@@ -43,6 +43,8 @@ const H = 'clamp(24px,3.5vw,48px)';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [form, setForm] = useState({
     name: '', role: '', organisation: '', location: '',
     teams: '', goalies: '', goals: '', email: '', phone: '',
@@ -51,15 +53,31 @@ export default function ContactPage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
+    setSubmitError('');
     setForm(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json() as { success: boolean; error?: string };
+      if (!data.success) throw new Error(data.error || 'Submission failed');
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -304,9 +322,19 @@ export default function ContactPage() {
                 </div>
               </div>
 
+              {submitError && (
+                <p style={{ textAlign: 'center', fontSize: '13px', color: '#f87171', marginTop: '16px', marginBottom: 0, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', borderRadius: '8px', padding: '10px 16px' }}>
+                  {submitError}
+                </p>
+              )}
               <div style={{ textAlign: 'center', marginTop: '22px' }}>
-                <button type="submit" className="cta-btn" style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#fff', background: `linear-gradient(135deg, ${RED}, #a00000)`, border: 'none', borderRadius: '10px', padding: '13px 38px', cursor: 'pointer', boxShadow: '0 6px 22px rgba(192,0,0,0.4)', transition: 'all .2s' }}>
-                  Set Up the Call
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="cta-btn"
+                  style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#fff', background: loading ? 'rgba(192,0,0,0.5)' : `linear-gradient(135deg, ${RED}, #a00000)`, border: 'none', borderRadius: '10px', padding: '13px 38px', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 6px 22px rgba(192,0,0,0.4)', transition: 'all .2s' }}
+                >
+                  {loading ? 'Sending…' : 'Set Up the Call'}
                 </button>
               </div>
               <p style={{ textAlign: 'center', fontSize: '12px', color: MUTED, fontStyle: 'italic', marginTop: '10px', marginBottom: 0 }}>

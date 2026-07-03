@@ -50,6 +50,25 @@ interface GoalieInvitationEmailData {
   supportEmail?: string;
 }
 
+interface ContactInquiry {
+  name: string;
+  role: string;
+  organisation: string;
+  location: string;
+  teams: string;
+  goalies: string;
+  goals: string;
+  email: string;
+  phone: string;
+  preferred_contact: string;
+}
+
+interface ContactInquiryNotificationData {
+  inquiry: ContactInquiry;
+  inquiryId: string;
+  notifyEmail: string;
+}
+
 /**
  * Email Service Interface
  */
@@ -58,6 +77,7 @@ export interface IEmailService {
   sendGoalieInvitation(data: GoalieInvitationEmailData): Promise<void>;
   sendEmail(data: EmailData): Promise<void>;
   sendVerificationEmail(data: VerificationEmailData): Promise<void>;
+  sendContactInquiryNotification(data: ContactInquiryNotificationData): Promise<void>;
 }
 
 /**
@@ -291,6 +311,116 @@ Questions? Contact ${supportEmail}
       logError('Failed to send email', error instanceof Error ? error : undefined, { error: String(error) });
       throw new Error('Failed to send email');
     }
+  }
+
+  /**
+   * Send contact inquiry notification email to the Smarter Goalie team
+   */
+  public async sendContactInquiryNotification(data: ContactInquiryNotificationData): Promise<void> {
+    const { inquiry, inquiryId, notifyEmail } = data;
+
+    const rows = [
+      ['Name',               inquiry.name],
+      ['Role',               inquiry.role],
+      ['Organisation',       inquiry.organisation],
+      ['Location',           inquiry.location],
+      ['Teams in program',   inquiry.teams   || '—'],
+      ['Goalies in program', inquiry.goalies || '—'],
+      ['Preferred contact',  inquiry.preferred_contact || '—'],
+      ['Phone',              inquiry.phone   || '—'],
+      ['Email',              inquiry.email],
+    ];
+
+    const rowsHtml = rows.map(([label, value]) => `
+      <tr>
+        <td style="padding:10px 14px;color:#64748b;font-size:13px;font-weight:600;white-space:nowrap;vertical-align:top;width:160px;">${label}</td>
+        <td style="padding:10px 14px;color:#0f172a;font-size:14px;vertical-align:top;">${value}</td>
+      </tr>`).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Contact Inquiry</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+  <div style="padding:40px 20px;">
+    <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#050d1a 0%,#0d1b3a 100%);padding:32px;text-align:center;">
+        <div style="display:inline-block;background:rgba(192,0,0,0.15);border:1px solid rgba(192,0,0,0.4);border-radius:99px;padding:6px 18px;margin-bottom:14px;">
+          <span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#ff6b6b;text-transform:uppercase;">New Inquiry</span>
+        </div>
+        <h1 style="margin:0;color:#37b5ff;font-size:22px;font-weight:800;letter-spacing:-0.3px;">Smarter Goalie</h1>
+        <p style="margin:6px 0 0;color:rgba(255,255,255,0.5);font-size:13px;">Contact Form Submission</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:32px;">
+        <p style="margin:0 0 6px;font-size:13px;color:#64748b;">Submission ID: <code style="font-size:12px;color:#94a3b8;">${inquiryId}</code></p>
+        <p style="margin:0 0 24px;font-size:13px;color:#64748b;">Received on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+
+        <!-- Details table -->
+        <table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:24px;">
+          ${rowsHtml}
+        </table>
+
+        <!-- Goals / message -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #37b5ff;border-radius:0 10px 10px 0;padding:18px 20px;margin-bottom:24px;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#37b5ff;text-transform:uppercase;">Program Goals</p>
+          <p style="margin:0;font-size:14px;color:#334155;line-height:1.75;">${inquiry.goals ? inquiry.goals.replace(/\n/g, '<br>') : '<em style="color:#94a3b8;">Not provided</em>'}</p>
+        </div>
+
+        <!-- Reply CTA -->
+        <div style="text-align:center;">
+          <a href="mailto:${inquiry.email}?subject=Re: Your Smarter Goalie Inquiry"
+             style="display:inline-block;background:linear-gradient(135deg,#C00000,#a00000);color:#fff;text-decoration:none;padding:13px 32px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:1px;text-transform:uppercase;">
+            Reply to ${inquiry.name} →
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:18px 32px;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#94a3b8;">
+          This notification was sent to you because someone submitted the contact form on the Smarter Goalie website.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+    const text = `
+NEW CONTACT INQUIRY — Smarter Goalie
+ID: ${inquiryId}
+
+Name:               ${inquiry.name}
+Role:               ${inquiry.role}
+Organisation:       ${inquiry.organisation}
+Location:           ${inquiry.location}
+Teams in program:   ${inquiry.teams || '—'}
+Goalies in program: ${inquiry.goalies || '—'}
+Preferred contact:  ${inquiry.preferred_contact || '—'}
+Phone:              ${inquiry.phone || '—'}
+Email:              ${inquiry.email}
+
+Program Goals:
+${inquiry.goals || '(not provided)'}
+
+Reply: ${inquiry.email}
+    `.trim();
+
+    await this.sendEmail({
+      to: notifyEmail,
+      subject: `New Inquiry: ${inquiry.name} — ${inquiry.organisation}`,
+      html,
+      text,
+    });
   }
 
   /**
@@ -552,3 +682,6 @@ Questions? Contact us at ${this.supportEmail}
 
 // Export singleton instance
 export const emailService = EmailService.getInstance();
+
+// Re-export interface types needed by callers
+export type { ContactInquiryNotificationData };

@@ -292,7 +292,6 @@ export default function Home() {
             {[
               { label: 'Features', action: () => { const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
               { label: 'About', action: () => router.push('/who-we-are') },
-              { label: 'Pricing', action: () => router.push('/pricing') },
             ].map(({ label, action }) => (
               <button key={label} onClick={action} style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', letterSpacing: '0.5px', transition: 'color 0.15s', background: 'none', border: 'none' }}
                 onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = '#37b5ff')}
@@ -327,7 +326,6 @@ export default function Home() {
             {[
               { label: 'Features', action: () => { setMobileNavOpen(false); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
               { label: 'About', action: () => { router.push('/who-we-are'); setMobileNavOpen(false); } },
-              { label: 'Pricing', action: () => { router.push('/pricing'); setMobileNavOpen(false); } },
               { label: 'Contact', action: () => { router.push('/contact'); setMobileNavOpen(false); } },
             ].map(({ label, action }) => (
               <button key={label} onClick={action}
