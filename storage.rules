@@ -15,12 +15,14 @@ service firebase.storage {
 
     function isAdmin() {
       return isAuthenticated() &&
-             request.auth.token.role == 'admin';
+             (request.auth.token.role == 'admin' ||
+              firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     function isCoach() {
       return isAuthenticated() &&
-             request.auth.token.role == 'coach';
+             (request.auth.token.role == 'coach' ||
+              firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'coach');
     }
 
     function isValidImageSize() {

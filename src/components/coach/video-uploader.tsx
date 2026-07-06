@@ -5,13 +5,14 @@ import { Upload, Video, X, Loader2, CheckCircle2, AlertCircle, Info } from 'luci
 import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { storageService, UploadProgress, STORAGE_CONFIGS } from '@/lib/firebase/storage.service';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+const BLUE = '#37b5ff';
 
 type VideoSourceType = 'youtube' | 'vimeo' | 'google-drive' | 'direct';
 
@@ -334,16 +335,21 @@ export function VideoUploader({
             />
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
               <span>Video ready</span>
               {videoDuration !== undefined && Number.isFinite(videoDuration) && (
-                <span className="text-muted-foreground">
+                <span className="text-white/40">
                   ({Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')})
                 </span>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={handleRemove}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              onClick={handleRemove}
+            >
               <X className="h-4 w-4 mr-1" />
               Remove
             </Button>
@@ -356,11 +362,11 @@ export function VideoUploader({
       return (
         <div className="space-y-4 p-6">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: BLUE }} />
           </div>
           <div className="space-y-2">
-            <Progress value={uploadProgress} className="h-2" />
-            <p className="text-sm text-center text-muted-foreground">
+            <Progress value={uploadProgress} className="h-2 bg-white/10" />
+            <p className="text-sm text-center text-white/50">
               Uploading... {uploadProgress}%
             </p>
           </div>
@@ -372,9 +378,10 @@ export function VideoUploader({
       <div
         className={cn(
           'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
-          isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
-          uploadState === 'error' && 'border-destructive/50 bg-destructive/5'
+          isDragging ? 'bg-[#37b5ff]/10' : 'border-white/15 hover:border-[#37b5ff]/50',
+          uploadState === 'error' && 'border-red-400/50 bg-red-400/5'
         )}
+        style={{ borderColor: isDragging ? BLUE : undefined }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -390,39 +397,47 @@ export function VideoUploader({
 
         {uploadState === 'error' ? (
           <div className="space-y-2">
-            <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-            <p className="text-sm text-destructive">{errorMessage}</p>
-            <Button variant="outline" size="sm" onClick={(e) => {
-              e.stopPropagation();
-              handleRemove();
-            }}>
+            <AlertCircle className="h-12 w-12 mx-auto text-red-400" />
+            <p className="text-sm text-red-400">{errorMessage}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove();
+              }}
+            >
               Try Again
             </Button>
           </div>
         ) : selectedFile ? (
           <div className="space-y-4">
-            <Video className="h-12 w-12 mx-auto text-primary" />
+            <Video className="h-12 w-12 mx-auto" style={{ color: BLUE }} />
             <div>
-              <p className="font-medium">{selectedFile.name}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-white">{selectedFile.name}</p>
+              <p className="text-sm text-white/50">
                 {formatFileSize(selectedFile.size)}
                 {videoDuration !== undefined && Number.isFinite(videoDuration) && ` • ${Math.floor(videoDuration / 60)}:${(videoDuration % 60).toString().padStart(2, '0')}`}
               </p>
             </div>
-            <Button onClick={(e) => {
-              e.stopPropagation();
-              handleUpload();
-            }}>
+            <Button
+              className="bg-gradient-to-r from-[#37b5ff] to-[#2596d1] hover:from-[#37b5ff] hover:to-[#1f7fb3] text-white border-0 shadow-md"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUpload();
+              }}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Upload Video
             </Button>
           </div>
         ) : (
           <div className="space-y-2">
-            <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+            <Upload className="h-12 w-12 mx-auto text-white/30" />
             <div>
-              <p className="font-medium">Drop your video here or click to browse</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-medium text-white">Drop your video here or click to browse</p>
+              <p className="text-sm text-white/40">
                 Supports MP4, WebM, MOV (max {formatFileSize(MAX_SIZE_BYTES)})
               </p>
             </div>
@@ -433,12 +448,15 @@ export function VideoUploader({
   };
 
   return (
-    <Card className={cn('overflow-hidden border-blue-100 shadow-sm', className)}>
-      <CardContent className="p-4">
+    <div
+      className={cn('overflow-hidden rounded-xl border', className)}
+      style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(96,205,255,0.18)' }}
+    >
+      <div className="p-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'upload' | 'url')}>
-          <TabsList className="grid w-full grid-cols-2 mb-4 rounded-xl bg-slate-100 p-1">
-            <TabsTrigger value="upload" className="rounded-lg data-[state=active]:bg-red-600 data-[state=active]:text-white">Upload Video</TabsTrigger>
-            <TabsTrigger value="url" className="rounded-lg data-[state=active]:bg-red-600 data-[state=active]:text-white">Video URL</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-4 rounded-xl bg-white/5 border border-white/10 p-1">
+            <TabsTrigger value="upload" className="rounded-lg text-white/50 data-[state=active]:bg-[#f87171] data-[state=active]:text-white">Upload Video</TabsTrigger>
+            <TabsTrigger value="url" className="rounded-lg text-white/50 data-[state=active]:bg-[#f87171] data-[state=active]:text-white">Video URL</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -479,16 +497,21 @@ export function VideoUploader({
                   )}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-green-600">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Video URL added</span>
                     {videoDuration !== undefined && Number.isFinite(videoDuration) && (
-                      <span className="text-muted-foreground">
+                      <span className="text-white/40">
                         ({Math.floor(videoDuration / 60)}:{(videoDuration % 60).toString().padStart(2, '0')})
                       </span>
                     )}
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleRemove}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                    onClick={handleRemove}
+                  >
                     <X className="h-4 w-4 mr-1" />
                     Remove
                   </Button>
@@ -497,37 +520,40 @@ export function VideoUploader({
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">Video URL</Label>
+                  <Label htmlFor="videoUrl" className="text-white/70">Video URL</Label>
                   <Input
                     id="videoUrl"
                     placeholder="YouTube, Vimeo, Google Drive, or direct video URL"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
-                    className="border-slate-300 focus-visible:ring-red-200"
+                    className="bg-white/5 border-white/15 text-white placeholder:text-white/30 focus-visible:ring-[#37b5ff]/40"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-white/40">
                     Paste a YouTube, Vimeo, Google Drive, or direct video URL
                   </p>
                 </div>
                 {isExternalPlatform && (
-                  <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50">
-                    <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-muted-foreground">
+                  <div className="flex items-start gap-2 p-3 rounded-md bg-white/5 border border-white/10">
+                    <Info className="h-4 w-4 text-white/40 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-white/50">
                       {videoSourceType === 'youtube' ? 'YouTube' : videoSourceType === 'vimeo' ? 'Vimeo' : 'Google Drive'} videos will play correctly in quizzes. Duration may not be detected automatically.
                     </p>
                   </div>
                 )}
                 {errorMessage && (
-                  <p className="text-sm text-destructive">{errorMessage}</p>
+                  <p className="text-sm text-red-400">{errorMessage}</p>
                 )}
-                <Button onClick={handleUrlSubmit} className="w-full bg-gradient-to-r from-red-600 to-blue-600 text-white hover:from-red-700 hover:to-blue-700">
+                <Button
+                  onClick={handleUrlSubmit}
+                  className="w-full bg-gradient-to-r from-[#f87171] to-[#37b5ff] hover:from-[#f75c5c] hover:to-[#2596d1] text-white border-0"
+                >
                   Add Video URL
                 </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
