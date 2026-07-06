@@ -64,7 +64,19 @@ export default function CoachInvitationsPage() {
     try {
       const updated = await coachInvitationService.resendInvitation(invitation.id);
       setInvitations(prev => prev.map(inv => (inv.id === updated.id ? updated : inv)));
-      toast.success(`Invitation resent to ${invitation.email}`);
+
+      try {
+        const res = await fetch('/api/invitations/send-coach-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitation: updated }),
+        });
+        if (!res.ok) throw new Error('Email send request failed');
+        toast.success(`Invitation resent to ${invitation.email}`);
+      } catch (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+        toast.warning('Invitation renewed but email failed to send', { description: 'You can copy the invitation link manually' });
+      }
     } catch (error) {
       console.error('Failed to resend invitation:', error);
       toast.error('Failed to resend invitation');

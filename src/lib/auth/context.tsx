@@ -216,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Register function
   const register = async (credentials: RegisterCredentials) => {
     const context = createErrorContext('register', { email: credentials.email });
+    let createdAuthUser: FirebaseUser | undefined;
 
     try {
       isRegisteringRef.current = true; // Prevent auth state listener from signing out
@@ -250,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials.email,
         credentials.password
       );
+      createdAuthUser = userCredential.user;
 
       // Update Firebase profile
       await updateProfile(userCredential.user, {
@@ -341,6 +343,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('❌ Registration error:', error);
       if (error && typeof error === 'object' && 'code' in error) {
         console.error('Error code:', (error as { code: string }).code);
+      }
+
+      // The Auth user was created but a later step (Firestore write, coach code, etc.)
+      // failed — delete it so the email isn't permanently orphaned in Firebase Auth
+      // with no corresponding Firestore user document.
+      if (createdAuthUser) {
+        try {
+          await createdAuthUser.delete();
+        } catch (cleanupError) {
+          console.error('❌ Failed to roll back orphaned auth user:', cleanupError);
+        }
       }
 
       // If it's already an AuthError, just re-throw it
@@ -460,6 +473,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // register() creates the Firestore user document and calls setUser itself.
+      // Firebase signs the new user in the moment createUserWithEmailAndPassword
+      // resolves, which fires this listener before register()'s own setDoc call
+      // lands — racing its write (correct role) against the fallback default
+      // ('student') below and letting whichever finishes last win. Skip while a
+      // registration is in flight so it can never clobber the intended role.
+      if (isRegisteringRef.current) {
+        return;
+      }
+
       if (firebaseUser) {
         const user = await createUserFromFirebaseUser(firebaseUser);
         setUser(user);
