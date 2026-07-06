@@ -50,6 +50,13 @@ interface GoalieInvitationEmailData {
   supportEmail?: string;
 }
 
+interface AdminInvitationEmailData {
+  invitation: Invitation;
+  inviteUrl: string;
+  appName?: string;
+  supportEmail?: string;
+}
+
 interface ContactInquiry {
   name: string;
   role: string;
@@ -75,6 +82,7 @@ interface ContactInquiryNotificationData {
 export interface IEmailService {
   sendCoachInvitation(data: CoachInvitationEmailData): Promise<void>;
   sendGoalieInvitation(data: GoalieInvitationEmailData): Promise<void>;
+  sendAdminInvitation(data: AdminInvitationEmailData): Promise<void>;
   sendEmail(data: EmailData): Promise<void>;
   sendVerificationEmail(data: VerificationEmailData): Promise<void>;
   sendContactInquiryNotification(data: ContactInquiryNotificationData): Promise<void>;
@@ -253,6 +261,126 @@ Accept your invitation here:
 ${inviteUrl}
 
 If you weren't expecting this invite, you can ignore this email.
+Questions? Contact ${supportEmail}
+
+© ${new Date().getFullYear()} ${appName}. All rights reserved.
+    `.trim();
+
+    await this.sendEmail({ to: invitation.email, subject, html, text });
+  }
+
+  /**
+   * Send admin invitation email
+   */
+  public async sendAdminInvitation(data: AdminInvitationEmailData): Promise<void> {
+    const { invitation, inviteUrl } = data;
+    const appName = data.appName || this.appName;
+    const supportEmail = data.supportEmail || this.supportEmail;
+    const firstName = invitation.metadata?.firstName;
+    const customMessage = invitation.metadata?.customMessage;
+
+    const subject = `You've been invited to join ${appName} as an Administrator`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator Invitation</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:Arial,sans-serif;">
+  <div style="padding:40px 20px;">
+    <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#050d1a 0%,#0d1b3a 100%);padding:36px 32px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🛡️</div>
+        <h1 style="margin:0;color:#37b5ff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">${appName}</h1>
+        <p style="margin:8px 0 0;color:rgba(255,255,255,0.6);font-size:14px;">Administrator Invitation</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:36px 32px;">
+        <h2 style="margin:0 0 16px;color:#0d1b3a;font-size:22px;font-weight:700;">
+          Welcome${firstName ? `, ${firstName}` : ''}!
+        </h2>
+        <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.7;">
+          <strong style="color:#0d1b3a;">${invitation.invitedByName}</strong> has invited you to join <strong style="color:#0d1b3a;">${appName}</strong> as an <strong style="color:#0d1b3a;">Administrator</strong>.
+        </p>
+
+        <!-- Warning box -->
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.6;">
+            Administrator accounts have full access to platform content, users, and settings. Only accept this invite if you recognize the inviter and expect this access.
+          </p>
+        </div>
+
+        <!-- Details box -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin-bottom:28px;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <tr>
+              <td style="padding:6px 0;color:#6b7280;width:120px;">Your email</td>
+              <td style="padding:6px 0;color:#0d1b3a;font-weight:600;">${invitation.email}</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;color:#6b7280;">Link expires</td>
+              <td style="padding:6px 0;color:#0d1b3a;font-weight:600;">${new Date(invitation.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+            </tr>
+          </table>
+        </div>
+
+        ${customMessage ? `
+        <!-- Personal message -->
+        <div style="border-left:4px solid #37b5ff;padding:14px 18px;background:#eff9ff;border-radius:0 8px 8px 0;margin-bottom:28px;">
+          <p style="margin:0;font-size:14px;color:#374151;font-style:italic;">"${customMessage}"</p>
+          <p style="margin:8px 0 0;font-size:12px;color:#6b7280;">— ${invitation.invitedByName}</p>
+        </div>` : ''}
+
+        <!-- CTA -->
+        <div style="text-align:center;margin:32px 0;">
+          <a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#37b5ff 0%,#0ea5e9 100%);color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;">
+            Accept Invitation →
+          </a>
+        </div>
+
+        <p style="font-size:13px;color:#9ca3af;text-align:center;margin:0;">
+          Or copy this link into your browser:<br>
+          <a href="${inviteUrl}" style="color:#37b5ff;word-break:break-all;">${inviteUrl}</a>
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:20px 32px;text-align:center;">
+        <p style="margin:0;font-size:13px;color:#9ca3af;">
+          If you weren't expecting this invite, you can safely ignore this email.<br>
+          Questions? <a href="mailto:${supportEmail}" style="color:#37b5ff;">${supportEmail}</a>
+        </p>
+        <p style="margin:12px 0 0;font-size:12px;color:#d1d5db;">
+          © ${new Date().getFullYear()} ${appName}. All rights reserved.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+    const text = `
+You've been invited to join ${appName} as an Administrator!
+
+${invitation.invitedByName} has invited you to create your administrator account.
+
+Administrator accounts have full access to platform content, users, and settings.
+Only accept this invite if you recognize the inviter and expect this access.
+
+Your email: ${invitation.email}
+Link expires: ${new Date(invitation.expiresAt).toLocaleDateString()}
+${customMessage ? `\nMessage from ${invitation.invitedByName}:\n"${customMessage}"\n` : ''}
+Accept your invitation here:
+${inviteUrl}
+
+If you weren't expecting this invite, you can safely ignore this email.
 Questions? Contact ${supportEmail}
 
 © ${new Date().getFullYear()} ${appName}. All rights reserved.

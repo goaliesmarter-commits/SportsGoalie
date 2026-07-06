@@ -5,8 +5,8 @@ import { Invitation } from '@/types/invitation';
 /**
  * POST /api/invitations/send-email
  *
- * Sends a goalie invite email via Resend.
- * Called server-side from the admin GoalieInviteForm after the Firestore record is created.
+ * Sends an invite email via Resend, branching template by invitation.role.
+ * Called server-side from admin invite forms (goalie, admin) after the Firestore record is created.
  *
  * Body: { invitation: Invitation }
  */
@@ -39,7 +39,11 @@ export async function POST(request: NextRequest) {
       expiresAt: new Date(invitation.expiresAt),
     };
 
-    await emailService.sendGoalieInvitation({ invitation: hydratedInvitation, inviteUrl });
+    if (hydratedInvitation.role === 'admin') {
+      await emailService.sendAdminInvitation({ invitation: hydratedInvitation, inviteUrl });
+    } else {
+      await emailService.sendGoalieInvitation({ invitation: hydratedInvitation, inviteUrl });
+    }
 
     return NextResponse.json({ success: true, inviteUrl });
   } catch (error) {

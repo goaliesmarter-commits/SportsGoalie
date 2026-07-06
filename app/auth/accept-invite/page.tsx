@@ -28,6 +28,7 @@ function roleLabel(inv: AnyInvitation): string {
     coach: 'Coach',
     goalie_coach: 'Goalie Coach',
     parent: 'Parent',
+    admin: 'Administrator',
   };
   return roleMap[inv.data.role] ?? 'Member';
 }
@@ -215,9 +216,10 @@ function AcceptInviteContent() {
 
       // Map InvitableRole → RegisterCredentials role
       // goalie_coach doesn't exist in RegisterCredentials so register as 'coach' and patch Firestore
-      const registerRole: 'student' | 'coach' | 'parent' =
+      const registerRole: 'student' | 'coach' | 'parent' | 'admin' =
         role === 'student' ? 'student'
         : role === 'parent' ? 'parent'
+        : role === 'admin' ? 'admin'
         : 'coach'; // covers 'coach' and 'goalie_coach'
 
       const { userId } = await register({
@@ -256,6 +258,8 @@ function AcceptInviteContent() {
         router.push('/onboarding');
       } else if (registerRole === 'parent') {
         router.push('/onboarding?role=parent');
+      } else if (registerRole === 'admin') {
+        router.push('/admin');
       } else {
         router.push('/coach');
       }

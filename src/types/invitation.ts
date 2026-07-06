@@ -1,6 +1,6 @@
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
 
-export type InvitableRole = 'student' | 'coach' | 'goalie_coach' | 'parent';
+export type InvitableRole = 'student' | 'coach' | 'goalie_coach' | 'parent' | 'admin';
 
 export interface Invitation {
   id: string;
