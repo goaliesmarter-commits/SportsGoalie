@@ -6,3 +6,4 @@
 
 export { VideoTagEditor } from './VideoTagEditor';
 export { VideoFilterPanel } from './VideoFilterPanel';
+export { VideoLibraryPicker } from './VideoLibraryPicker';

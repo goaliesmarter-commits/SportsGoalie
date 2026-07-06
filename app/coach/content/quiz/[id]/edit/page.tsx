@@ -33,6 +33,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { VideoUploader } from '@/components/coach/video-uploader';
+import { VideoLibraryPicker } from '@/components/video';
 import { VideoQuestionBuilder } from '@/components/admin/VideoQuestionBuilder';
 import { customContentService } from '@/lib/database';
 import { videoQuizService } from '@/lib/database';
@@ -447,6 +448,9 @@ export default function EditVideoQuizPage() {
                 <p className="text-sm text-muted-foreground">
                   Upload or add a video URL. Questions will be added at specific timestamps.
                 </p>
+                <div className="flex justify-end">
+                  <VideoLibraryPicker onSelect={handleVideoUploaded} />
+                </div>
                 <VideoUploader
                   coachId={user.id}
                   onVideoUploaded={handleVideoUploaded}

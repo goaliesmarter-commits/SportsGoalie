@@ -63,6 +63,16 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // Video library uploads (shared reusable video pool for quizzes)
+    match /video-library/{userId}/{fileName} {
+      // Coaches/admins read to browse and reuse videos
+      allow read: if isAuthenticated();
+      // Uploader can write to their own folder
+      allow write: if isOwner(userId) && (isAdmin() || isCoach()) && isValidVideoSize() && isValidVideoType();
+      // Uploader can delete their own, admin can delete any
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
     // Coach content uploads (videos, images, documents for custom lessons/quizzes)
     match /coach-content/{coachId}/videos/{fileName} {
       // Public read for coach content videos

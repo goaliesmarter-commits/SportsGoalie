@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { VideoQuestionBuilder } from '@/components/admin/VideoQuestionBuilder';
 import { VideoUploader } from '@/components/coach/video-uploader';
+import { VideoLibraryPicker } from '@/components/video';
 
 const BLUE = '#37b5ff';
 const RED = '#f87171';
@@ -219,6 +220,9 @@ function CreateVideoQuizContent() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(55,181,255,0.08)', border: '1px solid rgba(55,181,255,0.2)', borderRadius: '12px', padding: '14px' }}>
                   <Video size={16} color={BLUE} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>Provide a video by entering a URL or uploading a file. Duration will be automatically detected when you create questions.</p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <VideoLibraryPicker onSelect={handleVideoUploaded} />
                 </div>
                 <VideoUploader userId={user?.id} uploadFolder="video-quizzes" onVideoUploaded={handleVideoUploaded} initialVideoUrl={quizData.videoUrl} />
                 {quizData.videoUrl && (

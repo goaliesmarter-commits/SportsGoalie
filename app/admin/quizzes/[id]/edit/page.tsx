@@ -6,7 +6,7 @@ import { AdminRoute } from '@/components/auth/protected-route';
 import { videoQuizService } from '@/lib/database/services/video-quiz.service';
 import { sportsService } from '@/lib/database/services/sports.service';
 import { Sport, Skill, DifficultyLevel, VideoQuiz, VideoQuizQuestion, VideoQuizSettings, VideoStructuredTags, createEmptyStructuredTags } from '@/types';
-import { VideoTagEditor } from '@/components/video';
+import { VideoTagEditor, VideoLibraryPicker } from '@/components/video';
 import { ArrowLeft, Save, Loader2, Video, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -348,6 +348,9 @@ function EditVideoQuizContent() {
 
             <div style={{ position: 'relative', ...card, padding: '24px', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}66, transparent)` }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                <VideoLibraryPicker onSelect={handleVideoUploaded} />
+              </div>
               <VideoUploader
                 uploadFolder="video-quizzes"
                 onVideoUploaded={handleVideoUploaded}
