@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { CoachInvitation, CreateInvitationData } from '@/types/auth';
 import { coachInvitationService } from '@/lib/services/coach-invitation.service';
-import { emailService } from '@/lib/services/email.service';
 import { toast } from 'sonner';
 import { Loader2, Mail } from 'lucide-react';
 
@@ -48,10 +47,13 @@ export function InvitationForm({ invitedBy, invitedByName, onInvitationCreated }
         },
       };
       const invitation = await coachInvitationService.createInvitation(invitationData);
-      const baseUrl = window.location.origin;
-      const inviteUrl = `${baseUrl}/auth/accept-invite?token=${invitation.token}`;
       try {
-        await emailService.sendCoachInvitation({ invitation, inviteUrl });
+        const res = await fetch('/api/invitations/send-coach-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitation }),
+        });
+        if (!res.ok) throw new Error('Email send request failed');
       } catch (emailError) {
         console.error('Failed to send invitation email:', emailError);
         toast.warning('Invitation created but email failed to send', { description: 'You can copy the invitation link manually' });
@@ -82,6 +84,7 @@ export function InvitationForm({ invitedBy, invitedByName, onInvitationCreated }
         .if-inp:focus { border-color: rgba(55,181,255,0.45) !important; }
         .if-inp::placeholder { color: rgba(255,255,255,0.25) !important; }
         .if-inp:disabled { opacity: 0.5 !important; }
+        .if-inp-icon { padding-left: 36px !important; }
         .if-sel { background: rgba(2,18,44,0.7) !important; border: 1px solid rgba(55,181,255,0.18) !important; color: rgba(255,255,255,0.8) !important; border-radius: 10px !important; padding: 10px 14px !important; width: 100% !important; font-size: 15px !important; outline: none !important; cursor: pointer !important; }
         .if-sel:focus { border-color: rgba(55,181,255,0.45) !important; }
         .if-ta { background: rgba(2,18,44,0.7) !important; border: 1px solid rgba(55,181,255,0.18) !important; color: #fff !important; border-radius: 10px !important; padding: 10px 14px !important; width: 100% !important; font-size: 15px !important; outline: none !important; resize: vertical !important; box-sizing: border-box !important; }
@@ -93,7 +96,7 @@ export function InvitationForm({ invitedBy, invitedByName, onInvitationCreated }
           {fieldLabel('Email Address', true)}
           <div style={{ position: 'relative' }}>
             <Mail size={14} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-            <input className="if-inp" style={{ paddingLeft: '36px' } as React.CSSProperties} type="email" placeholder="coach@example.com" value={formData.email} onChange={e => handleChange('email', e.target.value)} required disabled={loading} />
+            <input className="if-inp if-inp-icon" type="email" placeholder="coach@example.com" value={formData.email} onChange={e => handleChange('email', e.target.value)} required disabled={loading} />
           </div>
         </div>
         <div>

@@ -38,6 +38,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Pillars', href: '/admin/pillars', icon: BookOpen },
       { label: 'Quizzes', href: '/admin/quizzes', icon: Trophy },
+      { label: 'Video Library', href: '/admin/video-library', icon: Video },
       { label: 'Video Reviews', href: '/admin/video-reviews', icon: Video },
       { label: 'Form Templates', href: '/admin/form-templates', icon: FileText },
     ],

@@ -931,6 +931,29 @@ service cloud.firestore {
       );
     }
 
+    // Video Library collection - shared pool of reusable videos for quizzes
+    // Lets admins/coaches upload a video once and reuse it across many quizzes
+    // instead of re-uploading the same footage every time
+    match /library_videos/{videoId} {
+      // Only coaches/admins browse the library (it's a content-creation tool, not public content)
+      allow read: if isCoachOrAdmin();
+
+      allow create: if isCoachOrAdmin() &&
+                       hasRequiredFields(['title', 'videoUrl', 'source', 'tags', 'createdBy', 'createdAt', 'updatedAt']) &&
+                       request.resource.data.createdBy == getUserId() &&
+                       request.resource.data.title is string &&
+                       request.resource.data.title.size() > 0 &&
+                       request.resource.data.videoUrl is string &&
+                       request.resource.data.videoUrl.size() > 0 &&
+                       request.resource.data.tags is list;
+
+      // Creator can update their own entry, admins can update any
+      allow update: if isAdmin() || (isCoach() && resource.data.createdBy == getUserId());
+
+      // Creator can delete their own entry, admins can delete any
+      allow delete: if isAdmin() || (isCoach() && resource.data.createdBy == getUserId());
+    }
+
     // ==================== PARENT LINKING SYSTEM ====================
 
     // Parent Link Codes collection - Lookup table for XXXX-XXXX codes

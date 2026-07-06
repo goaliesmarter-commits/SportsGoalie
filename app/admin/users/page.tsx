@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Users, UserPlus, ShieldCheck, MoreHorizontal, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Users, UserPlus, ShieldCheck, MoreHorizontal, Trash2, AlertTriangle, X } from 'lucide-react';
 import Link from 'next/link';
 import { AdminRoute } from '@/components/auth/protected-route';
 import { useAuth } from '@/lib/auth/context';
@@ -9,6 +9,9 @@ import { auth } from '@/lib/firebase/config';
 import { userService } from '@/lib/database/services/user.service';
 import { invitationService } from '@/lib/services/invitation.service';
 import { User, UserRole } from '@/types';
+import { Invitation } from '@/types/invitation';
+import { AdminInviteForm } from './components/AdminInviteForm';
+import { AdminInviteList } from './components/AdminInviteList';
 import { toast } from 'sonner';
 
 const BLUE = '#37b5ff';
@@ -34,18 +37,34 @@ function UsersManagementContent() {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [adminInvitations, setAdminInvitations] = useState<Invitation[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(true);
+
+  const fetchAdminInvitations = async () => {
+    try {
+      setInvitesLoading(true);
+      const data = await invitationService.getAllInvitations('admin');
+      setAdminInvitations(data);
+    } catch {
+      toast.error('Failed to load admin invitations');
+    } finally {
+      setInvitesLoading(false);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const result = await userService.getAllUsers({ searchTerm: searchTerm.trim() || undefined, role: roleFilter === 'all' ? undefined : roleFilter, limit: 100 });
+      const result = await userService.getAllUsers({ role: roleFilter === 'all' ? undefined : roleFilter, limit: 100 });
       if (result.success && result.data) setUsers(result.data.items);
       else toast.error('Failed to load users');
     } catch { toast.error('Failed to load users'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchUsers(); }, [searchTerm, roleFilter]);
+  useEffect(() => { fetchUsers(); }, [roleFilter]);
+  useEffect(() => { fetchAdminInvitations(); }, []);
 
   const handleDeleteUser = async (user: User) => {
     if (!currentUser?.id) return;
@@ -106,6 +125,7 @@ function UsersManagementContent() {
         .au-view:hover { background: rgba(55,181,255,0.12) !important; color: ${BLUE} !important; border-color: rgba(55,181,255,0.3) !important; }
         .au-view { transition: all 0.2s !important; }
         @media (max-width: 1024px) { .au-stats { grid-template-columns: repeat(3, 1fr) !important; } }
+        @media (max-width: 768px) { .au-invite-layout { grid-template-columns: 1fr !important; } }
         @media (max-width: 640px) {
           .au-stats { grid-template-columns: repeat(2, 1fr) !important; }
           .au-row-actions { flex-direction: column !important; align-items: flex-start !important; gap: '4px' !important; }
@@ -120,10 +140,43 @@ function UsersManagementContent() {
             <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', marginBottom: '4px' }}>User Management</h1>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '15px' }}>Manage user accounts, roles, and permissions</p>
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: `linear-gradient(135deg, ${RED} 0%, #dc2626 100%)`, color: '#fff', padding: '10px 18px', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>
-            <UserPlus size={15} /> Add User
+          <button onClick={() => setShowInvitePanel(prev => !prev)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: `linear-gradient(135deg, ${RED} 0%, #dc2626 100%)`, color: '#fff', padding: '10px 18px', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>
+            {showInvitePanel ? <X size={15} /> : <UserPlus size={15} />}
+            {showInvitePanel ? 'Close' : 'Invite Admin'}
           </button>
         </div>
+
+        {/* Invite Admin Panel */}
+        {showInvitePanel && (
+          <div className="au-invite-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', alignItems: 'start' }}>
+            <div style={{ position: 'relative', ...card, padding: '20px', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${RED}, transparent)` }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <ShieldCheck size={16} color={RED} />
+                <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Invite New Admin</h2>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', marginBottom: '18px' }}>Send an email invite to create an administrator account</p>
+              {currentUser && (
+                <AdminInviteForm
+                  invitedBy={currentUser.id}
+                  invitedByName={currentUser.displayName ?? 'Admin'}
+                  onInvitationCreated={inv => setAdminInvitations(prev => [inv, ...prev])}
+                />
+              )}
+            </div>
+            <div style={{ position: 'relative', ...card, padding: '20px', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}, transparent)` }} />
+              <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '14px' }}>Admin Invitations ({adminInvitations.length})</h2>
+              <AdminInviteList
+                invitations={adminInvitations}
+                loading={invitesLoading}
+                onResend={updated => setAdminInvitations(prev => prev.map(i => (i.id === updated.id ? updated : i)))}
+                onRevoke={revoked => setAdminInvitations(prev => prev.map(i => (i.id === revoked.id ? { ...i, status: 'revoked' as const } : i)))}
+                onDelete={deleted => setAdminInvitations(prev => prev.filter(i => i.id !== deleted.id))}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Stat Cards */}
         <div className="au-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
