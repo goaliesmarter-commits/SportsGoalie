@@ -215,6 +215,19 @@ export default function LoginPage() {
             <VerificationMessage />
           </Suspense>
 
+          <style>{`
+            .auth-input:-webkit-autofill,
+            .auth-input:-webkit-autofill:hover,
+            .auth-input:-webkit-autofill:focus,
+            .auth-input:-webkit-autofill:active {
+              -webkit-text-fill-color: #fff !important;
+              -webkit-box-shadow: 0 0 0px 1000px #00101f inset !important;
+              box-shadow: 0 0 0px 1000px #00101f inset !important;
+              caret-color: #fff !important;
+              transition: background-color 5000s ease-in-out 0s !important;
+            }
+          `}</style>
+
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} data-testid="login-form">
 
             {/* Email */}
@@ -227,6 +240,7 @@ export default function LoginPage() {
                 {...register('email')}
                 autoComplete="email"
                 data-testid="email-input"
+                className="auth-input"
                 style={inputStyle}
                 onFocus={(e) => (e.currentTarget.style.borderColor = BLUE)}
                 onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(55,181,255,0.2)')}
@@ -258,6 +272,7 @@ export default function LoginPage() {
                   {...register('password')}
                   autoComplete="current-password"
                   data-testid="password-input"
+                  className="auth-input"
                   style={{ ...inputStyle, paddingRight: '44px' }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = BLUE)}
                   onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(55,181,255,0.2)')}

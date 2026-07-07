@@ -6,6 +6,8 @@ import { Sport, Skill, DifficultyLevel, PILLARS, PacingLevel } from '@/types';
 import { sportsService } from '@/lib/database/services/sports.service';
 import { videoQuizService } from '@/lib/database/services/video-quiz.service';
 import { onboardingService } from '@/lib/database';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/auth/context';
 import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
 import { SkeletonPillarDetail } from '@/components/ui/skeletons';
@@ -199,6 +201,13 @@ export default function PillarDetailPage() {
     const load = async () => {
       setLevelLoading(true);
       try {
+        const baselineSnap = await getDoc(doc(db, 'studentBaselineProfiles', user.id));
+        const baselineProfile = baselineSnap.exists() ? baselineSnap.data()?.intelligenceProfile : null;
+        if (baselineProfile) {
+          setUserLevel(baselineProfile.pacingLevel);
+          setUserScore(baselineProfile.overallScore);
+          return;
+        }
         const result = await onboardingService.getEvaluation(user.id);
         if (result.success && result.data?.intelligenceProfile) {
           setUserLevel(result.data.intelligenceProfile.pacingLevel);

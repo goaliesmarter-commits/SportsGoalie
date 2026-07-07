@@ -12,6 +12,8 @@ import type { LucideIcon } from 'lucide-react';
 import { userService, sportsService, videoQuizService, customContentService } from '@/lib/database';
 import { customCurriculumService } from '@/lib/database';
 import { onboardingService } from '@/lib/database';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import { useProgress } from '@/hooks/useProgress';
 import { User, Sport, SportProgress, CustomCurriculum, CustomCurriculumItem, IntelligenceProfile, getPacingLevelDisplayText, PILLARS } from '@/types';
 import { enrollmentService } from '@/lib/database/services/enrollment.service';
@@ -101,12 +103,18 @@ export function CustomCurriculumDashboard({ user }: CustomCurriculumDashboardPro
   const loadData = async () => {
     try {
       setLoading(true);
-      const [curriculumResult, evalResult, coachResult] = await Promise.all([
+      const [curriculumResult, baselineSnap, evalResult, coachResult] = await Promise.all([
         customCurriculumService.getStudentCurriculum(user.id),
+        getDoc(doc(db, 'studentBaselineProfiles', user.id)).catch(() => null),
         onboardingService.getEvaluation(user.id).catch(() => null),
         user.assignedCoachId ? userService.getUser(user.assignedCoachId).catch(() => null) : Promise.resolve(null),
       ]);
-      if (evalResult?.success && evalResult.data?.intelligenceProfile) setProfile(evalResult.data.intelligenceProfile);
+      const baselineProfile = baselineSnap?.exists() ? baselineSnap.data()?.intelligenceProfile : null;
+      if (baselineProfile) {
+        setProfile(baselineProfile as IntelligenceProfile);
+      } else if (evalResult?.success && evalResult.data?.intelligenceProfile) {
+        setProfile(evalResult.data.intelligenceProfile);
+      }
       if (coachResult?.success && coachResult.data) setCoach(coachResult.data);
       if (curriculumResult.success && curriculumResult.data) setCurriculum(curriculumResult.data);
     } catch {
