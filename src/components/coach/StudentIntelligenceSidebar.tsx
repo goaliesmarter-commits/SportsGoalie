@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Loader2, AlertTriangle, TrendingUp, Plus, Brain, Target, Zap, Lightbulb } from 'lucide-react';
 import { onboardingService } from '@/lib/database';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import type { IntelligenceProfile, GapAnalysis, StrengthAnalysis, ContentRecommendation } from '@/types';
 import { getPacingLevelDisplayText, GOALIE_CATEGORIES } from '@/types';
 import { getRecommendedPillarsFromGaps, type PillarRecommendation } from '@/lib/utils/category-pillar-mapping';
@@ -43,6 +45,14 @@ export function StudentIntelligenceSidebar({ studentId, onAddContentForPillar }:
     const load = async () => {
       setLoading(true);
       try {
+        const baselineSnap = await getDoc(doc(db, 'studentBaselineProfiles', studentId));
+        const baselineProfile = baselineSnap.exists() ? baselineSnap.data()?.intelligenceProfile : null;
+        if (baselineProfile) {
+          const p = baselineProfile as IntelligenceProfile;
+          setProfile(p);
+          setRecommendations(getRecommendedPillarsFromGaps(p.identifiedGaps));
+          return;
+        }
         const result = await onboardingService.getEvaluation(studentId);
         if (result.success && result.data?.intelligenceProfile) {
           const p = result.data.intelligenceProfile;

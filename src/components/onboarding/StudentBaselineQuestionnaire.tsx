@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { generateStudentV2IntelligenceProfile } from '@/lib/scoring/v2-baseline-scoring';
 import {
   STUDENT_BASELINE_SECTIONS,
@@ -64,6 +64,55 @@ interface QState {
   openExtras: Record<string, string>;
 }
 
+// ─── Draft persistence ──────────────────────────────────────────────────────
+// Answers are auto-saved to localStorage so a failed submit, a dropped
+// connection, or an accidental refresh never costs the user their progress
+// through the full 74-question form.
+
+const DRAFT_KEY_PREFIX = 'sbq-draft-';
+
+function isQState(value: unknown): value is QState {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.phase === 'string' &&
+    typeof v.sectionIndex === 'number' &&
+    typeof v.questionIndex === 'number' &&
+    typeof v.responses === 'object' &&
+    typeof v.openExtras === 'object'
+  );
+}
+
+function loadDraft(userId: string): QState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(`${DRAFT_KEY_PREFIX}${userId}`);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isQState(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(userId: string, state: QState): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(`${DRAFT_KEY_PREFIX}${userId}`, JSON.stringify(state));
+  } catch {
+    // Best-effort — draft saving should never block the main flow.
+  }
+}
+
+function clearDraft(userId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(`${DRAFT_KEY_PREFIX}${userId}`);
+  } catch {
+    // ignore
+  }
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -75,13 +124,21 @@ interface Props {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StudentBaselineQuestionnaire({ userId, userName: _userName, onComplete }: Props): React.ReactElement {
-  const [state, setState] = useState<QState>({
-    phase: 'hero',
-    sectionIndex: 0,
-    questionIndex: 0,
-    responses: {},
-    openExtras: {},
-  });
+  const [state, setState] = useState<QState>(
+    () =>
+      loadDraft(userId) ?? {
+        phase: 'hero',
+        sectionIndex: 0,
+        questionIndex: 0,
+        responses: {},
+        openExtras: {},
+      }
+  );
+
+  // Auto-save progress so a failed submit or dropped connection never loses answers.
+  useEffect(() => {
+    saveDraft(userId, state);
+  }, [userId, state]);
 
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -290,42 +347,63 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
+  const MAX_SAVE_ATTEMPTS = 3;
+
+  const attemptSaveProfile = async (): Promise<void> => {
+    const sectionKeys: SectionKey[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+    // Run scoring engine on raw V2 responses to produce an Intelligence Profile
+    const intelligenceProfile = generateStudentV2IntelligenceProfile(userId, state.responses);
+
+    // Write both documents atomically — either both land or neither does, so a
+    // partial failure can never strand the account in a half-onboarded state.
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'studentBaselineProfiles', userId), {
+      userId,
+      submittedAt: serverTimestamp(),
+      responses: state.responses,
+      openExtras: state.openExtras,
+      sectionsCompleted: sectionKeys,
+      intelligenceProfile: {
+        overallScore: intelligenceProfile.overallScore,
+        pacingLevel: intelligenceProfile.pacingLevel,
+        categoryScores: intelligenceProfile.categoryScores,
+        identifiedGaps: intelligenceProfile.identifiedGaps,
+        identifiedStrengths: intelligenceProfile.identifiedStrengths,
+        contentRecommendations: intelligenceProfile.contentRecommendations,
+        chartingEmphasis: intelligenceProfile.chartingEmphasis,
+      },
+    });
+    batch.update(doc(db, 'users', userId), {
+      onboardingCompleted: true,
+      onboardingCompletedAt: serverTimestamp(),
+      pacingLevel: intelligenceProfile.pacingLevel,
+      overallScore: intelligenceProfile.overallScore,
+    });
+    await batch.commit();
+  };
+
   const saveProfile = async (): Promise<void> => {
     setSaving(true);
     setError(null);
-    try {
-      const sectionKeys: SectionKey[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-      // Run scoring engine on raw V2 responses to produce an Intelligence Profile
-      const intelligenceProfile = generateStudentV2IntelligenceProfile(userId, state.responses);
-
-      await setDoc(doc(db, 'studentBaselineProfiles', userId), {
-        userId,
-        submittedAt: serverTimestamp(),
-        responses: state.responses,
-        openExtras: state.openExtras,
-        sectionsCompleted: sectionKeys,
-        intelligenceProfile: {
-          overallScore: intelligenceProfile.overallScore,
-          pacingLevel: intelligenceProfile.pacingLevel,
-          categoryScores: intelligenceProfile.categoryScores,
-          identifiedGaps: intelligenceProfile.identifiedGaps,
-          identifiedStrengths: intelligenceProfile.identifiedStrengths,
-          contentRecommendations: intelligenceProfile.contentRecommendations,
-          chartingEmphasis: intelligenceProfile.chartingEmphasis,
-        },
-      });
-      await updateDoc(doc(db, 'users', userId), {
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        pacingLevel: intelligenceProfile.pacingLevel,
-        overallScore: intelligenceProfile.overallScore,
-      });
-      onComplete();
-    } catch (err) {
-      console.error('saveProfile failed:', err);
-      setError('Unable to save your profile. Please try again.');
-      setSaving(false);
+    for (let attempt = 1; attempt <= MAX_SAVE_ATTEMPTS; attempt++) {
+      try {
+        await attemptSaveProfile();
+        clearDraft(userId);
+        onComplete();
+        return;
+      } catch (err) {
+        console.error(`saveProfile attempt ${attempt} failed:`, err);
+        if (attempt === MAX_SAVE_ATTEMPTS) {
+          setError(
+            'Unable to save your profile — please check your internet connection and try again. Your answers are saved on this device, so nothing will be lost.'
+          );
+          setSaving(false);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+        }
+      }
     }
   };
 
