@@ -245,7 +245,7 @@ export default function Home() {
           className="absolute inset-0 hidden md:block"
           style={{
             backgroundImage: 'url("/quality.png")',
-            backgroundSize: 'auto 90%',
+            backgroundSize: 'cover',
             backgroundPosition: 'right center',
             backgroundRepeat: 'no-repeat',
             zIndex: 0,
@@ -337,39 +337,39 @@ export default function Home() {
 
         {/* ── HERO CONTENT ── */}
         <div className="relative flex-1 flex items-center" style={{ zIndex: 10 }}>
-          <div className="w-full max-w-7xl mx-auto pl-4 md:pl-6 pr-6 md:pr-16 py-12 md:py-20">
+          <div className="w-full max-w-7xl mx-auto pl-4 md:pl-6 pr-6 md:pr-16 py-8 md:py-12">
             <div className="w-full md:max-w-[600px]">
 
               {/* Eyebrow */}
-              <p style={{ fontSize: '13px', fontWeight: 700, color: '#37b5ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '16px' }}>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: '#37b5ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '14px' }}>
                 WELCOME TO
               </p>
 
               {/* Brand name — italic, SMARTER=blue, GOALIE=white */}
               <h1
-                className="font-black uppercase italic leading-none mb-6"
-                style={{ fontSize: 'clamp(56px, 9vw, 108px)', letterSpacing: '-0.03em', lineHeight: 0.92, fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
+                className="font-black uppercase italic leading-none mb-5"
+                style={{ fontSize: 'clamp(48px, 8vw, 96px)', letterSpacing: '-0.03em', lineHeight: 0.92, fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
               >
                 <span style={{ display: 'block', color: '#42a5f5' }}>SMARTER</span>
                 <span style={{ display: 'block', color: '#ffffff' }}>GOALIE</span>
               </h1>
 
               {/* Full-width divider */}
-              <div style={{ width: '100%', maxWidth: '520px', height: '1px', background: 'rgba(255,255,255,0.2)', marginBottom: '32px' }} />
+              <div style={{ width: '100%', maxWidth: '520px', height: '1px', background: 'rgba(255,255,255,0.2)', marginBottom: '24px' }} />
 
               {/* Sub-headline — large bold */}
               <h2
-                className="font-black uppercase leading-tight mb-4"
-                style={{ fontSize: 'clamp(22px, 3.5vw, 42px)', lineHeight: 1.1, color: '#ffffff', letterSpacing: '-0.01em' }}
+                className="font-black uppercase leading-tight mb-3"
+                style={{ fontSize: 'clamp(18px, 2.6vw, 32px)', lineHeight: 1.15, color: '#ffffff', letterSpacing: '-0.01em' }}
               >
-                ARE GOALIES THE WORST<br />ATHLETES IN SPORTS?
+                THE COMPLETE DEVELOPMENT SUPPORT SYSTEM GOALTENDING NEVER HAD.
               </h2>
 
               <p
-                className="uppercase font-semibold mb-12"
-                style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', fontSize: '11px' }}
+                className="uppercase font-semibold mb-8"
+                style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', fontSize: '11px' }}
               >
-                HERE IS WHAT WE KNOW.
+                It meets you where you are — and takes you where you&rsquo;re going.
               </p>
 
               {/* CTAs */}
@@ -377,11 +377,13 @@ export default function Home() {
                 {/* Video button */}
                 <button
                   className="flex items-center gap-3 cursor-pointer transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '14px 24px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', borderRadius: '12px', whiteSpace: 'nowrap' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '8px 26px 8px 8px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', borderRadius: '999px', whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
                 >
-                  <span className="flex items-center justify-center shrink-0" style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#fff', color: '#020617', fontSize: '9px', fontWeight: 900 }}>▶</span>
+                  <span className="flex items-center justify-center shrink-0" style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+                    <Play size={14} fill="#020617" color="#020617" style={{ marginLeft: '2px' }} />
+                  </span>
                   COACH MIKE
                 </button>
 
@@ -411,11 +413,17 @@ export default function Home() {
       {/* ── MAIN CONTENT ── */}
       <>
           <section id="features" className="pt-20 pb-0" style={{ background: 'linear-gradient(180deg, #000f28 0%, #041530 100%)' }}>
-            <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 mb-12">
+            <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 mb-24">
               <span className="inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-[3px] uppercase mb-3" style={{ background: 'rgba(55,181,255,0.1)', color: '#37b5ff', border: '1px solid rgba(55,181,255,0.25)' }}>FEATURES</span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white">WHAT WE DO</h2>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4">NOTHING LEFT TO THE IMAGINATION.</h2>
+              <p className="text-zinc-300 text-base md:text-lg leading-relaxed max-w-2xl mb-3">
+                We get to know you. You get to know your game. You grow — and the system grows with you. And the best part? It&rsquo;s always there, for as long as you need it.
+              </p>
+              <p className="uppercase font-semibold text-sm md:text-base" style={{ color: '#37b5ff', letterSpacing: '0.15em' }}>
+                The support system that keeps you sharp.
+              </p>
             </div>
-            <ScrollStack useWindowScroll={true} itemDistance={200} itemScale={0.02} itemStackDistance={30} stackPosition="5%" scaleEndPosition="15%" baseScale={0.95}>
+            <ScrollStack useWindowScroll={true} itemDistance={200} itemScale={0.02} itemStackDistance={30} stackPosition="72px" scaleEndPosition="15%" baseScale={0.95}>
               {/* 1 — The 7 Pillars of Intelligent Goaltending */}
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
@@ -473,7 +481,7 @@ export default function Home() {
                       <div className="p-5 md:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>3/5</span></div>
                         <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4">ANALYTICS & GAP MANAGEMENT</h3>
-                        <p className="text-lg md:text-xl mb-6" style={{ color: '#37b5ff' }}>Know what others miss.</p>
+                        <p className="text-lg md:text-xl mb-6" style={{ color: '#37b5ff' }}>Gaps are not failures — gaps are the roadmap to building your consistency in performance.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
                           The charting systems build your personal Baseline Profile. Your knowledge and skill base is now alive. Smarter Goalie&rsquo;s intuitive system is designed to grow your knowledge base and your tech game with methods built to accelerate your development.
                         </p>
@@ -534,7 +542,7 @@ export default function Home() {
           <section className="py-6 overflow-hidden" style={{ background: '#041530', borderTop: '1px solid rgba(55,181,255,0.12)', borderBottom: '1px solid rgba(55,181,255,0.12)' }}>
             <div className="relative flex" style={{ '--duration': '30s', '--gap': '2rem' } as React.CSSProperties}>
               <div className="flex shrink-0 animate-marquee items-center gap-8">
-                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', 'SEVEN POINT SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', 'SEVEN POINT SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>
@@ -542,7 +550,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="flex shrink-0 animate-marquee items-center gap-8" aria-hidden="true">
-                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', 'SEVEN POINT SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', 'SEVEN POINT SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>
