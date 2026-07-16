@@ -2,6 +2,16 @@ export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
 
 export type InvitableRole = 'student' | 'coach' | 'goalie_coach' | 'parent' | 'admin';
 
+// Machine-readable reason for a failed validation — lets the UI distinguish
+// "you already finished signing up" (should point to login) from a genuinely
+// broken/expired link, without string-matching the human-readable `error` text.
+export type InvitationValidationReason =
+  | 'not_found'
+  | 'already_accepted'
+  | 'revoked'
+  | 'expired'
+  | 'unknown';
+
 export interface Invitation {
   id: string;
   email: string;
@@ -45,4 +55,5 @@ export interface ValidateInvitationResult {
   valid: boolean;
   invitation?: Invitation;
   error?: string;
+  reason?: InvitationValidationReason;
 }

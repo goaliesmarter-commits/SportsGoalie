@@ -179,19 +179,19 @@ class InvitationService {
     try {
       const invitation = await this.getInvitationByToken(token);
 
-      if (!invitation) return { valid: false, error: 'Invalid invitation link.' };
-      if (invitation.status === 'accepted') return { valid: false, error: 'This invitation has already been used.' };
-      if (invitation.status === 'revoked') return { valid: false, error: 'This invitation has been revoked.' };
+      if (!invitation) return { valid: false, error: 'Invalid invitation link.', reason: 'not_found' };
+      if (invitation.status === 'accepted') return { valid: false, error: 'This invitation has already been used.', reason: 'already_accepted' };
+      if (invitation.status === 'revoked') return { valid: false, error: 'This invitation has been revoked.', reason: 'revoked' };
       if (isExpired(invitation.expiresAt)) {
         // Best-effort status update — fails silently if the user isn't authenticated yet
         this.updateStatus(invitation.id, 'expired').catch(() => {});
-        return { valid: false, error: 'This invitation has expired. Ask your admin to resend it.' };
+        return { valid: false, error: 'This invitation has expired. Ask your admin to resend it.', reason: 'expired' };
       }
 
       return { valid: true, invitation };
     } catch (error) {
       logError('Failed to validate invitation', error instanceof Error ? error : undefined);
-      return { valid: false, error: 'Failed to validate the invitation link.' };
+      return { valid: false, error: 'Failed to validate the invitation link.', reason: 'unknown' };
     }
   }
 
