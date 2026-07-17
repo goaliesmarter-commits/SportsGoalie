@@ -174,8 +174,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
-    width: 100%;
   }
 
   /* Unified typography system for student goalie pages */
