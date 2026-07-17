@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, CheckCircle, XCircle, Mail, Lock, User, Shield } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Mail, Lock, User, Shield, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { invitationService } from '@/lib/services/invitation.service';
 import { coachInvitationService } from '@/lib/services/coach-invitation.service';
-import { Invitation } from '@/types/invitation';
+import { Invitation, InvitationValidationReason } from '@/types/invitation';
 import { CoachInvitation } from '@/types/auth';
 import { useAuth } from '@/lib/auth/context';
 import Link from 'next/link';
@@ -108,6 +108,7 @@ function AcceptInviteContent() {
   const [submitting, setSubmitting] = useState(false);
   const [invitation, setInvitation] = useState<AnyInvitation | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationReason, setValidationReason] = useState<InvitationValidationReason | null>(null);
 
   const [form, setForm] = useState({
     displayName: '',
@@ -120,6 +121,7 @@ function AcceptInviteContent() {
   useEffect(() => {
     if (!token) {
       setValidationError('Invalid invitation link. No token provided.');
+      setValidationReason('not_found');
       setValidating(false);
       return;
     }
@@ -154,9 +156,11 @@ function AcceptInviteContent() {
       setValidationError(
         result.error ?? legacyResult.error ?? 'Invalid or expired invitation link.'
       );
+      setValidationReason(result.reason ?? legacyResult.reason ?? 'unknown');
       setValidating(false);
     } catch {
       setValidationError('Failed to validate your invitation. Please try again.');
+      setValidationReason('unknown');
       setValidating(false);
     }
   };
@@ -292,6 +296,8 @@ function AcceptInviteContent() {
 
   // ─── Error state ──────────────────────────────────────────────────────────
   if (validationError || !invitation) {
+    const alreadyAccepted = validationReason === 'already_accepted';
+
     return (
       <div
         style={{
@@ -308,7 +314,7 @@ function AcceptInviteContent() {
             width: '100%',
             maxWidth: '420px',
             background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(248,113,113,0.25)',
+            border: alreadyAccepted ? '1px solid rgba(55,181,255,0.25)' : '1px solid rgba(248,113,113,0.25)',
             borderRadius: '16px',
             padding: '36px 32px',
             textAlign: 'center',
@@ -319,26 +325,35 @@ function AcceptInviteContent() {
               width: '56px',
               height: '56px',
               borderRadius: '50%',
-              background: 'rgba(248,113,113,0.12)',
-              border: '1px solid rgba(248,113,113,0.3)',
+              background: alreadyAccepted ? 'rgba(55,181,255,0.12)' : 'rgba(248,113,113,0.12)',
+              border: alreadyAccepted ? '1px solid rgba(55,181,255,0.3)' : '1px solid rgba(248,113,113,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 20px',
             }}
           >
-            <XCircle size={26} color="#f87171" />
+            {alreadyAccepted ? (
+              <CheckCircle size={26} color={BLUE} />
+            ) : (
+              <XCircle size={26} color="#f87171" />
+            )}
           </div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '10px' }}>
-            Invalid Invitation
+            {alreadyAccepted ? 'You Already Have an Account' : 'Invalid Invitation'}
           </h2>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '28px', lineHeight: 1.6 }}>
-            {validationError ?? 'This invitation link is invalid, expired, or has already been used.'}
+            {alreadyAccepted
+              ? "Looks like this invite was already used to set up your account. Log in below to continue — if you didn't finish your onboarding questionnaire, you'll be taken right back to it."
+              : (validationError ?? 'This invitation link is invalid, expired, or has already been used.')}
           </p>
           <Link
             href="/auth/login"
             style={{
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
               padding: '11px 28px',
               borderRadius: '8px',
               background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE3} 100%)`,
@@ -349,7 +364,8 @@ function AcceptInviteContent() {
               letterSpacing: '0.5px',
             }}
           >
-            Go to Login
+            {alreadyAccepted && <LogIn size={15} />}
+            {alreadyAccepted ? 'Log In to Continue' : 'Go to Login'}
           </Link>
         </div>
       </div>

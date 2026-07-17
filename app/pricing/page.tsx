@@ -92,7 +92,7 @@ export default function PricingPage() {
     },
     {
       q: 'What is a Skill Pillar?',
-      a: 'Our 7 Pillars are Mind-Set, Skating Tech, Seven Angle-Mark System, Seven Point System, Form Tech, Game/Practice Performance Charting, and Decision-Making. Each pillar is a complete learning module.',
+      a: 'Our 7 Pillars are Mind-Set, Skating Tech, Seven Angle-Mark System, 6ZS (6 Zone System), Form Tech, Game/Practice Performance Charting, and Decision-Making. Each pillar is a complete learning module.',
     },
     {
       q: 'Do parents get access with any plan?',

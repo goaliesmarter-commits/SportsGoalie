@@ -23,6 +23,7 @@ import {
   CreateInvitationData,
   InvitationStatus,
 } from '@/types/auth';
+import type { InvitationValidationReason } from '@/types/invitation';
 import { logInfo, logDebug, logError } from '@/lib/errors/error-logger';
 
 /**
@@ -85,7 +86,7 @@ export interface ICoachInvitationService {
   getInvitationsByEmail(email: string): Promise<CoachInvitation[]>;
   getAllInvitations(): Promise<CoachInvitation[]>;
   getPendingInvitations(): Promise<CoachInvitation[]>;
-  validateInvitation(token: string): Promise<{ valid: boolean; invitation?: CoachInvitation; error?: string }>;
+  validateInvitation(token: string): Promise<{ valid: boolean; invitation?: CoachInvitation; error?: string; reason?: InvitationValidationReason }>;
   acceptInvitation(invitationId: string, userId: string): Promise<void>;
   revokeInvitation(invitationId: string, revokedBy: string): Promise<void>;
   resendInvitation(invitationId: string): Promise<CoachInvitation>;
@@ -286,32 +287,32 @@ export class CoachInvitationService implements ICoachInvitationService {
    */
   public async validateInvitation(
     token: string
-  ): Promise<{ valid: boolean; invitation?: CoachInvitation; error?: string }> {
+  ): Promise<{ valid: boolean; invitation?: CoachInvitation; error?: string; reason?: InvitationValidationReason }> {
     try {
       const invitation = await this.getInvitationByToken(token);
 
       if (!invitation) {
-        return { valid: false, error: 'Invalid invitation token' };
+        return { valid: false, error: 'Invalid invitation token', reason: 'not_found' };
       }
 
       if (invitation.status === 'accepted') {
-        return { valid: false, error: 'This invitation has already been accepted' };
+        return { valid: false, error: 'This invitation has already been accepted', reason: 'already_accepted' };
       }
 
       if (invitation.status === 'revoked') {
-        return { valid: false, error: 'This invitation has been revoked' };
+        return { valid: false, error: 'This invitation has been revoked', reason: 'revoked' };
       }
 
       if (isExpired(invitation.expiresAt)) {
         // Update status to expired
         await this.updateStatus(invitation.id, 'expired');
-        return { valid: false, error: 'This invitation has expired' };
+        return { valid: false, error: 'This invitation has expired', reason: 'expired' };
       }
 
       return { valid: true, invitation };
     } catch (error) {
       logError('Failed to validate invitation', error instanceof Error ? error : undefined, { error: String(error) });
-      return { valid: false, error: 'Failed to validate invitation' };
+      return { valid: false, error: 'Failed to validate invitation', reason: 'unknown' };
     }
   }
 
