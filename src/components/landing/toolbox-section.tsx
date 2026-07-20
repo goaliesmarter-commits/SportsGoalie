@@ -22,10 +22,10 @@ const TOOLBOX_ITEMS: ToolboxItem[] = [
   {
     id: 'positional',
     number: '01',
-    title: 'Positional Systems',
+    title: 'Goalies Positional System',
     tag: 'GPS · 7AMS · 6ZS',
     description:
-      'Your GPS on the ice. Master the Seven Angle-Mark System (7AMS) above the icing line and the 6 Zone System (6ZS) below it, so you are positioned with purpose before the puck arrives.',
+      'Your most critical relationship isn\'t with a coach or your teammates or even your parents — it\'s with the net - the seven angles above the icing line and the 6 zones below the icing line... When you are aware-sensitive to the net, the crease, and the white ice, you stop guessing and start USING YOUR SPIDY SENSES.',
     accent: '#37b5ff',
     accentLight: '#7dd3fc',
     accentRgb: '55,181,255',
@@ -37,9 +37,9 @@ const TOOLBOX_ITEMS: ToolboxItem[] = [
     id: 'game-iq',
     number: '02',
     title: 'Game IQ Assessments',
-    tag: 'READ · DECIDE · DICTATE',
+    tag: 'DECISION MAKING PROCESS',
     description:
-      'Think two passes ahead. Measure hockey sense through video analysis and charting, then watch your read speed and decision quality climb game after game.',
+      'The decision making process can be mapped and understood by replacing and reducing over reacting mentally or not reacting in a timely manner. These recognitions give context to game situations, building a smarter framework in decision making related to the play. "INTELLIGENT ATHLETE GOALTENDING"',
     accent: '#c4b5fd',
     accentLight: '#e9d5ff',
     accentRgb: '196,181,253',

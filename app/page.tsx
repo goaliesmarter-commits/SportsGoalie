@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ScrollStack, { ScrollStackItem } from '@/components/ScrollStack/ScrollStack';
-import { TestimonialsSection } from '@/components/ui/testimonials-with-marquee';
+// Testimonials on hold until client has real reviews to feature — see bottom of file
+// import { TestimonialsSection } from '@/components/ui/testimonials-with-marquee';
 import { GalleryHoverCarousel, type GalleryCarouselItem } from '@/components/ui/gallery-hover-carousel';
 import { ToolboxSection } from '@/components/landing/toolbox-section';
 import { Network, Lock, Filter, TrendingUp, Users, Trophy, Play, Pause, Menu, X } from 'lucide-react';
@@ -164,62 +165,64 @@ export default function Home() {
   const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const testimonials = [
-    {
-      author: {
-        name: 'Tyler Bouchard',
-        handle: '@tylerbouchard_g',
-        avatar:
-          'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'The angle-mark system changed how I read plays entirely. I used to guess my positioning. Now I own my crease with confidence every game.',
-    },
-    {
-      author: {
-        name: 'Sandra Lafleur',
-        handle: '@sandraL_hockeymom',
-        avatar:
-          'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'My son used to come off the ice frustrated with no idea what went wrong. Now he logs his sessions, reviews the feedback, and shows up next practice with a real plan.',
-    },
-    {
-      author: {
-        name: 'Coach Rémi Tremblay',
-        handle: '@remitremblay_goalie',
-        avatar:
-          'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'I coach AAA midget goalies in Québec and this platform fills a gap nothing else does. The charting tools give me data I can actually coach from, not just gut feelings.',
-    },
-    {
-      author: {
-        name: 'Kaitlyn MacPherson',
-        handle: '@kaitlyn_saves',
-        avatar:
-          'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'As a female goalie in a program that rarely focuses on us specifically, Smarter Goalie finally feels like it was built for me. The seven-point system alone is worth it.',
-    },
-    {
-      author: {
-        name: 'Derek Kowalski',
-        handle: '@dkowalski_pads',
-        avatar:
-          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'I\'ve been playing rep hockey in Ontario for six years. Nothing has improved my rebound control and breakout reading faster than the video quizzes on this platform.',
-    },
-    {
-      author: {
-        name: 'Lucie Gagnon',
-        handle: '@lucieg_parentBC',
-        avatar:
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      },
-      text: 'The coach sends weekly notes through the app and I can actually follow along with my daughter\'s development. For the first time I feel like part of her training, not just a driver.',
-    },
-  ];
+  // Testimonials data on hold until client has real reviews to feature — re-enable along with
+  // the TestimonialsSection import and JSX block below when ready.
+  // const testimonials = [
+  //   {
+  //     author: {
+  //       name: 'Tyler Bouchard',
+  //       handle: '@tylerbouchard_g',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'The angle-mark system changed how I read plays entirely. I used to guess my positioning. Now I own my crease with confidence every game.',
+  //   },
+  //   {
+  //     author: {
+  //       name: 'Sandra Lafleur',
+  //       handle: '@sandraL_hockeymom',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'My son used to come off the ice frustrated with no idea what went wrong. Now he logs his sessions, reviews the feedback, and shows up next practice with a real plan.',
+  //   },
+  //   {
+  //     author: {
+  //       name: 'Coach Rémi Tremblay',
+  //       handle: '@remitremblay_goalie',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'I coach AAA midget goalies in Québec and this platform fills a gap nothing else does. The charting tools give me data I can actually coach from, not just gut feelings.',
+  //   },
+  //   {
+  //     author: {
+  //       name: 'Kaitlyn MacPherson',
+  //       handle: '@kaitlyn_saves',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'As a female goalie in a program that rarely focuses on us specifically, Smarter Goalie finally feels like it was built for me. The seven-point system alone is worth it.',
+  //   },
+  //   {
+  //     author: {
+  //       name: 'Derek Kowalski',
+  //       handle: '@dkowalski_pads',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'I\'ve been playing rep hockey in Ontario for six years. Nothing has improved my rebound control and breakout reading faster than the video quizzes on this platform.',
+  //   },
+  //   {
+  //     author: {
+  //       name: 'Lucie Gagnon',
+  //       handle: '@lucieg_parentBC',
+  //       avatar:
+  //         'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+  //     },
+  //     text: 'The coach sends weekly notes through the app and I can actually follow along with my daughter\'s development. For the first time I feel like part of her training, not just a driver.',
+  //   },
+  // ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -460,11 +463,8 @@ export default function Home() {
                         <div className="text-right mb-2"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>2/5</span></div>
                         <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">VIDEO NEVER LIES</h3>
                         <p className="text-lg md:text-xl mb-4" style={{ color: '#37b5ff' }}>Seeing Is Believing</p>
-                        <p className="text-zinc-400 text-sm mb-4">
-                          Improve <strong className="text-white">10%</strong>, gain <strong className="text-white">20%</strong> from seeing yourself, go <strong className="text-white">50%</strong> further, or start at <strong className="text-white">100%</strong>. <strong className="text-white">We know how.</strong> Four decades of video analysis. <strong className="text-white">Immediate Development Impact.</strong>
-                        </p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
-                          Home, in transit, at school, on laptop or phone. <strong className="text-white">That&rsquo;s the Smarter Goalie Way.</strong><sup className="text-[10px] text-zinc-400 ml-0.5">™</sup> Tech analysis reaches the cognitive mind through movement and mechanics. Once gathered, your improvement design is ready. <strong className="text-white">Accelerated Results.</strong> See it, understand it, implement it.
+                          But the real value isn&rsquo;t just in watching; it&rsquo;s understanding what you&rsquo;re seeing. It&rsquo;s analyzing your technique, your mobility, your reactions, your decision making process. To truly understand your game. How much can you improve? Raising your evaluation ability is the key to immediate development. We don&rsquo;t know where your ceiling is, but we know exactly how to use video to analyze your game with you. Your success and your growth are in your hands, and you&rsquo;ll have all the support you need to maintain your level or reach the heights you dream of.
                         </p>
                         <button className="mt-2 text-white px-8 py-3 rounded-full transition-all duration-300 font-semibold inline-flex items-center gap-2 w-fit shrink-0 hover:opacity-85" style={{ background: 'linear-gradient(135deg, #37b5ff 0%, #0ea5e9 100%)', boxShadow: '0 4px 16px rgba(55,181,255,0.25)' }}><span className="w-2 h-2 bg-white rounded-full"></span>More about this ›</button>
                       </div>
@@ -570,7 +570,8 @@ export default function Home() {
 
           <ToolboxSection />
 
-          <TestimonialsSection
+          {/* Testimonials on hold until client has real reviews to feature */}
+          {/* <TestimonialsSection
             eyebrow="COMMUNITY"
             title="Voices From The Smarter Goalie Community"
             description="Goalies, parents, and coaches trust Smarter Goalie to sharpen their game, track real progress, and train with purpose."
@@ -578,7 +579,7 @@ export default function Home() {
             className="!bg-[#000f28]"
             dark={true}
             gradientColor="#000f28"
-          />
+          /> */}
       </>
 
     </div>
