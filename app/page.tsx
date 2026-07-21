@@ -496,7 +496,7 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
                     <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
-                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_4.png")' }}></div>
+                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/card3-5.png")' }}></div>
                       <div className="p-5 md:px-10 md:py-8 flex flex-col justify-center">
                         <div className="text-right mb-2"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>4/5</span></div>
                         <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">THE CHESS GAME</h3>
