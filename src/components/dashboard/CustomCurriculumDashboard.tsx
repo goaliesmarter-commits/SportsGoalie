@@ -18,6 +18,7 @@ import { useProgress } from '@/hooks/useProgress';
 import { User, Sport, SportProgress, CustomCurriculum, CustomCurriculumItem, IntelligenceProfile, getPacingLevelDisplayText, PILLARS } from '@/types';
 import { enrollmentService } from '@/lib/database/services/enrollment.service';
 import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import { toast } from 'sonner';
 
 const BLUE = '#37b5ff';
@@ -463,7 +464,7 @@ export function CustomCurriculumDashboard({ user }: CustomCurriculumDashboardPro
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {profile.categoryScores.slice(0, 4).map((cat) => {
-                      const pct = ((cat.averageScore - 1) / 3) * 100;
+                      const pct = scaleToPercentage(cat.averageScore, 4, 1) ?? 0;
                       const color = pct >= 66 ? '#4ade80' : pct >= 33 ? BLUE2 : '#f87171';
                       return (
                         <div key={cat.categorySlug}>

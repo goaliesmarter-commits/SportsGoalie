@@ -18,6 +18,7 @@ import { db } from '@/lib/firebase/config';
 import { enrollmentService } from '@/lib/database/services/enrollment.service';
 import { onboardingService } from '@/lib/database/services/onboarding.service';
 import { compareGoalieAndParent, DEFAULT_CROSS_REFERENCE_RULES } from '@/lib/scoring/cross-reference-engine';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import { PILLARS, GOALIE_CATEGORIES } from '@/types';
 import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
 
@@ -266,7 +267,7 @@ export default function ChildDetailPage() {
             refinement: { color: '#22c55e', label: 'Refinement', description: 'Refining advanced techniques and mental performance.' },
           };
           const pm = PACING_META[goalieProfile.pacingLevel] || PACING_META.introduction;
-          const barPct = ((goalieProfile.overallScore - 1) / 3) * 100;
+          const barPct = scaleToPercentage(goalieProfile.overallScore, 4, 1) ?? 0;
           const topStrength = goalieProfile.identifiedStrengths?.[0];
           const topGap = goalieProfile.identifiedGaps?.[0];
           return (

@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/lib/auth/context';
 import { SkeletonContentPage } from '@/components/ui/skeletons';
 import { userService, onboardingService } from '@/lib/database';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import {
   User, OnboardingEvaluation, PacingLevel, GoalieCategorySlug,
   getPacingLevelDisplayText, GOALIE_CATEGORIES, CategoryScoreResult, AssessmentResponse,
@@ -223,7 +224,7 @@ export default function CoachEvaluationPage() {
                 </div>
               </div>
               <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
-                <div style={{ height: '100%', width: `${((overallScore - 1) / 3) * 100}%`, background: `linear-gradient(90deg, ${overallStyle.bar}, ${overallStyle.bar}aa)`, borderRadius: '4px', transition: 'width 0.5s ease' }} />
+                <div style={{ height: '100%', width: `${scaleToPercentage(overallScore, 4, 1) ?? 0}%`, background: `linear-gradient(90deg, ${overallStyle.bar}, ${overallStyle.bar}aa)`, borderRadius: '4px', transition: 'width 0.5s ease' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
                 <span>Introduction (1.0–2.2)</span><span>Development (2.2–3.1)</span><span>Refinement (3.1–4.0)</span>
@@ -256,7 +257,7 @@ export default function CoachEvaluationPage() {
                         </div>
                       </div>
                       <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${((score - 1) / 3) * 100}%`, background: style.bar, borderRadius: '2px' }} />
+                        <div style={{ height: '100%', width: `${scaleToPercentage(score, 4, 1) ?? 0}%`, background: style.bar, borderRadius: '2px' }} />
                       </div>
                       {result && (result.strengths.length > 0 || result.gaps.length > 0) && (
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

@@ -29,6 +29,9 @@ export {
 // Practice index auto-generator (Pillar auto-connect)
 export { generatePracticeIndex } from './practice-index-generator';
 
+// The single rating → percentage rule every screen shares
+export { scaleToPercentage, clampPercentage } from './scale-score';
+
 // Cross-reference engine
 export {
   DEFAULT_CROSS_REFERENCE_RULES,
