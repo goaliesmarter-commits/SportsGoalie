@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
+import { ThemedSelect, themedSelectCss } from './ThemedSelect';
 
 const BLUE  = '#37b5ff';
 const BLUE2 = '#60cdff';
@@ -41,10 +42,21 @@ const labelStyle: React.CSSProperties = {
 const S = 'clamp(44px,5.5vw,72px) 0';
 const H = 'clamp(24px,3.5vw,48px)';
 
+const ROLE_OPTIONS = [
+  'Head Coach', 'Goalie Coach', 'Team Manager', 'Organisation / Association Executive',
+  'Federation Representative', 'Camp Director / Hockey Business',
+  'Sports Academy / Facility Director', 'Education Institution', 'Grassroots Program',
+  'Parent Group Representative', 'Other',
+];
+const TEAM_OPTIONS    = ['1 team', '2–5 teams', '6–15 teams', '16+ teams', 'Camp / seasonal program'];
+const GOALIE_OPTIONS  = ['1–2', '3–10', '11–30', '31+'];
+const CONTACT_OPTIONS = ['Phone call', 'Video call', 'Email first'];
+
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [roleError, setRoleError] = useState(false);
   const [form, setForm] = useState({
     name: '', role: '', organisation: '', location: '',
     teams: '', goalies: '', goals: '', email: '', phone: '',
@@ -60,8 +72,24 @@ export default function ContactPage() {
     }));
   }
 
+  // The dropdowns are custom listboxes, so they report their value by name.
+  function setField(name: string, value: string) {
+    setSubmitError('');
+    if (name === 'role') setRoleError(false);
+    setForm(prev => ({ ...prev, [name]: value }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Role is required but is not a native control, so validate it here.
+    if (!form.role) {
+      setRoleError(true);
+      setSubmitError('Please select your role.');
+      document.getElementById('field-role')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setLoading(true);
     setSubmitError('');
     try {
@@ -81,13 +109,43 @@ export default function ContactPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif', color: '#fff', background: '#000f28' }}>
+    <div style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif', color: '#fff', background: '#000f28', colorScheme: 'dark' }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        .contact-input:focus { border-color: ${BLUE} !important; box-shadow: 0 0 0 3px rgba(55,181,255,0.14) !important; }
+        .contact-input:focus, .contact-input:focus-visible { border-color: ${BLUE} !important; box-shadow: 0 0 0 3px rgba(55,181,255,0.14) !important; }
         .contact-input::placeholder { color: rgba(200,230,255,0.2); }
-        .contact-input option { background: #04152e; color: #fff; }
         .section-card { background: ${CARD_BG}; border: ${CARD_BDR}; border-radius: 14px; }
         .cta-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+
+        /* The native checkbox paints itself light, so it is drawn here instead. */
+        .contact-check {
+          -webkit-appearance: none; appearance: none;
+          flex-shrink: 0; position: relative;
+          width: 18px; height: 18px; margin: 2px 0 0; padding: 0;
+          box-sizing: border-box;
+          background: rgba(4,20,45,0.85);
+          border: 1px solid rgba(55,181,255,0.3);
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background .15s, border-color .15s;
+        }
+        .contact-check:hover { border-color: rgba(55,181,255,0.55); }
+        .contact-check:focus-visible {
+          outline: none;
+          border-color: ${BLUE};
+          box-shadow: 0 0 0 3px rgba(55,181,255,0.14);
+        }
+        .contact-check:checked { background: ${BLUE}; border-color: ${BLUE}; }
+        .contact-check:checked::after {
+          content: '';
+          position: absolute; left: 5px; top: 1px;
+          width: 5px; height: 10px;
+          border: solid #001426;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+        .contact-check-row { cursor: pointer; transition: color .15s; }
+        .contact-check-row:hover { color: rgba(200,230,255,0.75); }
+        ${themedSelectCss}
       `}} />
 
       <PublicPageNav />
@@ -259,12 +317,18 @@ export default function ContactPage() {
                   <input name="name" value={form.name} onChange={handleChange} placeholder="First and last name" required style={inputStyle} className="contact-input" />
                 </div>
 
-                <div className="flex flex-col">
-                  <label style={labelStyle}>Your Role</label>
-                  <select name="role" value={form.role} onChange={handleChange} required style={inputStyle} className="contact-input">
-                    <option value="" disabled>Select your role…</option>
-                    {['Head Coach','Goalie Coach','Team Manager','Organisation / Association Executive','Federation Representative','Camp Director / Hockey Business','Sports Academy / Facility Director','Education Institution','Grassroots Program','Parent Group Representative','Other'].map(r => <option key={r}>{r}</option>)}
-                  </select>
+                <div className="flex flex-col" id="field-role">
+                  <label style={labelStyle} id="label-role">Your Role</label>
+                  <ThemedSelect
+                    name="role"
+                    label="Your Role"
+                    value={form.role}
+                    options={ROLE_OPTIONS}
+                    onChange={setField}
+                    placeholder="Select your role…"
+                    invalid={roleError}
+                    style={inputStyle}
+                  />
                 </div>
 
                 <div className="flex flex-col">
@@ -279,18 +343,26 @@ export default function ContactPage() {
 
                 <div className="flex flex-col">
                   <label style={labelStyle}>Teams in Your Program</label>
-                  <select name="teams" value={form.teams} onChange={handleChange} style={inputStyle} className="contact-input">
-                    <option value="" disabled>Select…</option>
-                    {['1 team','2–5 teams','6–15 teams','16+ teams','Camp / seasonal program'].map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  <ThemedSelect
+                    name="teams"
+                    label="Teams in Your Program"
+                    value={form.teams}
+                    options={TEAM_OPTIONS}
+                    onChange={setField}
+                    style={inputStyle}
+                  />
                 </div>
 
                 <div className="flex flex-col">
                   <label style={labelStyle}>Goaltenders in Your Program</label>
-                  <select name="goalies" value={form.goalies} onChange={handleChange} style={inputStyle} className="contact-input">
-                    <option value="" disabled>Select…</option>
-                    {['1–2','3–10','11–30','31+'].map(g => <option key={g}>{g}</option>)}
-                  </select>
+                  <ThemedSelect
+                    name="goalies"
+                    label="Goaltenders in Your Program"
+                    value={form.goalies}
+                    options={GOALIE_OPTIONS}
+                    onChange={setField}
+                    style={inputStyle}
+                  />
                 </div>
 
                 <div className="flex flex-col sm:col-span-2">
@@ -310,16 +382,20 @@ export default function ContactPage() {
 
                 <div className="flex flex-col sm:col-span-2">
                   <label style={labelStyle}>Preferred Way to Talk</label>
-                  <select name="preferred_contact" value={form.preferred_contact} onChange={handleChange} style={inputStyle} className="contact-input">
-                    <option value="" disabled>Select…</option>
-                    {['Phone call','Video call','Email first'].map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <ThemedSelect
+                    name="preferred_contact"
+                    label="Preferred Way to Talk"
+                    value={form.preferred_contact}
+                    options={CONTACT_OPTIONS}
+                    onChange={setField}
+                    style={inputStyle}
+                  />
                 </div>
 
-                <div className="flex gap-3 items-start sm:col-span-2" style={{ fontSize: '13px', color: MUTED, lineHeight: 1.6 }}>
-                  <input type="checkbox" name="consent" checked={form.consent} onChange={handleChange} required style={{ width: 'auto', marginTop: '3px', accentColor: BLUE } as React.CSSProperties} />
+                <label className="contact-check-row flex gap-3 items-start sm:col-span-2" style={{ fontSize: '13px', color: MUTED, lineHeight: 1.6 }}>
+                  <input type="checkbox" name="consent" checked={form.consent} onChange={handleChange} required className="contact-check" />
                   <span>I'd like Smarter Goalie to contact me about my program. My information stays with Smarter Goalie — never sold, never shared.</span>
-                </div>
+                </label>
               </div>
 
               {submitError && (
