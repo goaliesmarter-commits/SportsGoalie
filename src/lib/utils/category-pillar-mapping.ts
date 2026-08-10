@@ -7,14 +7,20 @@ import type { PillarSlug } from '@/types/onboarding';
 import type { GapAnalysis } from '@/types';
 import { PILLAR_IDS } from './pillars';
 
-/** Assessment category → relevant pillars */
+/**
+ * Assessment category → relevant pillars.
+ *
+ * The keys are assessment categories, not pillars — `training` here is the
+ * category a student answers questions about, and it maps to the Practice
+ * pillar (with Skating and Lifestyle alongside it).
+ */
 const CATEGORY_PILLAR_MAP: Record<string, PillarSlug[]> = {
   feelings: ['mindset', 'lifestyle'],
   knowledge: ['form', 'positioning', 'seven_point'],
-  pre_game: ['mindset', 'training', 'lifestyle'],
+  pre_game: ['mindset', 'game', 'lifestyle'],
   in_game: ['positioning', 'skating', 'seven_point', 'form'],
-  post_game: ['mindset', 'training'],
-  training: ['training', 'skating', 'lifestyle'],
+  post_game: ['mindset', 'game'],
+  training: ['practice', 'skating', 'lifestyle'],
   learning: ['mindset'],
 };
 

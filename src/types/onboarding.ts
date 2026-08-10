@@ -75,13 +75,43 @@ export type CategorySlug = GoalieCategorySlug | ParentCategorySlug | CoachCatego
  * Assessment uses 7 categories; pillars are for content organization
  */
 export type PillarSlug =
-  | 'mindset'      // Mind-Set Development
-  | 'skating'      // Skating as a Skill
-  | 'form'         // Form & Structure
-  | 'positioning'  // Positional Systems
-  | 'seven_point'  // 7 Point System Below Icing Line
-  | 'training'     // Game/Practice/Off-Ice
-  | 'lifestyle';   // Lifestyle (off-ice habits, nutrition, recovery, sleep, life balance)
+  | 'mindset'      // Pillar 1 — MindSet
+  | 'skating'      // Pillar 2 — Skating
+  | 'positioning'  // Pillar 3 · 7AMS (Above the Icing Line)
+  | 'seven_point'  // Pillar 3 · 6 Zone – 7 Point System™ (Below the Icing Line)
+  | 'form'         // Pillar 4 — Form
+  | 'game'         // Pillar 5 — Game
+  | 'practice'     // Pillar 6 — Practice
+  | 'lifestyle';   // Pillar 7 — Lifestyle (includes off-ice training, nutrition, recovery, sleep)
+
+/**
+ * Pillar slugs that no longer exist but are still written on stored documents.
+ *
+ * `training` was the combined "Game/Practice/Off-Ice" pillar, split into Game and
+ * Practice on Michael's instruction (6 August 2026) with its off-ice material
+ * moved into Lifestyle. Anything read back from Firestore may still carry it, so
+ * it is resolved rather than rejected — see `resolvePillarSlug`.
+ */
+export type LegacyPillarSlug = 'training';
+
+/** A pillar slug as it may appear on a stored document — current or retired. */
+export type StoredPillarSlug = PillarSlug | LegacyPillarSlug;
+
+const LEGACY_PILLAR_SLUGS: Record<LegacyPillarSlug, PillarSlug> = {
+  // Practice is the wider of the two halves and holds the planning and repetition
+  // material, so it is where an unmigrated `training` document reads most sensibly.
+  training: 'practice',
+};
+
+/**
+ * Resolves a slug read from storage to one that currently exists.
+ * Returns null for anything unrecognised so callers can decide how to handle it.
+ */
+export function resolvePillarSlug(slug: string | null | undefined): PillarSlug | null {
+  if (!slug) return null;
+  if (slug in LEGACY_PILLAR_SLUGS) return LEGACY_PILLAR_SLUGS[slug as LegacyPillarSlug];
+  return PILLARS.some(p => p.slug === slug) ? (slug as PillarSlug) : null;
+}
 
 /**
  * Types of questions in the onboarding assessment
@@ -909,6 +939,8 @@ export function getCategoryInfo(slug: string, role: QuestionnaireRole = 'goalie'
  */
 export interface PillarInfo {
   slug: PillarSlug;
+  /** Which of the seven Pillars this belongs to. Pillar 3 has two halves, so 3 appears twice. */
+  pillarNumber: number;
   name: string;
   shortName: string;
   description: string;
@@ -917,73 +949,108 @@ export interface PillarInfo {
 }
 
 /**
- * The 7 Ice Hockey Goalie content pillars
- * Used for organizing learning content (not assessment)
+ * The 7 Ice Hockey Goalie content pillars, in the order Michael approved on
+ * 6 August 2026. This array is the single source the app reads its pillar
+ * wording and ordering from — changing it here changes every screen that
+ * renders the list.
+ *
+ * Pillar 3 is deliberately two entries: 7AMS governs play above the icing line
+ * and the 6 Zone – 7 Point System™ governs play below it. They are taught as one
+ * pillar but charted separately, so both need to exist as selectable options.
  */
 export const PILLARS: PillarInfo[] = [
   {
     slug: 'mindset',
-    name: 'Mind-Set Development',
-    shortName: 'Mindset',
+    pillarNumber: 1,
+    name: 'MindSet',
+    shortName: 'MindSet',
     description: 'Mental resilience, focus, and emotional regulation skills',
     icon: 'Brain',
     color: 'purple',
   },
   {
     slug: 'skating',
-    name: 'Skating as a Skill',
+    pillarNumber: 2,
+    name: 'Skating',
     shortName: 'Skating',
     description: 'Movement confidence and skating knowledge',
     icon: 'Footprints',
     color: 'blue',
   },
   {
-    slug: 'form',
-    name: 'Form & Structure',
-    shortName: 'Form',
-    description: 'Stance awareness and positioning fundamentals',
-    icon: 'Shapes',
-    color: 'green',
-  },
-  {
     slug: 'positioning',
-    name: 'Positional Systems',
-    shortName: 'Positioning',
-    description: 'Understanding of positioning concepts',
+    pillarNumber: 3,
+    name: '7AMS (Above the Icing Line)',
+    shortName: '7AMS',
+    description: 'The 7 Angle-Marker System — positioning above the icing line',
     icon: 'Target',
     color: 'orange',
   },
   {
     slug: 'seven_point',
-    name: '6 Zone Grid Below Icing Line',
-    shortName: '6 Zone Grid',
-    description: 'Zone awareness and coverage patterns',
+    pillarNumber: 3,
+    name: '6 Zone – 7 Point System™ (Below the Icing Line)',
+    shortName: '6 Zone – 7 Point System™',
+    description: 'Zone awareness and coverage patterns below the icing line',
     icon: 'Grid3X3',
     color: 'red',
   },
   {
-    slug: 'training',
-    name: 'Game/Practice/Off-Ice',
-    shortName: 'Training',
-    description: 'Training habits and preparation routines',
-    icon: 'Dumbbell',
+    slug: 'form',
+    pillarNumber: 4,
+    name: 'Form',
+    shortName: 'Form',
+    description: 'Stance awareness and execution fundamentals',
+    icon: 'Shapes',
+    color: 'green',
+  },
+  {
+    slug: 'game',
+    pillarNumber: 5,
+    name: 'Game',
+    shortName: 'Game',
+    description: 'Game-day routine, charting, and post-game review',
+    icon: 'Trophy',
     color: 'cyan',
   },
   {
+    slug: 'practice',
+    pillarNumber: 6,
+    name: 'Practice',
+    shortName: 'Practice',
+    description: 'Purposeful practice, planning, and repetition that earns the technique',
+    icon: 'Dumbbell',
+    color: 'teal',
+  },
+  {
     slug: 'lifestyle',
+    pillarNumber: 7,
     name: 'Lifestyle',
     shortName: 'Lifestyle',
-    description: 'Off-ice habits, nutrition, recovery, sleep, life balance, and overall wellness essential for peak goaltending performance',
+    description: 'Off-ice training, nutrition, recovery, sleep, life balance, and overall wellness essential for peak goaltending performance',
     icon: 'Heart',
     color: 'pink',
   },
 ];
 
 /**
- * Helper to get pillar info by slug
+ * The label a pillar carries in a picker: "Pillar 4 — Form".
+ *
+ * The two halves of Pillar 3 are joined with "·" rather than "—" so the list
+ * reads as one pillar split in two rather than two pillars sharing a number.
  */
-export function getPillarInfo(slug: PillarSlug): PillarInfo {
-  const pillar = PILLARS.find(p => p.slug === slug);
+export function pillarOptionLabel(pillar: PillarInfo): string {
+  const isSplit = PILLARS.filter(p => p.pillarNumber === pillar.pillarNumber).length > 1;
+  return `Pillar ${pillar.pillarNumber} ${isSplit ? '·' : '—'} ${pillar.name}`;
+}
+
+/**
+ * Helper to get pillar info by slug.
+ * Accepts retired slugs found on stored documents and resolves them.
+ */
+export function getPillarInfo(slug: StoredPillarSlug): PillarInfo {
+  const resolved = resolvePillarSlug(slug);
+  const pillar = resolved ? PILLARS.find(p => p.slug === resolved) : undefined;
   if (!pillar) {
     throw new Error(`Unknown pillar slug: ${slug}`);
   }

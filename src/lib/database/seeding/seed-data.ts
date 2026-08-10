@@ -10,16 +10,13 @@ import {
 } from '@/types';
 
 /**
- * Pillar ID mapping - use these fixed IDs for the 6 pillars
+ * Pillar ID mapping — re-exported so seeding keeps one source of truth.
+ *
+ * This file used to keep its own copy, which still listed the retired
+ * `training` pillar and knew nothing about Game, Practice or Lifestyle.
  */
-export const PILLAR_IDS = {
-  mindset: 'pillar_mindset',
-  skating: 'pillar_skating',
-  form: 'pillar_form',
-  positioning: 'pillar_positioning',
-  seven_point: 'pillar_seven_point',
-  training: 'pillar_training',
-} as const;
+export { PILLAR_IDS } from '@/lib/utils/pillars';
+import { PILLAR_IDS } from '@/lib/utils/pillars';
 
 /**
  * Map Tailwind color names to hex values
@@ -31,12 +28,14 @@ const PILLAR_COLORS: Record<string, string> = {
   orange: '#F97316',
   red: '#EF4444',
   cyan: '#06B6D4',
+  teal: '#14B8A6',
   pink: '#EC4899',
 };
 
 /**
- * The 6 Ice Hockey Goalie Pillars - fixed set of learning pillars
- * These replace the generic "sports" with a structured goalie training system
+ * The Ice Hockey Goalie Pillars - fixed set of learning pillars
+ * These replace the generic "sports" with a structured goalie training system.
+ * The list itself lives in PILLARS (src/types/onboarding.ts).
  */
 export const sampleSports: Omit<Sport, 'id' | 'createdAt' | 'updatedAt' | 'skillsCount' | 'metadata' | 'createdBy'>[] = PILLARS.map((pillar, index) => ({
   name: pillar.name,
