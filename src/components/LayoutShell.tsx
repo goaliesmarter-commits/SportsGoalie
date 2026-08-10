@@ -28,18 +28,31 @@ const NAKED_ROUTES = [
 const ONBOARDING_ROUTES = ['/onboarding', '/coach/onboarding', '/coach/assessment'];
 const PUBLIC_ROUTES = ['/', '/pricing'];
 
+/**
+ * Prefix match that stops at a path segment: '/pillar' matches '/pillar' and
+ * '/pillar/3', but NOT '/pillars'.
+ *
+ * A plain startsWith() made the goalie pillar list (/pillars) and its detail
+ * pages (/pillars/[id]) match the public sales route (/pillar), so they were
+ * rendered naked — no sidebar, no top bar, and no dark page background. Their
+ * white heading text then sat on the white body and vanished.
+ */
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 function isPublicRoute(pathname: string): boolean {
   if (pathname === '/') return true;
-  return PUBLIC_ROUTES.some(route => route !== '/' && pathname.startsWith(route));
+  return PUBLIC_ROUTES.some(route => route !== '/' && matchesRoute(pathname, route));
 }
 function isBareRoute(pathname: string): boolean {
-  return BARE_ROUTES.some(route => pathname.startsWith(route));
+  return BARE_ROUTES.some(route => matchesRoute(pathname, route));
 }
 function isNakedRoute(pathname: string): boolean {
-  return NAKED_ROUTES.some(route => pathname.startsWith(route));
+  return NAKED_ROUTES.some(route => matchesRoute(pathname, route));
 }
 function isOnboardingRoute(pathname: string): boolean {
-  return ONBOARDING_ROUTES.some(route => pathname.startsWith(route));
+  return ONBOARDING_ROUTES.some(route => matchesRoute(pathname, route));
 }
 function isAdminRoute(pathname: string): boolean { return pathname.startsWith('/admin'); }
 function isCoachRoute(pathname: string): boolean { return pathname.startsWith('/coach'); }
