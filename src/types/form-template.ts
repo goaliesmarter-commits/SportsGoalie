@@ -216,8 +216,10 @@ export interface FieldAnalyticsResult {
 
   // Average analytics (for numeric, scale)
   average?: number;
-  min?: number;
-  max?: number;
+  min?: number;                 // Lowest value the athlete actually entered
+  max?: number;                 // Highest value the athlete actually entered
+  scaleMin?: number;            // Floor of the rating scale the field was answered on
+  scaleMax?: number;            // Ceiling of that scale — absent when the field is open-ended
   median?: number;
   averageTrend?: TrendDirection;
 
