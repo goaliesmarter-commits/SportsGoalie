@@ -21,7 +21,7 @@ const PILLAR_DESCRIPTIONS: Record<string, string> = {
   skating:     'Move with precision and purpose. Master edgework, lateral speed, and efficiency of movement in sync with the play.',
   form:        'Perfect your physical foundation. Stance, paddle control, and body mechanics — the blueprint of every great save.',
   positioning: 'See the ice geometrically. The 7 Angle-Mark System gives you a mathematical grid to always be in the right spot.',
-  seven_point: 'Own the danger zone. The 6 Zone Grid addresses below-the-icing-line positioning — the most dangerous area on ice.',
+  seven_point: 'Own the danger zone. The 6 Zone – 7 Point System™ addresses below-the-icing-line positioning — the most dangerous area on ice.',
   training:    'Make every rep count. Chart your games, spot your patterns, and translate practice directly into game performance.',
   lifestyle:   'Train the whole athlete. Off-ice habits, nutrition, recovery, and sleep are the foundation your on-ice game builds on.',
 };

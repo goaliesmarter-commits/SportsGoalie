@@ -234,9 +234,9 @@ export default function PeriodsPage() {
 
     return (
       <div className="space-y-6">
-        {/* Mind-Set */}
+        {/* MindSet */}
         <Card className="p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Mind-Set</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">MindSet</h3>
           <div className="space-y-4">
             <RadioSelectField
               label="Focus"

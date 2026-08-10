@@ -56,9 +56,9 @@ interface PillarData {
 const PILLARS: Record<string, PillarData> = {
   '1': {
     number: '01',
-    title: 'Mind-Set',
+    title: 'MindSet',
     subtitle: 'The Foundation of Everything',
-    intro: 'Regardless how technically strong you are — if the mind is not the strongest tool you have, then what is your foundation built on?\n\nMIND-SET for a Smarter Goalie is the discipline of building what we call the MIND-VAULT — where only the most valuable foundational thoughts and behaviors are kept. For game performance. And for life in general.\n\nThis is where Logic, Common Sense, Math, and Science become your filters — applied to every read, every shift, every decision.\n\nThis is where you learn the difference between performance and outcome — and why the goalie controls one, not the other.\n\nThis is where respect is forged through consistency in performance — not single games.\n\nThis is where you understand that how the goalie goes reflects on the bench. A solid goalie lifts the bench. An inconsistent goalie deflates it.\n\nSix decades of original IP. One foundation. The MIND-VAULT is yours to build.\n\nThe goalie lives it. The parent supports it. The coach builds around it. The organization stands on it.\n\nLearn Smart — Play Smart. Think Smart — Play Smart.',
+    intro: 'Regardless how technically strong you are — if the mind is not the strongest tool you have, then what is your foundation built on?\n\nMINDSET for a Smarter Goalie is the discipline of building what we call the MIND-VAULT — where only the most valuable foundational thoughts and behaviors are kept. For game performance. And for life in general.\n\nThis is where Logic, Common Sense, Math, and Science become your filters — applied to every read, every shift, every decision.\n\nThis is where you learn the difference between performance and outcome — and why the goalie controls one, not the other.\n\nThis is where respect is forged through consistency in performance — not single games.\n\nThis is where you understand that how the goalie goes reflects on the bench. A solid goalie lifts the bench. An inconsistent goalie deflates it.\n\nSix decades of original IP. One foundation. The MIND-VAULT is yours to build.\n\nThe goalie lives it. The parent supports it. The coach builds around it. The organization stands on it.\n\nLearn Smart — Play Smart. Think Smart — Play Smart.',
     accent: '#00f2ff',
     accentAlt: '#60cdff',
     facts: [
@@ -113,7 +113,7 @@ const PILLARS: Record<string, PillarData> = {
   },
   '2': {
     number: '02',
-    title: 'Skating Tech',
+    title: 'Skating',
     titleOneLine: true,
     subtitle: 'The Mobility That Keeps You In Game Frequency',
     intro: 'The goalie who understands goalie skating — not just how to move, but when, why, and how to arrive — separates from the rest at every level of the game.',
@@ -164,7 +164,7 @@ const PILLARS: Record<string, PillarData> = {
   },
   '4': {
     number: '04',
-    title: 'The 6 Zone Grid',
+    title: 'The 6 Zone – 7 Point System™',
     titleBreakAt: 2,
     subtitle: '"Keeping the Advantage in Your House"',
     intro: 'Below the icing line the game changes — the strategies and the tactical game take on new meaning. Six zones. Three pairs of twins. One system for the area of the ice most goalies are least prepared for. The goalie who knows each zone\'s fundamentals is never guessing.',
@@ -178,8 +178,8 @@ const PILLARS: Record<string, PillarData> = {
       },
       {
         statement: 'SIX ZONES — THREE TWINS. THE PASS OPTIONS CHANGE WITH EVERY ZONE.',
-        support: 'One system: the 6 Zone Grid — the layers of knowledge required to be steps ahead of the player with the puck. The puck\'s location determines "The Passing Field" — the area a pass has to travel, from The Location Principle: what path can the puck take, given no obstructions?\n\nThe beauty: six zones, identical on both sides — Zones 1 & 6 twins · Zones 2 & 5 twins · Zones 3 & 4 twins.\n\nAnd the goalie can BE that obstruction — a pass traveling through the crease, or just outside it, is a pass your stick can interfere with. Knowing this is an advantage.',
-        voiceLabel: 'HEAR COACH MIKE: THE 6 ZONE GRID AND HOW IT MAPS EVERY SITUATION BELOW THE ICING LINE',
+        support: 'One system: the 6 Zone – 7 Point System™ — the layers of knowledge required to be steps ahead of the player with the puck. The puck\'s location determines "The Passing Field" — the area a pass has to travel, from The Location Principle: what path can the puck take, given no obstructions?\n\nThe beauty: six zones, identical on both sides — Zones 1 & 6 twins · Zones 2 & 5 twins · Zones 3 & 4 twins.\n\nAnd the goalie can BE that obstruction — a pass traveling through the crease, or just outside it, is a pass your stick can interfere with. Knowing this is an advantage.',
+        voiceLabel: 'HEAR COACH MIKE: THE 6 ZONE – 7 POINT SYSTEM™ AND HOW IT MAPS EVERY SITUATION BELOW THE ICING LINE',
       },
       {
         statement: 'WHEN THE PASS LEAVES, YOUR READ ALERT IS ALREADY WORKING.',
@@ -188,12 +188,12 @@ const PILLARS: Record<string, PillarData> = {
       },
       {
         statement: 'BEHIND THE NET, IT\'S YOUR MIND VERSUS THEIRS — AND THE ADVANTAGE STAYS IN YOUR HOUSE.',
-        support: 'The 6 Zone Grid. The Passing Field and The Location Principle — knowing the puck\'s paths before the pass leaves. Your Read Alert — the puck, the player\'s position, and how to play the player.',
+        support: 'The 6 Zone – 7 Point System™. The Passing Field and The Location Principle — knowing the puck\'s paths before the pass leaves. Your Read Alert — the puck, the player\'s position, and how to play the player.',
         voiceLabel: 'HEAR COACH MIKE: KEEPING THE ADVANTAGE IN YOUR HOUSE',
         extra: {
           label: 'What You\'ll Own',
           items: [
-            'The 6 Zone Grid — and the twins that make it learnable',
+            'The 6 Zone – 7 Point System™ — and the twins that make it learnable',
             'The Passing Field and The Location Principle — knowing the puck\'s paths before the pass leaves',
             'Your Read Alert — the puck, the player\'s position, and how to play the player',
             'The strategies and tactical game behind the net — read by read',
@@ -205,9 +205,9 @@ const PILLARS: Record<string, PillarData> = {
   },
   '5': {
     number: '05',
-    title: 'Form Tech',
+    title: 'Form',
     subtitle: 'The body & mind, built to make it look easy.',
-    intro: 'Anyone can make a save. It\'s the second, the third, and even beyond that will separate you from the wannabes. Form Tech covers a wide array of skills — all broken down and systematically taught to render an Intelligent Athletic Goaltender.',
+    intro: 'Anyone can make a save. It\'s the second, the third, and even beyond that will separate you from the wannabes. Form covers a wide array of skills — all broken down and systematically taught to render an Intelligent Athletic Goaltender.',
     accent: '#38bdf8',
     accentAlt: BLUE2,
     facts: [
@@ -217,9 +217,9 @@ const PILLARS: Record<string, PillarData> = {
         voiceLabel: 'HEAR COACH MIKE: TRAINED INTO EXISTENCE — HOW INTELLIGENT GOALTENDING IS BUILT',
       },
       {
-        statement: 'FORM TECH COVERS A WIDE ARRAY OF SKILLS — OPTIMIZING WHAT WORKS FOR YOU.',
+        statement: 'FORM COVERS A WIDE ARRAY OF SKILLS — OPTIMIZING WHAT WORKS FOR YOU.',
         support: 'At Smarter Goalie we assist you in knowledge acquisition and skill know-how: optimizing your understanding of what works FOR YOU — to the ability to not just make one save, but make multiple saves in succession without balance loss.\n\nEvery save, every sequence, every time. Nothing is left to the imagination. You will be a Smarter Goalie without a doubt — and mold your game to your ability level.',
-        voiceLabel: 'HEAR COACH MIKE: THE WIDE ARRAY OF FORM TECH SKILLS AND HOW EACH ONE IS BUILT FOR YOUR BODY',
+        voiceLabel: 'HEAR COACH MIKE: THE WIDE ARRAY OF FORM SKILLS AND HOW EACH ONE IS BUILT FOR YOUR BODY',
         extra: {
           label: 'Skills Covered',
           items: [
@@ -239,7 +239,7 @@ const PILLARS: Record<string, PillarData> = {
       },
       {
         statement: 'FORM IS HOW YOU LOOK. CORRECT FORM IS CONTROL. ANYTHING LESS IS SLOPPY — AND SLOPPY LETS GOALS IN.',
-        support: 'Form Tech is rated by Control Factor. Your new knowledge — your new understanding — lets you pinpoint the breakdown of any execution and isolate the correction, driving toward your highest level of Control Factor.',
+        support: 'Form is rated by Control Factor. Your new knowledge — your new understanding — lets you pinpoint the breakdown of any execution and isolate the correction, driving toward your highest level of Control Factor.',
         voiceLabel: 'HEAR COACH MIKE: THE CONTROL FACTOR AND WHAT CORRECT FORM PRODUCES',
         extra: {
           label: 'What You\'ll Own',
@@ -252,6 +252,11 @@ const PILLARS: Record<string, PillarData> = {
       },
     ],
   },
+  // NOTE: in the app, Game and Practice are now two separate pillars (5 and 6),
+  // and off-ice content has moved to Lifestyle. This public page is still the
+  // single combined sales page, because splitting it needs new long-form copy in
+  // Coach Mike's voice — including his voice-note labels — which we can't write
+  // for him. Awaiting his copy before this becomes two pages.
   '6': {
     number: '06',
     title: 'Game & Practice Performance',
@@ -635,7 +640,7 @@ function PillarPageContent() {
                 <div>
                   <p style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '3px', color: accent, textTransform: 'uppercase', margin: '0 0 6px' }}>Now Entering</p>
                   <h2 style={{ fontSize: 'clamp(28px, 4vw, 56px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', margin: 0, lineHeight: 1.05 }}>
-                    PILLAR 1 — MIND-SET<br />
+                    PILLAR 1 — MINDSET<br />
                     <span style={{ color: accent }}>THE FOUNDATION OF EVERYTHING.</span>
                   </h2>
                 </div>
@@ -657,7 +662,7 @@ function PillarPageContent() {
               <div style={{ maxWidth: '820px', marginBottom: '52px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
                   <div style={{ width: '6px', height: '48px', background: BLUE2, boxShadow: `0 0 14px ${BLUE2}`, borderRadius: '3px', flexShrink: 0 }} />
-                  <p style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '3.5px', color: BLUE2, textTransform: 'uppercase', margin: 0 }}>PILLAR 02 — SKATING TECH</p>
+                  <p style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '3.5px', color: BLUE2, textTransform: 'uppercase', margin: 0 }}>PILLAR 02 — SKATING</p>
                 </div>
                 {/* Placeholder for Michael's opening line */}
                 <div style={{ background: `${BLUE2}08`, border: `1px dashed ${BLUE2}28`, borderRadius: '10px', padding: '14px 18px', marginBottom: '24px' }}>
@@ -924,11 +929,11 @@ function PillarPageContent() {
             <p style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '3px', color: BLUE2, textTransform: 'uppercase', margin: '0 0 24px' }}>EXPLORE ALL 7 PILLARS</p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 items-start" style={{ maxWidth: '960px' }}>
               {([
-                { num: '01', label: 'Mind-Set', a: '#00f2ff' },
-                { num: '02', label: 'Skating Tech', a: BLUE2 },
+                { num: '01', label: 'MindSet', a: '#00f2ff' },
+                { num: '02', label: 'Skating', a: BLUE2 },
                 { num: '03', label: '7AMS', a: BLUE },
-                { num: '04', label: '6 Zone Grid', a: BLUE3 },
-                { num: '05', label: 'Form Tech', a: '#38bdf8' },
+                { num: '04', label: '6 Zone – 7 Point System™', a: BLUE3 },
+                { num: '05', label: 'Form', a: '#38bdf8' },
                 { num: '06', label: 'Game & Practice', a: '#22d3ee' },
                 { num: '07', label: 'Lifestyle', a: BLUE2 },
               ] as { num: string; label: string; a: string }[]).map((p, i) => {

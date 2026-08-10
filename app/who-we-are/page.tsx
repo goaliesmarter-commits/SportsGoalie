@@ -172,7 +172,7 @@ const ACT_EIGHT = {
   title: 'THE DREAM',
   body: [
     'I had a dream, to make a difference. To have an impact. To help develop everyone who joins in.',
-    'Not just to build goalies. To build self-aware, disciplined people, achievers who know anything is possible with the right MIND-SET. To build confidence and self-esteem that takes doubt and fear and throws them in the trash where they belong.',
+    'Not just to build goalies. To build self-aware, disciplined people, achievers who know anything is possible with the right MINDSET. To build confidence and self-esteem that takes doubt and fear and throws them in the trash where they belong.',
     'And to forge the rare athlete who doesn\'t flinch from the toughest seat in sport, who chooses the net, owns the pressure, and turns it into power. Because goaltending is unique in all of sport. It builds a rare kind of character: dynamic in volume, soft in approach. One that leads by example, on the ice and off of it.',
     'That\'s what I\'m really building. Not just a goaltender. A person who can read the game, read themselves, and lead, wherever life takes them.',
   ],
