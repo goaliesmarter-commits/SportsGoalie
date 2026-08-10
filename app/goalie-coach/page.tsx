@@ -250,7 +250,7 @@ export default function GoalieCoachPage() {
                 Smarter Goalie is built on six decades of original IP. Every principle has been stress-tested against four filters. Not one has failed.
               </p>
               <p style={{ fontSize: 'clamp(15px, 1.9vw, 18px)', color: '#fff', lineHeight: 1.85, marginBottom: '40px', fontWeight: 600 }}>
-                The 7 Angle-Mark System. The 6 Zone Grid. The Feel Factor. The Mind&rsquo;s Eye. The Development Loop. These are not philosophies. They are systems with mathematical foundations.
+                The 7 Angle-Mark System. The 6 Zone – 7 Point System™. The Feel Factor. The Mind&rsquo;s Eye. The Development Loop. These are not philosophies. They are systems with mathematical foundations.
               </p>
               <VoiceButton label="HEAR COACH MIKE: THE MATHEMATICAL FRAMEWORK BEHIND THE SMARTER GOALIE SYSTEM" />
             </div>

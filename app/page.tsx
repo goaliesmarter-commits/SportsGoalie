@@ -445,7 +445,7 @@ export default function Home() {
                         </p>
                         <p className="text-zinc-400 text-base leading-relaxed mb-5">Through 7 Pillars, we lay the foundation.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
-                          We build INTELLIGENT ATHLETIC GOALTENDERS through 7 Pillars — anchored by two UNIQUE, PROVEN positional systems: the Seven Angle-Mark System (7AMS) above the icing line and the 6 Zone System (6ZS) below it. From MIND-SET to Skating Tech, Form Tech, Game Performance, and LIFE STYLE — mastering each pillar builds lasting consistency.
+                          We build INTELLIGENT ATHLETIC GOALTENDERS through 7 Pillars — anchored by two UNIQUE, PROVEN positional systems: the Seven Angle-Mark System (7AMS) above the icing line and the 6 Zone – 7 Point System™ below it. From MINDSET to Skating, Form, Game, Practice, and LIFESTYLE — mastering each pillar builds lasting consistency.
                         </p>
                       </div>
                     </div>
@@ -537,7 +537,7 @@ export default function Home() {
           <section className="py-6 overflow-hidden" style={{ background: '#041530', borderTop: '1px solid rgba(55,181,255,0.12)', borderBottom: '1px solid rgba(55,181,255,0.12)' }}>
             <div className="relative flex" style={{ '--duration': '30s', '--gap': '2rem' } as React.CSSProperties}>
               <div className="flex shrink-0 animate-marquee items-center gap-8">
-                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>
@@ -545,7 +545,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="flex shrink-0 animate-marquee items-center gap-8" aria-hidden="true">
-                {['MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ', 'MIND-SET', 'MIND-VAULT', 'SKATING TECH', 'ANGLE-MARK SYSTEM', '6 ZONE SYSTEM', 'FORM TECH', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>

@@ -10,6 +10,7 @@ import {
   GOALIE_CATEGORIES,
 } from '@/types';
 import { generateProfileSummary } from '@/lib/scoring/intelligence-profile';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import { cn } from '@/lib/utils';
 import {
   ChevronRight,
@@ -141,9 +142,10 @@ export function IntelligenceProfileView({
     return identifiedGaps.slice(0, 3);
   }, [identifiedGaps]);
 
-  // Calculate percentage for visual meter (1.0-4.0 to 0-100%)
+  // Percentage for the visual meter — a score out of 4.0, read the app-wide way
+  // (3.0 out of 4.0 is 75%), so the meter agrees with every other screen.
   const overallPercentage = useMemo(() => {
-    return ((overallScore - 1) / 3) * 100;
+    return scaleToPercentage(overallScore, 4, 1) ?? 0;
   }, [overallScore]);
 
   const pacingStyle = PACING_LEVEL_STYLES[pacingLevel];
@@ -239,7 +241,7 @@ export function IntelligenceProfileView({
               const colors = CATEGORY_CARD_COLORS[cs.categorySlug] || CATEGORY_CARD_COLORS.knowledge;
               const Icon = CATEGORY_ICONS[cs.categorySlug] || Brain;
               const categoryInfo = GOALIE_CATEGORIES.find(c => c.slug === cs.categorySlug);
-              const percentage = ((cs.averageScore - 1) / 3) * 100;
+              const percentage = scaleToPercentage(cs.averageScore, 4, 1) ?? 0;
 
               return (
                 <div

@@ -5,7 +5,7 @@
  * These replace the generic "sports" concept with a fixed pillar structure.
  */
 
-import { PillarSlug, PILLARS, PillarInfo } from '@/types/onboarding';
+import { PillarSlug, StoredPillarSlug, PILLARS, PillarInfo, resolvePillarSlug } from '@/types/onboarding';
 
 /**
  * Fixed pillar document IDs in Firestore
@@ -13,12 +13,19 @@ import { PillarSlug, PILLARS, PillarInfo } from '@/types/onboarding';
 export const PILLAR_IDS = {
   mindset: 'pillar_mindset',
   skating: 'pillar_skating',
-  form: 'pillar_form',
   positioning: 'pillar_positioning',
   seven_point: 'pillar_seven_point',
-  training: 'pillar_training',
+  form: 'pillar_form',
+  game: 'pillar_game',
+  practice: 'pillar_practice',
   lifestyle: 'pillar_lifestyle',
 } as const;
+
+/**
+ * The document ID of the retired combined Game/Practice/Off-Ice pillar.
+ * Skills still filed under it are moved by scripts/split-training-pillar.ts.
+ */
+export const LEGACY_TRAINING_PILLAR_ID = 'pillar_training';
 
 export type PillarId = typeof PILLAR_IDS[keyof typeof PILLAR_IDS];
 
@@ -74,6 +81,13 @@ export const PILLAR_COLOR_CLASSES: Record<string, {
     border: 'border-cyan-200 dark:border-cyan-800',
     gradient: 'from-cyan-500 to-cyan-700',
   },
+  teal: {
+    bg: 'bg-teal-500',
+    bgLight: 'bg-teal-100 dark:bg-teal-900/30',
+    text: 'text-teal-600 dark:text-teal-400',
+    border: 'border-teal-200 dark:border-teal-800',
+    gradient: 'from-teal-500 to-teal-700',
+  },
   pink: {
     bg: 'bg-pink-500',
     bgLight: 'bg-pink-100 dark:bg-pink-900/30',
@@ -84,33 +98,38 @@ export const PILLAR_COLOR_CLASSES: Record<string, {
 };
 
 /**
- * Get the fixed Firestore document ID for a pillar slug
+ * Get the fixed Firestore document ID for a pillar slug.
+ * Retired slugs resolve to the pillar that replaced them.
  */
-export function getPillarDocId(slug: PillarSlug): PillarId {
-  return PILLAR_IDS[slug];
+export function getPillarDocId(slug: StoredPillarSlug): PillarId {
+  const resolved = resolvePillarSlug(slug);
+  if (!resolved) throw new Error(`Unknown pillar slug: ${slug}`);
+  return PILLAR_IDS[resolved];
 }
 
 /**
  * Get the app URL for a pillar slug
  * Used by charting pages to navigate from low-score badges → Pillar content
  */
-export function getPillarUrl(slug: PillarSlug): string {
-  return `/pillars/${PILLAR_IDS[slug]}`;
+export function getPillarUrl(slug: StoredPillarSlug): string {
+  return `/pillars/${getPillarDocId(slug)}`;
 }
 
 /**
  * Get pillar info by Firestore document ID
  */
 export function getPillarByDocId(docId: string): PillarInfo | null {
-  const slug = Object.entries(PILLAR_IDS).find(([, id]) => id === docId)?.[0] as PillarSlug | undefined;
+  const slug = getPillarSlugFromDocId(docId);
   if (!slug) return null;
   return PILLARS.find(p => p.slug === slug) || null;
 }
 
 /**
- * Get pillar slug from document ID
+ * Get pillar slug from document ID.
+ * Documents still filed under the retired combined training pillar resolve to Practice.
  */
 export function getPillarSlugFromDocId(docId: string): PillarSlug | null {
+  if (docId === LEGACY_TRAINING_PILLAR_ID) return resolvePillarSlug('training');
   const entry = Object.entries(PILLAR_IDS).find(([, id]) => id === docId);
   return entry ? entry[0] as PillarSlug : null;
 }

@@ -754,10 +754,10 @@ export default function ChartingAnalyticsPage() {
               </SectionCard>
             )}
 
-            {/* Mind-Set Performance */}
+            {/* MindSet Performance */}
             {focusStats && (
               <SectionCard>
-                <SectionTitle>Mind-Set Performance</SectionTitle>
+                <SectionTitle>MindSet Performance</SectionTitle>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div style={{ borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '20px' }}>
                     <div className="flex items-center justify-between">

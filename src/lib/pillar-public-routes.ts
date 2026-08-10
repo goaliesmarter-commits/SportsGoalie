@@ -26,12 +26,23 @@ export const PILLAR_FROM_CONTEXT: Record<PillarFromKey, PillarFromContext> = {
 
 export const DEFAULT_PILLAR_FROM: PillarFromKey = 'goalie';
 
+/**
+ * The public marketing site's pillar list.
+ *
+ * NAMES follow Michael's approved list of 6 August 2026. NUMBERS do not, and
+ * deliberately so: `id` is the /pillar/[id] URL, and every link Michael has
+ * already shared points at these numbers. The in-app list treats 7AMS and the
+ * 6 Zone – 7 Point System™ as two halves of Pillar 3 and so runs one number
+ * ahead of this one from `04` on. Renumbering these routes, and splitting the
+ * single "Game & Practice" sales page into two, both need Michael's sign-off
+ * and new copy in his voice — neither is a rename we can make on our own.
+ */
 export const PUBLIC_PILLARS = [
-  { id: 1, num: '01', label: 'Mind-Set', accent: '#00f2ff' },
-  { id: 2, num: '02', label: 'Skating Tech', accent: '#60cdff' },
+  { id: 1, num: '01', label: 'MindSet', accent: '#00f2ff' },
+  { id: 2, num: '02', label: 'Skating', accent: '#60cdff' },
   { id: 3, num: '03', label: '7AMS', accent: '#37b5ff' },
-  { id: 4, num: '04', label: '6 Zone Grid', accent: '#0ea5e9' },
-  { id: 5, num: '05', label: 'Form Tech', accent: '#38bdf8' },
+  { id: 4, num: '04', label: '6 Zone – 7 Point System™', accent: '#0ea5e9' },
+  { id: 5, num: '05', label: 'Form', accent: '#38bdf8' },
   { id: 6, num: '06', label: 'Game & Practice', accent: '#22d3ee' },
   { id: 7, num: '07', label: 'Lifestyle', accent: '#60cdff' },
 ] as const;

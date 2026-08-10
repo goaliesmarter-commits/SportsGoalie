@@ -269,7 +269,7 @@ export default function OvertimeShootoutPage() {
             {hasOvertime && (
               <>
                 <Card className="p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Mind-Set</h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">MindSet</h2>
                   <div className="space-y-4">
                     <RadioSelectField
                       label="Focus"

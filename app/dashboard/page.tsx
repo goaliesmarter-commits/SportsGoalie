@@ -21,6 +21,7 @@ import { useRecentQuizzes } from '@/hooks/useRecentQuizzes';
 import { CustomCurriculumDashboard } from '@/components/dashboard/CustomCurriculumDashboard';
 import { PILLARS } from '@/types';
 import { getPillarSlugFromDocId, getPillarByDocId } from '@/lib/utils/pillars';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import { useGrowthPoints } from '@/hooks/useGrowthPoints';
 
 const BLUE = '#37b5ff';
@@ -564,7 +565,7 @@ function GoalieProfileCard({ profile }: { profile: BaselineIntelligenceProfile }
   };
 
   const pm = PACING_META[profile.pacingLevel] || PACING_META.introduction;
-  const barPct = ((profile.overallScore - 1) / 3) * 100;
+  const barPct = scaleToPercentage(profile.overallScore, 4, 1) ?? 0;
   const topStrength = profile.identifiedStrengths?.[0];
   const topGap = profile.identifiedGaps?.[0];
 

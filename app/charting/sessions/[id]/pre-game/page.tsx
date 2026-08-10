@@ -193,9 +193,9 @@ export default function PreGamePage() {
           </div>
         </Card>
 
-        {/* Mind-Set */}
+        {/* MindSet */}
         <Card className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Mind-Set</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">MindSet</h2>
           <div className="space-y-4">
             <YesNoField
               label="Mind Cleared"

@@ -77,7 +77,9 @@ function ProgressContent() {
     ? Math.round((data.consistency.thisMonthDays / data.consistency.daysInCurrentMonth) * 100)
     : 0;
 
-  const PILLAR_ORDER = ['MIND-SET', 'SKATING', '7AMS', '6ZS', 'FORM', 'TEAM-PRACTICE', 'LIFE STYLE'];
+  // Sort keys, matched loosely against the stored pillar name (see below), in
+  // Michael's approved order. Uppercase because the comparison uppercases both sides.
+  const PILLAR_ORDER = ['MINDSET', 'SKATING', '7AMS', '6 ZONE', 'FORM', 'GAME', 'PRACTICE', 'LIFESTYLE'];
 
   const scoreDistribution = [
     { name: '95-100 CLUB', value: data.attempts.filter(a => a.percentage >= 95).length, color: '#fbbf24' },

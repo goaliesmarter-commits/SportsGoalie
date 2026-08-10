@@ -48,6 +48,34 @@ import { db } from '../../firebase/config';
  * await formTemplateService.activateTemplate(templateId);
  * ```
  */
+/**
+ * Renders a validation path such as `sections[0].fields[2].label` in the wording
+ * the builder screen uses, so an error can be read against the thing on screen
+ * rather than against an internal path.
+ */
+export function describeValidationPath(path: string): string {
+  const section = /sections\[(\d+)\]/.exec(path);
+  const field = /fields\[(\d+)\]/.exec(path);
+  if (section && field) return `Section ${Number(section[1]) + 1}, field ${Number(field[1]) + 1}`;
+  if (section) return `Section ${Number(section[1]) + 1}`;
+  return '';
+}
+
+/**
+ * The message a save failure reports.
+ *
+ * This used to be the fixed string "Template validation failed", which named
+ * neither the reason nor the field, leaving no way to correct the template. The
+ * reason was already known here — it was just being discarded.
+ */
+export function describeValidationFailure(errors: { path: string; message: string }[]): string {
+  if (errors.length === 0) return 'Template validation failed';
+  const [first] = errors;
+  const where = describeValidationPath(first.path);
+  const headline = where ? `${where} — ${first.message}` : first.message;
+  return errors.length === 1 ? headline : `${headline} (and ${errors.length - 1} more)`;
+}
+
 export class FormTemplateService extends BaseDatabaseService {
   private readonly TEMPLATES_COLLECTION = 'form_templates';
 
@@ -69,7 +97,7 @@ export class FormTemplateService extends BaseDatabaseService {
     if (!validation.isValid) {
       return {
         success: false,
-        message: 'Template validation failed',
+        message: describeValidationFailure(validation.errors),
         error: {
           code: 'VALIDATION_ERROR',
           message: validation.errors.map((e) => e.message).join(', '),
@@ -162,7 +190,7 @@ export class FormTemplateService extends BaseDatabaseService {
     if (!validation.isValid) {
       return {
         success: false,
-        message: 'Template validation failed',
+        message: describeValidationFailure(validation.errors),
         error: {
           code: 'VALIDATION_ERROR',
           message: validation.errors.map((e) => e.message).join(', '),
@@ -555,7 +583,7 @@ export class FormTemplateService extends BaseDatabaseService {
         if (sectionIds.has(section.id)) {
           errors.push({
             path: `${sectionPath}.id`,
-            message: `Duplicate section ID: ${section.id}`,
+            message: `This section shares an internal ID (${section.id}) with an earlier section. Delete it and add it again.`,
           });
         }
         sectionIds.add(section.id);
@@ -586,7 +614,7 @@ export class FormTemplateService extends BaseDatabaseService {
             if (fieldIds.has(field.id)) {
               errors.push({
                 path: `${fieldPath}.id`,
-                message: `Duplicate field ID: ${field.id}`,
+                message: `This field shares an internal ID (${field.id}) with an earlier field in the same section. Delete it and add it again.`,
               });
             }
             fieldIds.add(field.id);

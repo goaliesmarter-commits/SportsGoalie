@@ -6,6 +6,7 @@ import {
   FormField,
   FieldAnalyticsResult,
   CategoryAnalyticsResult,
+  AnalyticsType,
   TrendDirection,
   ApiResponse,
   AnalyticsQueryOptions,
@@ -22,6 +23,7 @@ import {
 import { db } from '../../firebase/config';
 import { logger } from '../../utils/logger';
 import { toDateSafe } from '../../utils/timestamp';
+import { scaleToPercentage } from '../../scoring/scale-score';
 import { formTemplateService } from './form-template.service';
 import { dynamicChartingService } from './dynamic-charting.service';
 
@@ -94,7 +96,9 @@ function describeError(error: unknown): { code: string; message: string; stack?:
  */
 export class DynamicAnalyticsService extends BaseDatabaseService {
   private readonly ANALYTICS_COLLECTION = 'dynamic_charting_analytics';
-  private readonly CALCULATION_VERSION = 1; // Increment when algorithm changes
+  // 2: scores normalize against the field's configured scale instead of the
+  //    observed range, and scale fields mis-typed as `percentage` are repaired.
+  private readonly CALCULATION_VERSION = 2; // Increment when algorithm changes
 
   // ==================== MAIN ANALYTICS CALCULATION ====================
 
@@ -472,6 +476,60 @@ export class DynamicAnalyticsService extends BaseDatabaseService {
   // ==================== FIELD ANALYTICS CALCULATION ====================
 
   /**
+   * The analytics type to actually calculate for a field.
+   *
+   * The template builder stamped every analytics-enabled field as `percentage`
+   * regardless of its input type. `percentage` counts boolean trues, so a 1-10
+   * scale field scored a flat 0% however the athlete answered — every template
+   * authored through the admin UI reported an overall score of 0. The builder
+   * now picks the right type up front, but templates saved before that fix are
+   * already in Firestore, so the mismatch is repaired here on read rather than
+   * by migrating documents: a stored type that cannot produce a number from
+   * this field's values gives way to the one that can.
+   */
+  private resolveAnalyticsType(field: FormField): AnalyticsType {
+    const stored = field.analytics.type;
+
+    if ((field.type === 'scale' || field.type === 'numeric') && stored === 'percentage') {
+      return 'average';
+    }
+
+    if (
+      (field.type === 'radio' || field.type === 'checkbox') &&
+      (stored === 'percentage' || stored === 'average')
+    ) {
+      return 'distribution';
+    }
+
+    return stored;
+  }
+
+  /**
+   * The bounds of the rating scale a field is answered on, or null when it has none.
+   *
+   * Scale fields fall back to 1-10 to match the input control (DynamicScaleField)
+   * and the history page's progress bars — the builder didn't record explicit
+   * bounds for them. A numeric field only counts as scaled when the author gave
+   * it both ends: an open-ended tally like "shots faced" has no ceiling to
+   * measure a percentage against.
+   */
+  private getConfiguredScale(field: FormField): { min: number; max: number } | null {
+    if (field.type === 'scale') {
+      return { min: field.validation?.min ?? 1, max: field.validation?.max ?? 10 };
+    }
+
+    if (
+      field.type === 'numeric' &&
+      field.validation?.min !== undefined &&
+      field.validation?.max !== undefined
+    ) {
+      return { min: field.validation.min, max: field.validation.max };
+    }
+
+    return null;
+  }
+
+  /**
    * Calculates analytics for a single field
    */
   private calculateFieldAnalytics(
@@ -488,17 +546,27 @@ export class DynamicAnalyticsService extends BaseDatabaseService {
       return null;
     }
 
+    const analyticsType = this.resolveAnalyticsType(field);
+
     const result: FieldAnalyticsResult = {
       fieldId: field.id,
       fieldLabel: field.analytics.displayName || field.label,
       fieldType: field.type,
-      analyticsType: field.analytics.type,
+      analyticsType,
       category: field.analytics.category,
       dataPoints: values.length,
     };
 
+    // Carried onto the result so scoring can normalize against the scale the
+    // athlete answered on without needing the template back.
+    const scale = this.getConfiguredScale(field);
+    if (scale) {
+      result.scaleMin = scale.min;
+      result.scaleMax = scale.max;
+    }
+
     // Calculate based on analytics type
-    switch (field.analytics.type) {
+    switch (analyticsType) {
       case 'percentage':
         this.calculatePercentageAnalytics(result, values, field);
         break;
@@ -968,11 +1036,23 @@ export class DynamicAnalyticsService extends BaseDatabaseService {
       return fieldAnalytics.percentage;
     }
 
-    if (fieldAnalytics.average !== undefined && fieldAnalytics.max !== undefined) {
-      // Normalize to 0-100
-      const range = fieldAnalytics.max - (fieldAnalytics.min || 0);
-      if (range === 0) return 100;
-      return Math.round(((fieldAnalytics.average - (fieldAnalytics.min || 0)) / range) * 100);
+    if (fieldAnalytics.average !== undefined) {
+      // Score against the scale the athlete was rating on, not the spread of
+      // their own answers. Measured against the observed range, entries of 4 and
+      // 7 always scored exactly 50%, and a run of identical answers always
+      // scored 100% — the number tracked the sample, never the performance.
+      if (fieldAnalytics.scaleMax === undefined) {
+        // An open-ended number has no ceiling, so it has no honest percentage.
+        // Leaving it out of the average beats inventing one for it.
+        return null;
+      }
+
+      // scaleToPercentage is the app-wide rule: 7 out of 10 reads 70%.
+      return scaleToPercentage(
+        fieldAnalytics.average,
+        fieldAnalytics.scaleMax,
+        fieldAnalytics.scaleMin
+      );
     }
 
     if (fieldAnalytics.consistencyScore !== undefined) {

@@ -13,12 +13,13 @@ export interface ExplorePillar {
   accent: string;
 }
 
+/** Names track PUBLIC_PILLARS in src/lib/pillar-public-routes.ts. */
 const DEFAULT_PILLARS: ExplorePillar[] = [
-  { accent: '#00f2ff', label: 'Mind-Set' },
-  { accent: BLUE2, label: 'Skating Tech' },
+  { accent: '#00f2ff', label: 'MindSet' },
+  { accent: BLUE2, label: 'Skating' },
   { accent: BLUE, label: '7AMS' },
-  { accent: BLUE3, label: '6 Zone Grid' },
-  { accent: '#38bdf8', label: 'Form Tech' },
+  { accent: BLUE3, label: '6 Zone – 7 Point System™' },
+  { accent: '#38bdf8', label: 'Form' },
   { accent: '#22d3ee', label: 'Game & Practice' },
   { accent: BLUE2, label: 'Lifestyle' },
 ];

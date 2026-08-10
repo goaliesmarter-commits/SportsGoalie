@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow, subDays, subMonths } from 'date-fns';
 import { toDateSafe } from '@/lib/utils/timestamp';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import {
   CYAN,
   MINT,
@@ -68,12 +69,15 @@ function rangeStart(range: RangeKey): Date | undefined {
   }
 }
 
-/** Where a value sits on its field's own scale, as a 0-100 bar percentage. */
+/**
+ * Where a value sits on its field's own scale, as a 0-100 bar percentage.
+ * Uses the app-wide rule so 7 out of 10 fills 70% of the bar here and reads 70%
+ * everywhere else.
+ */
 function scalePercent(value: number, field: FormField | undefined): number {
   const min = field?.validation?.min ?? 1;
   const max = field?.validation?.max ?? 10;
-  if (max <= min) return 0;
-  return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  return scaleToPercentage(value, max, min) ?? 0;
 }
 
 function GrowthChip({ growth }: { growth: number }) {

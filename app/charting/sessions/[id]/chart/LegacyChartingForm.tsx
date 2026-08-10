@@ -307,7 +307,7 @@ export default function LegacyChartingForm({ session, user }: LegacyChartingForm
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">Mind-Set</h2>
+            <h2 className="text-xl font-bold mb-4">MindSet</h2>
             <div className="space-y-3">
               <YesNoField
                 label="Mind Cleared"

@@ -9,6 +9,7 @@ import type { IntelligenceProfile, GapAnalysis, StrengthAnalysis, ContentRecomme
 import { getPacingLevelDisplayText, GOALIE_CATEGORIES } from '@/types';
 import { getRecommendedPillarsFromGaps, type PillarRecommendation } from '@/lib/utils/category-pillar-mapping';
 import { getPillarByDocId } from '@/lib/utils/pillars';
+import { scaleToPercentage } from '@/lib/scoring/scale-score';
 
 const BLUE = '#37b5ff';
 const PURPLE = '#a78bfa';
@@ -122,7 +123,7 @@ export function StudentIntelligenceSidebar({ studentId, onAddContentForPillar }:
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {profile.categoryScores.map((cat) => {
               const barColor = cat.averageScore >= 3.0 ? GREEN : cat.averageScore >= 2.0 ? BLUE : YELLOW;
-              const pct = ((cat.averageScore - 1) / 3) * 100;
+              const pct = scaleToPercentage(cat.averageScore, 4, 1) ?? 0;
               const categoryName = GOALIE_CATEGORIES.find(c => c.slug === cat.categorySlug)?.shortName
                 ?? cat.categorySlug.replace(/_/g, ' ');
               return (

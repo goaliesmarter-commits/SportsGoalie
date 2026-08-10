@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/context';
-import { formTemplateService } from '@/lib/database/services/form-template.service';
-import { FormSection, FormField, FieldType, PillarSlug, PILLARS } from '@/types';
-import { Loader2, Plus, Trash2, ArrowLeft, Save } from 'lucide-react';
+import { formTemplateService, describeValidationFailure } from '@/lib/database/services/form-template.service';
+import { FormTemplate, FormSection, FormField, FieldType, AnalyticsType, PillarSlug, PILLARS } from '@/types';
+import { Loader2, Plus, Trash2, ArrowLeft, Save, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -13,6 +13,45 @@ const BLUE = '#37b5ff';
 const RED = '#f87171';
 const GREEN = '#22c55e';
 const card = { background: 'rgba(2,18,44,0.85)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '16px' } as const;
+
+/**
+ * The only analytics that mean anything for a given input type.
+ *
+ * Enabling analytics used to save every field as `percentage`, which counts
+ * yes/no answers. On a 1-10 scale nothing is ever `true`, so those fields scored
+ * a permanent 0% and dragged the chart's overall score to zero however the
+ * athlete rated themselves.
+ */
+function defaultAnalyticsType(fieldType: FieldType): AnalyticsType {
+  switch (fieldType) {
+    case 'yesno':
+      return 'percentage';
+    case 'scale':
+    case 'numeric':
+      return 'average';
+    case 'radio':
+    case 'checkbox':
+      return 'distribution';
+    default:
+      return 'none'; // free text and dates have nothing to measure
+  }
+}
+
+/**
+ * IDs used to be derived from how many sections or fields were currently in the
+ * list, so deleting one and adding another handed the newcomer an ID the list
+ * already held. The template validator rejects duplicate IDs, which is what
+ * stopped the 7AMS template saving. Count from the highest ID in use instead, so
+ * an ID is never reissued within a single build.
+ */
+function nextId(prefix: string, existing: (string | undefined)[]): string {
+  const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d+)$`);
+  const highest = existing.reduce<number>((max, id) => {
+    const match = id ? pattern.exec(id) : null;
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `${prefix}${highest + 1}`;
+}
 
 export default function NewTemplatePage() {
   const router = useRouter();
@@ -25,9 +64,14 @@ export default function NewTemplatePage() {
   const [sections, setSections] = useState<Partial<FormSection>[]>([
     { id: 'section_1', title: '', description: '', order: 1, fields: [] },
   ]);
+  /** Validation failures from the last save attempt, keyed by their path so each shows against its own field. */
+  const [saveErrors, setSaveErrors] = useState<{ path: string; message: string }[]>([]);
 
   const addSection = () => {
-    setSections(prev => [...prev, { id: `section_${prev.length + 1}`, title: '', description: '', order: prev.length + 1, fields: [] }]);
+    setSections(prev => [
+      ...prev,
+      { id: nextId('section_', prev.map(s => s.id)), title: '', description: '', order: prev.length + 1, fields: [] },
+    ]);
   };
 
   const removeSection = (index: number) => {
@@ -39,64 +83,131 @@ export default function NewTemplatePage() {
     setSections(prev => { const n = [...prev]; n[index] = { ...n[index], ...updates }; return n; });
   };
 
+  /**
+   * These three updaters rebuild the section they touch instead of assigning into
+   * it. `[...prev]` only copies the outer array, so `n[sectionIndex].fields = ...`
+   * wrote straight through to the section object React was still holding. Strict
+   * Mode runs an updater twice with the same `prev` to prove it is pure, and the
+   * second run saw the first run's mutation — appending the same new field twice
+   * under one ID, which is the duplicate-key crash on adding a field.
+   */
   const addFieldToSection = (sectionIndex: number) => {
-    const section = sections[sectionIndex];
-    const fieldCount = section.fields?.length || 0;
-    const newField = {
-      id: `${section.id}_field_${fieldCount + 1}`, label: '', type: 'text' as FieldType,
-      description: '', includeComments: false,
-      validation: { required: false },
-      analytics: { enabled: false, type: 'none' as const },
-      order: fieldCount + 1, _optionsRaw: '',
-    };
-    setSections(prev => {
-      const n = [...prev];
-      n[sectionIndex].fields = [...(n[sectionIndex].fields || []), newField as unknown as FormField];
-      return n;
-    });
+    setSections(prev => prev.map((section, i) => {
+      if (i !== sectionIndex) return section;
+      const fields = section.fields || [];
+      const newField = {
+        id: nextId(`${section.id}_field_`, fields.map(f => f.id)), label: '', type: 'text' as FieldType,
+        description: '', includeComments: false,
+        validation: { required: false },
+        analytics: { enabled: false, type: 'none' as const },
+        order: fields.length + 1, _optionsRaw: '',
+      };
+      return { ...section, fields: [...fields, newField as unknown as FormField] };
+    }));
   };
 
   const removeFieldFromSection = (sectionIndex: number, fieldIndex: number) => {
-    setSections(prev => {
-      const n = [...prev];
-      n[sectionIndex].fields = n[sectionIndex].fields?.filter((_, i) => i !== fieldIndex);
-      return n;
-    });
+    setSections(prev => prev.map((section, i) =>
+      i === sectionIndex
+        ? { ...section, fields: (section.fields || []).filter((_, fi) => fi !== fieldIndex) }
+        : section
+    ));
   };
 
   const updateField = (sectionIndex: number, fieldIndex: number, updates: Partial<FormField>) => {
-    setSections(prev => {
-      const n = [...prev];
-      const fields = n[sectionIndex].fields || [];
-      fields[fieldIndex] = { ...fields[fieldIndex], ...updates };
-      n[sectionIndex].fields = fields;
-      return n;
+    setSections(prev => prev.map((section, i) =>
+      i === sectionIndex
+        ? {
+            ...section,
+            fields: (section.fields || []).map((f, fi) => (fi === fieldIndex ? { ...f, ...updates } : f)),
+          }
+        : section
+    ));
+  };
+
+  /**
+   * Changing the input type drags its validation bounds and analytics with it —
+   * left behind, they describe the field it used to be.
+   */
+  const changeFieldType = (sectionIndex: number, fieldIndex: number, field: FormField, nextType: FieldType) => {
+    const validation = { ...field.validation };
+    if (nextType === 'scale') {
+      // The picker promises "Scale (1-10)", so record it rather than leaning on
+      // every reader to assume the same default.
+      validation.min = 1;
+      validation.max = 10;
+    } else if (nextType !== 'numeric') {
+      delete validation.min;
+      delete validation.max;
+    }
+
+    updateField(sectionIndex, fieldIndex, {
+      type: nextType,
+      validation,
+      analytics: field.analytics.enabled
+        ? { ...field.analytics, type: defaultAnalyticsType(nextType) }
+        : field.analytics,
     });
   };
 
+  /** Errors raised against a whole section, rather than one of its fields. */
+  const sectionErrors = (sectionIndex: number) =>
+    saveErrors.filter(e => e.path.startsWith(`sections[${sectionIndex}]`) && !e.path.includes('.fields['));
+
+  const fieldErrors = (sectionIndex: number, fieldIndex: number) =>
+    saveErrors.filter(e => e.path.startsWith(`sections[${sectionIndex}].fields[${fieldIndex}]`));
+
+  /** Errors that belong to the template itself — its name, sport, or having no sections at all. */
+  const templateErrors = () => saveErrors.filter(e => !e.path.startsWith('sections['));
+
   const handleSave = async () => {
     if (!user) { toast.error('You must be logged in'); return; }
-    if (!name.trim()) { toast.error('Template name is required'); return; }
-    if (!sport.trim()) { toast.error('Sport is required'); return; }
-    if (sections.length === 0) { toast.error('Template must have at least one section'); return; }
-    for (let i = 0; i < sections.length; i++) {
-      if (!sections[i].title?.trim()) { toast.error(`Section ${i + 1} must have a title`); return; }
-      if (!sections[i].fields?.length) { toast.error(`Section ${i + 1} must have at least one field`); return; }
-      for (let j = 0; j < sections[i].fields!.length; j++) {
-        if (!sections[i].fields![j].label?.trim()) { toast.error(`Field ${j + 1} in section ${i + 1} must have a label`); return; }
+
+    // Strip the raw options text the editor keeps alongside each field, and renumber
+    // so a section deleted mid-build does not leave a gap in the ordering.
+    const cleanSections = sections.map((section, index) => ({
+      ...section,
+      order: index + 1,
+      fields: section.fields?.map((field, fieldIndex) => {
+        const { _optionsRaw, ...cleanField } = field as FormField & { _optionsRaw?: string };
+        return { ...cleanField, order: fieldIndex + 1 };
+      }) || [],
+    }));
+
+    const draft = {
+      name, description, sport: sport.trim(), pillar,
+      isActive: false, isArchived: false, allowPartialSubmission: true,
+      sections: cleanSections as FormSection[], createdBy: user.id,
+    };
+
+    // Validate against the same rules the save itself applies, so a template that
+    // cannot be stored is reported here — next to the field at fault — rather than
+    // coming back from the server as an unattributed failure.
+    const errors = [...formTemplateService.validateTemplate(draft as FormTemplate).errors];
+    if (!draft.sport) errors.push({ path: 'sport', message: 'Sport is required' });
+    cleanSections.forEach((section, index) => {
+      if (section.fields.length === 0) {
+        errors.push({ path: `sections[${index}].fields`, message: 'Add at least one field to this section' });
       }
+    });
+
+    if (errors.length > 0) {
+      setSaveErrors(errors);
+      toast.error(describeValidationFailure(errors));
+      return;
     }
+
+    setSaveErrors([]);
     setSaving(true);
     try {
-      const cleanSections = sections.map(section => ({
-        ...section,
-        fields: section.fields?.map(field => { const { _optionsRaw, ...cleanField } = field as FormField & { _optionsRaw?: string }; return cleanField; }) || []
-      }));
-      const result = await formTemplateService.createTemplate({ name, description, sport: sport.trim(), pillar, isActive: false, isArchived: false, allowPartialSubmission: true, sections: cleanSections as FormSection[], createdBy: user.id });
+      const result = await formTemplateService.createTemplate(draft);
       if (result.success && result.data) {
         toast.success('Template created successfully');
         router.push(`/admin/form-templates/${result.data.id}`);
       } else {
+        // The server validates too. If it disagrees, show its reasons in the same places.
+        const details = (result.error?.details as { path: string; message: string }[] | undefined) ?? [];
+        setSaveErrors(details);
         toast.error(result.message || 'Failed to create template');
       }
     } catch (error) {
@@ -112,6 +223,21 @@ export default function NewTemplatePage() {
       {text} {required && <span style={{ color: RED }}>*</span>}
     </p>
   );
+
+  /** Shows why a save was refused, against the thing that caused it. */
+  const Issues = ({ issues }: { issues: { path: string; message: string }[] }) => {
+    if (issues.length === 0) return null;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+        {issues.map(issue => (
+          <p key={issue.path} style={{ color: RED, fontSize: '13px', lineHeight: 1.45, display: 'flex', gap: '6px' }}>
+            <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{issue.message}</span>
+          </p>
+        ))}
+      </div>
+    );
+  };
 
   const Toggle = ({ checked, onChange }: { checked?: boolean; onChange: (v: boolean) => void }) => (
     <button onClick={() => onChange(!checked)} style={{ width: '36px', height: '20px', borderRadius: '10px', background: checked ? BLUE : 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
@@ -168,6 +294,7 @@ export default function NewTemplatePage() {
             <p style={{ color: 'rgba(255,255,255,0.32)', fontSize: '12px', lineHeight: 1.5 }}>
               One template can be active per sport + pillar pair, so a pillar chart can run alongside the combined tracker.
             </p>
+            <Issues issues={templateErrors()} />
           </div>
         </div>
 
@@ -192,6 +319,7 @@ export default function NewTemplatePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>{fieldLabel('Section Title', true)}<input className="nt-inp" value={section.title || ''} onChange={e => updateSection(sectionIndex, { title: e.target.value })} placeholder="e.g., Pre-Game, In-Game Performance" /></div>
               <div>{fieldLabel('Section Description')}<textarea className="nt-ta" value={section.description || ''} onChange={e => updateSection(sectionIndex, { description: e.target.value })} placeholder="Describe this section..." rows={2} /></div>
+              <Issues issues={sectionErrors(sectionIndex)} />
 
               {/* Fields */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
@@ -208,7 +336,7 @@ export default function NewTemplatePage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {section.fields?.map((field, fieldIndex) => (
-                    <div key={field.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '14px' }}>
+                    <div key={field.id} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${fieldErrors(sectionIndex, fieldIndex).length > 0 ? 'rgba(248,113,113,0.45)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '10px', padding: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
@@ -218,7 +346,7 @@ export default function NewTemplatePage() {
                             </div>
                             <div>
                               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Field Type</p>
-                              <select className="nt-sel" value={field.type} onChange={e => updateField(sectionIndex, fieldIndex, { type: e.target.value as FieldType })}>
+                              <select className="nt-sel" value={field.type} onChange={e => changeFieldType(sectionIndex, fieldIndex, field, e.target.value as FieldType)}>
                                 <option value="yesno">Yes/No</option>
                                 <option value="radio">Radio (Single Choice)</option>
                                 <option value="checkbox">Checkbox (Multiple)</option>
@@ -247,7 +375,7 @@ export default function NewTemplatePage() {
                             {[
                               { key: 'required', label: 'Required', get: () => field.validation?.required, set: (v: boolean) => updateField(sectionIndex, fieldIndex, { validation: { ...field.validation, required: v } }) },
                               { key: 'comments', label: 'Include Comments', get: () => field.includeComments, set: (v: boolean) => updateField(sectionIndex, fieldIndex, { includeComments: v }) },
-                              { key: 'analytics', label: 'Enable Analytics', get: () => field.analytics.enabled, set: (v: boolean) => updateField(sectionIndex, fieldIndex, { analytics: { ...field.analytics, enabled: v, type: v ? 'percentage' : 'none' } }) },
+                              { key: 'analytics', label: 'Enable Analytics', get: () => field.analytics.enabled, set: (v: boolean) => updateField(sectionIndex, fieldIndex, { analytics: { ...field.analytics, enabled: v, type: v ? defaultAnalyticsType(field.type) : 'none' } }) },
                             ].map(({ key, label, get, set }) => (
                               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Toggle checked={get()} onChange={set} />
@@ -255,6 +383,7 @@ export default function NewTemplatePage() {
                               </div>
                             ))}
                           </div>
+                          <Issues issues={fieldErrors(sectionIndex, fieldIndex)} />
                         </div>
                         <button onClick={() => removeFieldFromSection(sectionIndex, fieldIndex)} style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.08)', color: RED, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <Trash2 size={12} />

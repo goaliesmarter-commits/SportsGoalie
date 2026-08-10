@@ -41,13 +41,13 @@ const GAME_RETENTION_OPTIONS = [
 const IMPROVEMENT_FOCUS_OPTIONS = [
   { value: 'mind_control',         label: 'Emotional Balance',        detail: 'Stay in the now, period by period',        pillar: 'Mindset' },
   { value: 'pre_game_routine',     label: 'Pre-Game Routine',        detail: 'Preparation & mental activation',          pillar: 'Mindset' },
-  { value: 'positioning',          label: 'Positioning',             detail: 'Angle play, depth & reads',                pillar: 'Positioning' },
+  { value: 'positioning',          label: '7AMS',                    detail: 'Angle play, depth & reads',                pillar: '7AMS' },
   { value: 'form',                 label: 'Form & Structure',        detail: 'Mechanics, technique & fundamentals',      pillar: 'Form' },
   { value: 'skating',              label: 'Skating',                 detail: 'Edge work, recovery & movement',           pillar: 'Skating' },
-  { value: 'seven_point',          label: '6 Zone Grid',             detail: 'Below icing line — angles & reads',        pillar: '6 Zone Grid' },
+  { value: 'seven_point',          label: '6 Zone – 7 Point System™', detail: 'Below icing line — angles & reads',        pillar: '6 Zone – 7 Point System™' },
   { value: 'game_retention',       label: 'Game Retention',          detail: 'Recall, replay & self-review',             pillar: 'Mindset' },
   { value: 'pressure_performance', label: 'Pressure Performance',    detail: 'High-challenge, breakaway, 2-on-1',        pillar: 'Mindset' },
-  { value: 'goal_decisions',       label: 'Reading the Play',        detail: 'Read → position → execute under pressure', pillar: 'Positioning' },
+  { value: 'goal_decisions',       label: 'Reading the Play',        detail: 'Read → position → execute under pressure', pillar: '7AMS' },
   { value: 'training',             label: 'Training Quality',        detail: 'Designated training & intentional reps',   pillar: 'Training' },
   { value: 'lifestyle',            label: 'Lifestyle Foundations',   detail: 'Sleep, fuel & recovery habits',            pillar: 'Lifestyle' },
 ];
@@ -78,7 +78,7 @@ function derivePriorityArea(
     candidates.push({
       score: pct,
       label: 'Emotional Balance',
-      pillarLabel: 'Mindset — Mind-Set Development',
+      pillarLabel: 'Pillar 1 — MindSet',
       pillarSlug: 'mindset',
       reason: `Emotional balance averaged ${mindControlAvg.toFixed(1)}/5 across periods`,
       urgency: mindControlAvg <= 2 ? 'critical' : mindControlAvg <= 3 ? 'high' : 'moderate',
@@ -105,7 +105,7 @@ function derivePriorityArea(
     candidates.push({
       score: pct,
       label: 'Game Retention',
-      pillarLabel: 'Mindset — Mind-Set Development',
+      pillarLabel: 'Pillar 1 — MindSet',
       pillarSlug: 'mindset',
       reason: `Game retention rated ${gameRetentionRating}/5 — game memory is unclear`,
       urgency: gameRetentionRating <= 2 ? 'critical' : gameRetentionRating <= 3 ? 'high' : 'moderate',
@@ -117,7 +117,7 @@ function derivePriorityArea(
     candidates.push({
       score: (mindControlAvg / 5) * 40,
       label: 'Pressure Performance',
-      pillarLabel: 'Mindset — Mind-Set Development',
+      pillarLabel: 'Pillar 1 — MindSet',
       pillarSlug: 'mindset',
       reason: `Mind broke down (${mindControlAvg.toFixed(1)}/5) in a ${overallGameFactorRating}/5 challenge game`,
       urgency: 'critical',

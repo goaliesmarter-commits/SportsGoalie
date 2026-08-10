@@ -6,10 +6,14 @@
 
 ## 📊 Project Status
 
-**Current Phase:** Block 1 - Launch Critical (per Michael's Work Directive 2026-03-10)
+**Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Target Completion:** End of March 2026 (Block 1+2), Early April 2026 (Launch Ready)
-**Overall Progress:** Phase 2.0-2.2 Complete, Block 1 In Progress (4/7 tasks)
+**Last Updated:** 2026-08-03
+**Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
+
+> ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
+
+> 🚨 **Immediate blocker:** Firestore rules and indexes from 2026-08-02 are written but **not deployed**. Production has two active form templates being read by code that only understands one, so the form a student receives is non-deterministic. See PROJECT_TRACKER.md.
 
 ### SOW Compliance Requirements
 | Requirement | Frequency | Detail |
@@ -26,32 +30,46 @@
 > **Work Directive:** Per Michael's directive (2026-03-10), work follows Block 1 → Block 2 → Block 3 order.
 > Do not skip ahead without written approval. See `client_data/Phase2/basim-work-directive-march10.md`
 
-### Block 1: Launch Critical (Active) - Est. 35-50 hours
-| # | Task | Est | Status |
-|---|------|-----|--------|
-| 1 | Branding: SportsGoalie → Smarter Goalie | 2-3h | ✅ |
-| 2 | 7th Pillar: Add Lifestyle | 2h | ✅ |
-| 3 | Landing Page + 8-Role Selection | 5-8h | 🔲 |
-| 4 | Video Database + Tagging System | 8-12h | ✅ |
-| 5 | Parent Dashboard + Child Linking | 10-15h | ✅ |
-| 6 | Dashboard Visualization + Integration | 4-6h | 🔲 |
-| 7 | Production Email (Resend domain config) | 2-3h | 🔲 |
+### Block 1: Launch Critical - COMPLETE
+| # | Task | Est | Status | Delivered |
+|---|------|-----|--------|-----------|
+| 1 | Branding: SportsGoalie → Smarter Goalie | 2-3h | ✅ | 2026-03-12 |
+| 2 | 7th Pillar: Add Lifestyle | 2h | ✅ | 2026-03-12 |
+| 3 | Landing Page + Role Selection | 5-8h | ✅ | 2026-03-16, extended 2026-04-25 and 2026-07-27 |
+| 4 | Video Database + Tagging System | 8-12h | ✅ | 2026-03-12, shared library added 2026-07-06 |
+| 5 | Parent Dashboard + Child Linking | 10-15h | ✅ | 2026-03-12 |
+| 6 | Dashboard Visualization + Integration | 4-6h | ✅ | 2026-08-02 (built as its own area, not a `/progress` tab — deviation not yet communicated to Michael) |
+| 7 | Production Email (Resend) | 2-3h | ✅ | 2026-05-16 invitations, 2026-07-03 contact |
 
-### Block 2: Depth & Quality (Next) - Est. 21-36 hours
-| # | Task | Est | Status |
-|---|------|-----|--------|
-| 8 | Questionnaire Alignment (84 assessment + 20 intake) | 3-5h | 🔲 |
-| 9 | LMS Enhancements (content recommendations) | 5-8h | 🔲 |
-| 10 | Analytics Upgrades (trend views) | 5-8h | 🔲 |
-| 11 | Mobile Polish | 3-5h | 🔲 |
-| 12 | Bug Fixes + Iteration Buffer | 5-10h | 🔲 |
+### Block 2: Depth & Quality - 4/5
+| # | Task | Est | Status | Delivered |
+|---|------|-----|--------|-----------|
+| 8 | Questionnaire Alignment (84 assessment + 20 intake) | 3-5h | 🔲 | Not verified against specs |
+| 9 | LMS Enhancements (content recommendations) | 5-8h | ✅ | 2026-06-14 (gap-driven recommendations + level enforcement) |
+| 10 | Analytics Upgrades (trend views) | 5-8h | ✅ | 2026-06-21 charting analytics, 2026-08-02 baseline/growth |
+| 11 | Mobile Polish | 3-5h | ✅ | 2026-06-30, 2026-07-01, 2026-07-16 |
+| 12 | Bug Fixes + Iteration Buffer | 5-10h | 🔄 | Ongoing; well past the 5-10h estimate |
 
-### Block 3: Experience Features (Project Active)
+### Block 3: Experience Features - partially delivered
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 13 | Contextual Support System | 🔲 | `IntroOverlay` (2026-06-23) is a first-visit walkthrough, not the three-layer term support Michael specified |
+| 14 | Milestone Recognition System | 🔄 | Growth Points built 2026-06-06/2026-06-22 — **has never awarded a point in production**, rules undeployed |
+| 15 | Learning Portfolio | 🔲 | Not started |
+
+> Additional Block 3 work delivered outside the original list: parent charting module, coach charting module, coach video review module, coach baseline questionnaire, L-Index catalogue, Seven Pillars public pages.
+
+### Block 4: Pillar Charting Engine (Active) - per Michael's charting brief
 | # | Task | Status |
 |---|------|--------|
-| 13 | Contextual Support System | 🔲 |
-| 14 | Milestone Recognition System | 🔲 |
-| 15 | Learning Portfolio | 🔲 |
+| 16 | `(sport, pillar)` concurrency scoping | ✅ 2026-08-02 |
+| 17 | Baseline + growth analytics | ✅ 2026-08-02 |
+| 18 | Pillar dashboard | ✅ 2026-08-02 |
+| 19 | **Deploy rules + indexes, then app** | 🚨 Blocking |
+| 20 | Multi-URL deployment diagnostic | 🔲 1.5h billed, outstanding |
+| 21 | Live-data testing | 🔲 2.5h billed, blocked on #19 |
+| 22 | MindSet / Skating / Form templates | 🔲 Blocked on Michael's checkpoint wording |
+| 23 | Net Orientation, Game Performance, Practice, Lifestyle | 🔲 Blocked — no content from Michael |
 
 ### Completed Foundation
 - [x] Multi-Role Foundation (Phase 2.0) - COMPLETE
@@ -64,6 +82,141 @@
 ## 📅 Recent Sessions
 
 > **Full session details:** See `docs/sessions/YYYY-MM/` for detailed session logs
+>
+> ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
+
+### 2026-08-02 - [Concurrent Pillar Charting Engine](docs/sessions/2026-08/2026-08-02-concurrent-pillar-charting-engine.md)
+**Time:** 10h 30min | **Focus:** Feature - Charting Engine / Bug Fixes | **Block:** 4
+Scoped form-template concurrency by `(sport, pillar)` compound key, replacing the one-globally-active-template model that made MindSet/Skating/combined charts mutually exclusive. Replaced both broken deactivation methods with `deactivateTemplatesInScope()`. Added baseline tracking to analytics (first submission pins the baseline, computed from full history not the filtered window). Central `toDateSafe` in `src/lib/utils/timestamp.ts` fixing the mangled-Firestore-timestamp crash at source. Wrote the missing Growth Points security rules and fixed the `.finally()`/`.catch()` that swallowed every permission denial. Backfill dry run reported 0 documents needing update. **Rules and indexes not yet deployed — production is serving a non-deterministic form until they are.**
+
+### 2026-07-27 - [Seven Pillars Public Pages + Explore More](docs/sessions/2026-07/2026-07-27-seven-pillars-pages-and-explore-more.md)
+**Time:** 12h | **Focus:** Feature - Public Pillars / UI | **Block:** 3
+`app/7-pillars/page.tsx` (641 lines) and `app/pillar/[id]/page.tsx` (1,035 lines) public pillar surface, `ExploreMoreSection`, `SevenPillarsCTA`, `hero-shader.tsx`, and `pillar-public-routes.ts` so pillar links generate from one source. ScrollStack sticky positioning fixed for larger screens. Admin user role menu moved onto the shared shadcn `DropdownMenu`.
+
+### 2026-07-20 - [Landing Toolbox + Chatbot Model Version](docs/sessions/2026-07/2026-07-20-landing-toolbox-and-model-version.md)
+**Time:** 3h | **Focus:** UI - Landing / Maintenance - AI | **Block:** 2
+Toolbox section refined on the landing page. Anthropic model ID updated in both call sites (`app/api/chatbot/route.ts`, `src/lib/ai/claude.service.ts`) — still duplicated across two files.
+
+### 2026-07-16 - [Invite Validation + Layout Overflow](docs/sessions/2026-07/2026-07-16-invite-validation-and-layout-overflow.md)
+**Time:** 4h | **Focus:** Bug Fixes - Invitations / Layout | **Block:** 2
+Invitation accept flow now validates expired tokens, already-accepted invites, and invite/account email mismatch with clear reporting instead of failing at the write. Added `_inspect-overflow.js`, a console diagnostic that walks the DOM reporting elements wider than their container, and fixed the mobile horizontal-scroll sources it identified.
+
+### 2026-07-07 - [Baseline Save Reliability + Auth Fixes](docs/sessions/2026-07/2026-07-07-baseline-save-reliability-and-auth-fixes.md)
+**Time:** 4h | **Focus:** Bug Fixes - Baseline / Auth | **Block:** 2
+Coach baseline questionnaire could fail to persist silently, losing a completed assessment; save path made reliable with surfaced errors. Fixed the password show/hide toggle rendering invisible against the browser autofill background.
+
+### 2026-07-06 - [Invitations, Admin Invite Management, Video Library](docs/sessions/2026-07/2026-07-06-invitations-admin-and-video-library.md)
+**Time:** 11h | **Focus:** Feature - Invitations / Video Library | **Block:** 3
+Fixed two silent invitation bugs: coach invite emails never sent, and a role race condition on accept. Built `AdminInviteForm`/`AdminInviteList` (+600) so invitations can be inspected, re-sent, and revoked. Shared video library (15 files, +790): `video-library.service.ts`, `VideoLibraryPicker`, `video-source.ts` normalising YouTube/Vimeo/direct uploads, plus `storage.rules` with role validation.
+
+### 2026-07-03 - [Contact Form Wiring](docs/sessions/2026-07/2026-07-03-contact-form-wiring.md)
+**Time:** 3h | **Focus:** Feature - Contact / Email | **Block:** 2
+The contact form previously validated then discarded submissions. New `app/api/contact/route.ts` writes the enquiry to Firestore first, then sends via Resend, so a delivery failure leaves a recoverable record. `email.service.ts` +133.
+
+### 2026-07-01 - [Mobile Responsiveness + Baseline Scores](docs/sessions/2026-07/2026-07-01-mobile-responsiveness-and-baseline-scores.md)
+**Time:** 4h | **Focus:** Responsive / Feature - Baseline Scores | **Block:** 2
+Continued the mobile pass. Surfaced baseline intelligence-profile scores to goalie, parent, and coach — previously admin-only — with +36 lines of `firestore.rules` granting the three roles read access.
+
+### 2026-06-30 - [Public Navigation, User Deletion, Mobile Pass](docs/sessions/2026-06/2026-06-30-navigation-and-mobile-responsiveness.md)
+**Time:** 4h | **Focus:** Navigation / Admin - User Management | **Block:** 2
+Delete-user API route removing the Firebase Auth record alongside the Firestore document, so deletion no longer leaves an orphaned auth account blocking re-registration. `PublicPageNav` extended to remaining public routes, `ScrollStack.css` added, pricing/register/accept-invite reworked for narrow viewports.
+
+### 2026-06-24 - [Coach Video Review Module](docs/sessions/2026-06/2026-06-24-coach-video-review-module.md)
+**Time:** 10h 30min | **Focus:** Feature - Video Review / Refactor | **Block:** 3
+Video review across three roles: coach hub (585 lines), read-only per-goalie videos tab (256), goalie-facing records page (165). Admin modal gained an analysis timer with start/pause/resume/save-session and auto-save on close; `video-review.service.ts` stores per-session durations and recalculates the cumulative total. Terminology per Coach Mike's brief (Mind Control → Emotional Balance, Good Decision % → Good Decision Factor, intermediate → Development, Anxiety Present → Pre-Game Stress). `PublicPageNav` and `Footer7` extracted, replacing per-page inline navs across 10 pages — net 244-line reduction.
+
+### 2026-06-23 - [6 Zone Grid Rename + Intro Overlay](docs/sessions/2026-06/2026-06-23-six-zone-grid-rename-and-intro-overlay.md)
+**Time:** 4h | **Focus:** Terminology / Feature - Coach Onboarding | **Block:** 2
+"7 Point System" → "6 Zone Grid" and "Bad Goal" → "Weak Goal" across 31 files. `IntroOverlay` first-visit walkthrough for coaches, plus `app/coach/charting/[goalieId]/page.tsx` (284 lines) listing a goalie's sessions with chart status.
+
+### 2026-06-22 - [Growth Points System](docs/sessions/2026-06/2026-06-22-growth-points-system.md)
+**Time:** 11h | **Focus:** Feature - Growth Points / Charting Flow | **Block:** 3
+`growth-points.service.ts` (153 lines) with transaction-safe awarding and ledger writes, `useGrowthPoints` hook, award triggers on the three post-game charting variants plus lessons and quiz results, balance on the dashboard. Parent chart flow overhauled with emoji options, a `SectionLabel` component, and **auto-save replacing manual save buttons** throughout. **Note: Growth Points has never awarded a point in production — the security rules were never written. Fixed 2026-08-02, still undeployed.**
+
+### 2026-06-21 - [Blue Design System + Parent & Coach Charting](docs/sessions/2026-06/2026-06-21-blue-design-system-and-parent-coach-charting.md)
+**Time:** 44h | **Focus:** Feature - Parent/Coach Charting / Design System | **Block:** 3
+The largest work block on the project. Public pages rebranded off CYAN/MINT/VIOLET/CORAL onto blue (9 files, +3,077/-968) including a 553-line Bridge page, `ToolboxSection`, and `PillarsArchitectureSection` (524 lines). Full parent chart module (7 files, +1,776) — session list, 3-step hub with lock/unlock, pre-game, P1/P2/P3 star ratings with observation multi-select, post-game with mood-driven coaching tips. Full coach chart module (6 files, +1,209) — 955-line form with 7 rating factors per period. V2 Cross-Reference rewritten for three-role comparison. Fixed a timestamp parsing bug treating millisecond values as seconds.
+
+### 2026-06-14 - [Build Fixes, L-Index, Blue Admin Theme](docs/sessions/2026-06/2026-06-14-build-fixes-l-index-and-blue-theme.md)
+**Time:** 13h 30min | **Focus:** Build / Feature - L-Index / Design System | **Block:** 2
+Two rounds of Vercel build failures resolved — missing carousel components, undeclared `@react-three` dependencies, missing barrel exports, and React 19 `LucideIcon` typing (restored twice more during merge conflict resolution). L-Index catalogue: 529-line admin CRUD page with category filtering plus Firestore rules for `l_index_items`/`training_logs`. `ContentBrowser` pre-filtered to the student's assessed pacing level with an off-level warning. Admin routes moved onto a dedicated blue `adminBg`.
+
+### 2026-06-12 - [Coach Baseline Questionnaire](docs/sessions/2026-06/2026-06-12-coach-baseline-questionnaire.md)
+**Time:** 15h | **Focus:** Feature - Coach Assessment | **Block:** 3
+
+### 2026-06-11 - [Public Overview Redesign](docs/sessions/2026-06/2026-06-11-public-overview-redesign.md)
+**Time:** 4h | **Focus:** UI - Public Pages | **Block:** 2
+
+### 2026-06-07 - [Coach Panel + Parent UI Overhaul](docs/sessions/2026-06/2026-06-07-coach-panel-and-parent-ui-overhaul.md)
+**Time:** 27h | **Focus:** Feature - Coach Panel / Parent UI | **Block:** 3
+
+### 2026-06-06 - [Coach Onboarding + Growth Points Foundation](docs/sessions/2026-06/2026-06-06-coach-onboarding-and-growth-points-foundation.md)
+**Time:** 11h | **Focus:** Feature - Coach Onboarding / Growth Points | **Block:** 3
+
+### 2026-05-31 - [Language Lock Pass](docs/sessions/2026-05/2026-05-31-language-lock-pass.md)
+**Time:** 8h | **Focus:** Terminology / Copy | **Block:** 2
+
+### 2026-05-20 - [Admin Redesign](docs/sessions/2026-05/2026-05-20-admin-redesign.md)
+**Time:** 14h | **Focus:** UI - Admin | **Block:** 2
+
+### 2026-05-16 - [Invite Email Delivery + Pricing Page](docs/sessions/2026-05/2026-05-16-invite-email-delivery-and-pricing-page.md)
+**Time:** 6h | **Focus:** Email / UI - Pricing | **Block:** 1
+
+### 2026-05-15 - [Goalie Invitation System](docs/sessions/2026-05/2026-05-15-goalie-invitation-system.md)
+**Time:** 9h | **Focus:** Feature - Invitations | **Block:** 1
+
+### 2026-05-10 - [Animated Backgrounds + Pillar Pages](docs/sessions/2026-05/2026-05-10-animated-backgrounds-and-pillar-pages.md)
+**Time:** 10h 15min | **Focus:** UI - Public Pages | **Block:** 1
+
+### 2026-04-25 - [Public Role Pages](docs/sessions/2026-04/2026-04-25-public-role-pages.md)
+**Time:** 8h | **Focus:** Feature - Public Pages | **Block:** 1
+
+### 2026-04-23 - [Video Quiz Progress Tracking](docs/sessions/2026-04/2026-04-23-video-quiz-progress-tracking.md)
+**Time:** 3h 30min | **Focus:** Feature - Progress Tracking | **Block:** 2
+
+### 2026-04-20 - [Goalie Charting History + V2 Read-Only](docs/sessions/2026-04/2026-04-20-goalie-charting-history-and-v2-readonly.md)
+**Time:** 11h 30min | **Focus:** Feature - Charting | **Block:** 2
+Includes `565e5dc` — the **earliest instance of the mangled-timestamp bug**, patched locally into `CalendarHeatmap` rather than centrally. The same class of bug resurfaced in June and again in August; the central fix (`toDateSafe`) only landed 2026-08-02.
+
+### 2026-04-19 - [Lesson Service + Skill Detail](docs/sessions/2026-04/2026-04-19-lesson-service-and-skill-detail.md)
+**Time:** 11h | **Focus:** Feature - LMS | **Block:** 2
+
+### 2026-04-17 - [Charting Performance + Admin Styling](docs/sessions/2026-04/2026-04-17-charting-performance-and-admin-styling.md)
+**Time:** 15h 15min | **Focus:** Performance / UI - Admin | **Block:** 2
+
+### 2026-04-16 - [Code Structure Refactor](docs/sessions/2026-04/2026-04-16-code-structure-refactor.md)
+**Time:** 4h 30min | **Focus:** Refactor | **Block:** 2
+
+### 2026-04-10 - [Skeleton Loading States](docs/sessions/2026-04/2026-04-10-skeleton-loading-states.md)
+**Time:** 4h | **Focus:** UI - Loading States | **Block:** 2
+
+### 2026-04-08 - [Analytics + Route Handling](docs/sessions/2026-04/2026-04-08-analytics-and-route-handling.md)
+**Time:** 6h | **Focus:** Analytics / Routing | **Block:** 2
+
+### 2026-04-04 - [UI Pass: Quizzes, Lessons, Enrollment](docs/sessions/2026-04/2026-04-04-ui-pass-quizzes-lessons-enrollment.md)
+**Time:** 6h 30min | **Focus:** UI | **Block:** 2
+
+### 2026-04-03 - [Student Intelligence Sidebar + Lessons](docs/sessions/2026-04/2026-04-03-student-intelligence-sidebar-and-lessons.md)
+**Time:** 7h | **Focus:** Feature - Coach Tools / LMS | **Block:** 2
+
+### 2026-04-02 - [Mind Vault Form + Admin Pillars](docs/sessions/2026-04/2026-04-02-mind-vault-form-and-admin-pillars.md)
+**Time:** 4h | **Focus:** Feature - Mind Vault | **Block:** 2
+
+### 2026-03-31 - [Voice Input + Coach Role](docs/sessions/2026-03/2026-03-31-voice-input-and-coach-role.md)
+**Time:** 10h | **Focus:** Feature - Voice Input / Coach Role | **Block:** 1
+
+### 2026-03-22 - [Parent Onboarding Flow](docs/sessions/2026-03/2026-03-22-parent-onboarding-flow.md)
+**Time:** 5h | **Focus:** Feature - Parent Onboarding | **Block:** 1
+
+### 2026-03-19 - [Admin Layout + Parent Linking](docs/sessions/2026-03/2026-03-19-admin-layout-and-parent-linking.md)
+**Time:** 4h 30min | **Focus:** UI - Admin / Feature - Parent Linking | **Block:** 1
+Includes `7221dda` and `c2f1ede`, which untracked 67 client session documents (~10,000 lines) under the `docs/` gitignore rule — the point at which the session-logging practice stopped.
+
+### 2026-03-18 - [Layout Shell + Planning Docs](docs/sessions/2026-03/2026-03-18-layout-shell-and-planning-docs.md)
+**Time:** 7h | **Focus:** UI - Layout / Planning | **Block:** 1
+
+### 2026-03-16 - [Landing Page + Club Intro](docs/sessions/2026-03/2026-03-16-landing-page-club-intro.md)
+**Time:** 5h | **Focus:** Feature - Landing Page | **Block:** 1
 
 ### 2026-03-12 - [Test Import Path Fixes](docs/sessions/2026-03/2026-03-12-test-import-path-fixes.md)
 **Time:** 1h 30min | **Focus:** Testing / Bug Fix - Import Path Resolution | **Block:** Testing
@@ -257,27 +410,43 @@ Initial project analysis and progress tracking system implementation.
 | Phase | Time Spent | Status |
 |-------|-----------|--------|
 | Phase 1 | ~160 hours (estimated) | ✅ Complete |
-| Phase 2 | 58 hours | 🔄 In Progress |
-| **Total** | **~218 hours** | - |
+| Phase 2 | 413.5 hours | 🔄 In Progress |
+| **Total** | **~573.5 hours** | - |
+
+> **Phase 2 = 58h logged (Feb 17 – Mar 12) + 355.5h reconstructed (Mar 13 – Aug 2).** The reconstructed portion is estimated from commit scope and from two contemporaneous work-log documents; it is not a measured time log. Treat it as an order-of-magnitude record of effort, not as a billing source.
 
 ### By Category (Phase 2)
 | Category | Time Spent | Percentage |
 |----------|-----------|------------|
-| Development | 37h | 64% |
-| Documentation | 4.75h | 8% |
-| Debugging | 10h | 17% |
-| Security | 1.5h | 3% |
-| Refactor | 2h | 3% |
-| Testing | 2.5h | 4% |
+| Development (features) | 265h | 64% |
+| UI / Design System | 68h | 16% |
+| Debugging / Bug Fixes | 42h | 10% |
+| Refactor | 14h | 3% |
+| Documentation | 12.25h | 3% |
+| Build / Infrastructure | 8h | 2% |
+| Testing | 2.5h | <1% |
+| Security | 1.5h | <1% |
 | Version Control | 0.25h | <1% |
-| Code Review | 0h | 0% |
-| **Total** | **58h** | **100%** |
+| **Total** | **413.5h** | **100%** |
+
+> Category split for the reconstructed period is apportioned from each session's Focus label, not from per-task records. The pre-2026-03-13 figures are the original logged ones.
 
 ### Weekly Summary
 | Week Starting | Hours Worked | Main Focus | Sessions |
 |--------------|--------------|------------|----------|
 | 2026-02-17 | 26h | Multi-role system, student IDs, security, coach invitations, workflow types, curriculum builder, content browser, AI chatbot, session tracking, coach-student linking, dashboard separation, auth fixes, curriculum fixes, difficulty level renaming, data migration | 14 |
 | 2026-03-01 | 31.5h | Coach custom content creation, student access fixes, video quiz full-page conversion, UI/UX improvements, video handling verification, security audit & fixes, dead code cleanup, TypeScript fixes, student onboarding evaluation system, Firestore rules, Playwright testing, coach UX improvements, codebase verification & bug fixes, onboarding redirect fix, workflow filter, 6-pillar conversion, route renaming, test file updates, navigation cleanup, Michael's Phase 2 scoring foundation, V2 onboarding UI fixes, email verification branding, V2 backward compatibility removal, login redirect fix, evaluation Q&A detail view, reset incomplete evaluations script, branding update, 7th pillar (Lifestyle), video tagging system, parent dashboard + child linking, test import path fixes | 26 |
+
+### Monthly Summary (2026-03-13 onward — reconstructed)
+| Month | Hours | Main Focus | Sessions |
+|-------|-------|------------|----------|
+| 2026-03 (from 13th) | 31.5h | Landing page, layout shell, admin layout, parent onboarding, voice input, coach role | 5 |
+| 2026-04 | 81.25h | Mind Vault, coach intelligence sidebar, LMS lessons, analytics, skeletons, charting performance, charting history + V2 read-only, public role pages | 11 |
+| 2026-05 | 47.25h | Animated backgrounds, pillar pages, goalie invitations, email delivery, pricing, admin redesign, language lock | 5 |
+| 2026-06 | 144h | Coach onboarding, coach panel, baseline questionnaire, L-Index, blue design system, parent + coach charting modules, Growth Points, video review | 10 |
+| 2026-07 | 41h | Mobile responsiveness, baseline scores, contact form, invitations + admin invite management, video library, invite validation, Seven Pillars public pages | 7 |
+| 2026-08 (to 2nd) | 10.5h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules | 1 |
+| **Total** | **355.5h** | - | **39** |
 
 ---
 
@@ -400,22 +569,63 @@ Initial project analysis and progress tracking system implementation.
 
 ## 🐛 Known Issues & Technical Debt
 
+> Current as of 2026-08-03. Full detail and ownership in `PROJECT_TRACKER.md`.
+
 ### High Priority
-- None currently
+- **Firestore rules + indexes undeployed.** Production has two active form templates read by code that understands one; the served form is non-deterministic. Deploy rules and indexes, wait for index build, then deploy the app — in that order.
+- **Growth Points has never awarded a point in production.** Built 2026-06-06 and 2026-06-22, blocked by missing security rules the entire time. Rules written 2026-08-02, undeployed. Michael has not been told.
+- **Goalies cannot see their own session chart history.**
+- **Client-side `awardPoints` self-award risk** — points are awarded from the client, so the call is reachable by a determined user.
 
 ### Medium Priority
-- None currently
+- Five template-builder bugs: edit page, delete/archive, duplicate-ID collision, silent validation errors, and the Text+Analytics field trap
+- 404 link at [app/charting/sessions/[id]/page.tsx:468](app/charting/sessions/[id]/page.tsx#L468)
+- Repo-wide ESLint broken — ESLint 9 against a legacy `.eslintrc`
+- `DropdownMenu` with `modal={false}` clips inside scroll containers on admin quizzes and moderation
+- MindSet template labels carry stray whitespace: `"Resilience "`, `" Positive Attitude "`, `"Flexibility "` — needs Michael's confirmation before trimming
 
 ### Low Priority
-- None currently
+- Anthropic model ID duplicated across `app/api/chatbot/route.ts` and `src/lib/ai/claude.service.ts` — should be one constant
+- `.charting-dark` not applied to `/charting/sessions/[id]/chart` — `ChartingFormWrapper.tsx:220` sits on `bg-gray-50` inside the navy shell. Unresolved question, not a decided bug.
 
 ### Technical Debt
+- **Swallowed promise rejections are a recurring pattern**, not isolated incidents — the Growth Points `.finally()`, the silent coach-invite email failure, and the silent baseline-save failure are the same shape. Worth one deliberate sweep rather than fixing them as they surface.
+- **Local patches for systemic bugs.** The mangled-timestamp bug was patched into `CalendarHeatmap` (2026-04-20), then into the coach panel (2026-06-21), before finally getting a central `toDateSafe` (2026-08-02). Cost: roughly four months of the same defect resurfacing.
+- **Features shipping without Firestore rules** — Growth Points and the baseline intelligence scores both needed rules retrofitted after the fact. Rules should be part of the feature, not a follow-up.
+- Corrupted timestamp documents may still exist in Firestore from before the `removeUndefinedFields` fix. A repair script was offered; run a dry run first.
 - Consider refactoring service layer for better type safety
-- Improve error handling consistency across components
+- `CLAUDE.md` still describes Next.js 14; the project is on 16.2.7
+- `docs/sessions/template.md`, referenced by `CLAUDE.md`, does not exist
 
 ---
 
 ## 📝 Recent Decisions
+
+### 2026-08-03: Reconstruct the Five-Month Session Log
+**Decision:** Rebuild session files for 2026-03-13 through 2026-08-02 from git history rather than leaving the gap
+**Rationale:** The gap had a concrete cost — the 2026-08-02 billing table's "actual hours" column had to be filled with estimates because nothing was tracked, and the open-items list existed only in conversation. Both are now on disk.
+**Impact:** 39 reconstructed session files, ~355.5h recovered as an estimated figure. Every reconstructed file carries an explicit provenance line so the estimates are never mistaken for measurements.
+**Caveat:** This is a record of what was built, not a time log. Do not bill from it.
+
+### 2026-08-02: Pillar Concurrency Scoped by `(sport, pillar)`, Not `sport` Alone
+**Decision:** Add a required `pillar` field to `FormTemplate` rather than overloading `sport`
+**Rationale:** `sport` means "Hockey" — the whole combined tracker. Pillar charts must coexist *with* the combined chart, not replace it, so they need a separate axis. Reuses the existing `PillarSlug` taxonomy rather than inventing new strings.
+**Impact:** MindSet, Skating, and combined Hockey can all be active simultaneously and independently. Required a one-time backfill check before deploying scoped code (dry run: 0 documents needed updating).
+
+### 2026-08-02: Baseline Computed from Full History, Never the Filtered Window
+**Decision:** `recalculateStudentAnalytics()` derives `allEntries` for the baseline and `windowedEntries` for averages and trend
+**Rationale:** If the baseline came from the date-filtered set, selecting anything but "All-Time" on the dashboard would silently exclude the baseline entry and corrupt every growth figure shown.
+**Impact:** Two derived collections instead of one; correct growth numbers under every filter.
+
+### 2026-06-24: Terminology Locked to Coach Mike's Brief
+**Decision:** Adopt Michael's exact wording across the product — Emotional Balance, Weak Goals, Good Decision Factor, 6 Zone Grid, Development (pacing level), Pre-Game Stress, Reading the Play
+**Rationale:** Client-facing language is Michael's to define; paraphrasing it creates drift between the product and how he teaches.
+**Impact:** Renames touched 31+ files across two sessions. Standing rule since: never invent client-facing copy.
+
+### 2026-03-19: `docs/` Added to `.gitignore` (documentation practice lapsed here)
+**Decision:** Untracked 67 client session documents (~10,000 lines) under a broad `docs/` ignore rule
+**Rationale:** Client material should not be in the public repo
+**Impact, unintended:** The rule is wholesale — it also excluded internal session logs and `PROJECT_TRACKER.md`. Session logging stopped the same week and did not resume for five months. 87 older files under `docs/` remain tracked only because they predate the rule. New session files need `git add -f` to commit.
 
 ### 2026-03-11: Work Directive Block Structure
 **Decision:** Replace Phase 2.3-2.6 with Michael's Block 1/2/3 priority structure
@@ -669,6 +879,22 @@ Initial project analysis and progress tracking system implementation.
 ---
 
 ## 🔄 Recent Changes (Last 30 Days)
+
+> ⚠️ Entries below 2026-08-02 are from March 2026 and were never rolled to Archive during the logging gap. They are kept as-is for the historical record. For 2026-03-13 onward, use the Recent Sessions list and the session files in `docs/sessions/`.
+
+### 2026-08-02 (Session: Concurrent Pillar Charting Engine)
+- **Feature:** Added required `pillar: PillarSlug | 'combined'` to `FormTemplate`; concurrency now scoped by `(sport, pillar)` compound key
+- **Feature:** `getActiveTemplate({ sport, pillar })` replaces the zero-arg version; three call sites updated
+- **Feature:** New `getActiveTemplatesForSport()` — one query for all simultaneously-active templates
+- **Fix:** Replaced `deactivateAllTemplates()` and `deactivateOtherTemplates()` — both deactivated every template system-wide — with `deactivateTemplatesInScope(sport, pillar, exceptTemplateId?)` applied via `writeBatch`
+- **Feature:** Baseline tracking — `baselineValue`, `baselineDate`, `growthFromBaseline` on field and category results, computed from full entry history rather than the date-filtered window
+- **Fix:** `toDateSafe` in `src/lib/utils/timestamp.ts` — one tolerant parser for `Timestamp`, `Date`, number, string, and the mangled `{seconds, nanoseconds}` map shape written by the old `removeUndefinedFields`. Helpers `millisOf`, `compareBySubmittedAt`, `describeError` built on it.
+- **Fix:** Growth Points security rules written for `growth_points_balance` and `growth_points_transactions` — absent since the feature was built on 2026-06-06, blocking every read and write
+- **Fix:** `useGrowthPoints` used `.finally()` where it needed `.catch()`, silently swallowing every permission denial
+- **Feature:** `app/charting/pillars/` — standalone pillar check-in route, not gated behind logging a session
+- **Admin:** Pillar dropdown on template creation, cards grouped by pillar, `checkDefaultTemplatesExist()` scoped so activating a pillar template doesn't hide the initialize banner
+- **Migration:** Backfill dry run against `form_templates` reported 0 documents needing update
+- **Verification:** Not yet deployed. Rules, indexes, and app deploy all outstanding.
 
 ### 2026-03-12 (Session: Test Import Path Fixes)
 - **Fix:** Corrected import path aliases in 8 source files (@/src/* → @/*)

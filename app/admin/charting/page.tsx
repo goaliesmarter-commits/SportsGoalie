@@ -511,10 +511,10 @@ function AdminChartingContent() {
                 </div>
               )}
 
-              {/* Mind-Set Performance */}
+              {/* MindSet Performance */}
               {focusStats && (
                 <div style={{ ...card, padding: '24px' }}>
-                  <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Mind-Set Performance</h2>
+                  <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>MindSet Performance</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
                     <MetricPanel title="Focus Consistency" value={focusStats.percentage} label="consistent" color="#14b8a6" detail={`${focusStats.consistentCount} consistent / ${focusStats.inconsistentCount} inconsistent periods`} trend={focusStats.trend} />
                     {skatingStats && (
