@@ -9,28 +9,21 @@ import { storageService, STORAGE_CONFIGS } from '@/lib/firebase/storage.service'
 import { MediaUpload } from '@/components/admin/media-upload';
 import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
 import Link from 'next/link';
+import { Edit, Save, X, Sparkles, BookOpen, RefreshCw, Target } from 'lucide-react';
 import {
-  Edit, Eye, Save, X, Sparkles, BookOpen, ArrowRight,
-  RefreshCw, Brain, Footprints, Shapes, Target, Grid3X3, Dumbbell, Heart,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-const BLUE = '#37b5ff';
-const RED = '#f87171';
-const card = { background: 'rgba(2,18,44,0.85)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '16px' } as const;
-
-const PILLAR_ICONS: Record<string, LucideIcon> = {
-  Brain, Footprints, Shapes, Target, Grid3X3, Dumbbell, Heart,
-};
+  BLUE, RED, card, accentLineStyle, pageStackStyle, cardGridStyle, badgeStyle,
+  iconChipStyle, PILLAR_ICONS, adminPillarCss,
+} from '@/components/admin/pillar-chrome';
 
 const PILLAR_DESCRIPTIONS: Record<string, string> = {
   mindset: 'Build your mental fortress. Learn why your brain does what it does and how to redirect anxiety into performance energy.',
   skating: 'Build your goalie dream on skill skating, as a skill. Learn a vision to pair with skating reason project.',
   form: 'Build your goalie structure. Skating is creativity, form and as structure, repetition, structure, assignments.',
   positioning: 'Build your goalie mask for anxiety position paths and the scan team of the most positional systems.',
-  seven_point: 'Build your mentalframes. Learn your positioning as strong unlock to form 6 Zone Grid below icing line.',
-  training: 'Build your game/practice/off-ice, vision my different weighting off-ice.',
-  lifestyle: 'Build your lifestyle habits to support confidence, focus, and consistent performance in and out of the crease.',
+  seven_point: 'Build your mentalframes. Learn your positioning as strong unlock to form the 6 Zone – 7 Point System™ below the icing line.',
+  game: 'Build your game day. Routine before the puck drops, management during it, and the charting and review that turn a played game into a lesson.',
+  practice: 'Build your practice. Go in with intent, target what your charts say is weak, and make the session demand what a game demands.',
+  lifestyle: 'Build your lifestyle habits — off-ice training, nutrition, sleep and recovery — to support confidence, focus, and consistent performance in and out of the crease.',
 };
 
 interface PillarFormData {
@@ -114,22 +107,8 @@ function AdminPillarsContent() {
 
   return (
     <>
-      <style>{`
-        .pl-card { transition: all 0.25s !important; }
-        .pl-card:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.3) !important; }
-        .pl-edit:hover { background: rgba(55,181,255,0.12) !important; color: ${BLUE} !important; border-color: rgba(55,181,255,0.3) !important; }
-        .pl-skills:hover { background: rgba(34,197,94,0.1) !important; color: #22c55e !important; border-color: rgba(34,197,94,0.3) !important; }
-        .pl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-        .pl-save { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: ${BLUE}; color: #000f28; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; opacity: 1; transition: opacity 0.2s; }
-        .pl-save:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
-        .pl-inp { background: rgba(2,18,44,0.6) !important; border: 1px solid rgba(55,181,255,0.18) !important; color: #fff !important; border-radius: 8px !important; padding: 9px 12px !important; width: 100% !important; font-size: 13px !important; outline: none !important; }
-        .pl-inp:focus { border-color: rgba(55,181,255,0.45) !important; }
-        .pl-ta { background: rgba(2,18,44,0.6) !important; border: 1px solid rgba(55,181,255,0.18) !important; color: #fff !important; border-radius: 8px !important; padding: 9px 12px !important; width: 100% !important; font-size: 13px !important; outline: none !important; resize: vertical !important; min-height: 80px !important; }
-        .pl-ta:focus { border-color: rgba(55,181,255,0.45) !important; }
-        .pl-sel { background: rgba(2,18,44,0.6) !important; border: 1px solid rgba(55,181,255,0.18) !important; color: rgba(255,255,255,0.7) !important; border-radius: 8px !important; padding: 9px 12px !important; width: 100% !important; font-size: 13px !important; outline: none !important; }
-        @media (max-width: 768px) { .pl-grid { grid-template-columns: 1fr !important; } }
-      `}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <style>{adminPillarCss}</style>
+      <div className="pl-page" style={pageStackStyle}>
 
         {/* Hero Banner */}
         <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', minHeight: '180px', backgroundImage: "url('https://images.unsplash.com/photo-1514511719-9f5849dc16d0?w=1920&q=80&auto=format&fit=crop')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -163,7 +142,7 @@ function AdminPillarsContent() {
         {/* Edit Form */}
         {editingId && (
           <div style={{ position: 'relative', ...card, padding: '24px', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}, transparent)` }} />
+            <div style={accentLineStyle} />
             <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>Edit Pillar</h2>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', marginBottom: '20px' }}>Update pillar information and settings</p>
             <div className="pl-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -239,20 +218,20 @@ function AdminPillarsContent() {
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Run the migration script to create the 7 pillars.</p>
           </div>
         ) : (
-          <div className="pl-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="pl-grid" style={cardGridStyle}>
             {pillars.map((pillar) => {
               const displayInfo = getPillarDisplayInfo(pillar);
               const IconComponent = PILLAR_ICONS[displayInfo.icon] || Target;
               const description = (displayInfo.slug && PILLAR_DESCRIPTIONS[displayInfo.slug]) || pillar.description;
               return (
                 <div key={pillar.id} className="pl-card" style={{ position: 'relative', ...card, padding: '20px', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}66, transparent)` }} />
+                  <div style={accentLineStyle} />
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `rgba(55,181,255,0.12)`, border: '1px solid rgba(55,181,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={iconChipStyle}>
                         <IconComponent size={18} color={BLUE} />
                       </div>
-                      <span style={{ background: `rgba(55,181,255,0.12)`, color: BLUE, border: '1px solid rgba(55,181,255,0.2)', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <span style={badgeStyle}>
                         Pillar {String(pillar.order).padStart(2, '0')}
                       </span>
                     </div>
@@ -262,11 +241,10 @@ function AdminPillarsContent() {
                   </div>
                   <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '20px', marginBottom: '6px' }}>{pillar.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.6, marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{description}</p>
-                  <button
-                    onClick={() => window.open(`/pillars/${pillar.id}`, '_blank')}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', color: BLUE, fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '14px', padding: 0 }}>
-                    Explore Pillar <ArrowRight size={13} />
-                  </button>
+                  {/* Both an "Explore Pillar" link and a preview eye used to sit here,
+                      each opening the goalie-facing /pillars/{id}. Reviewing a pillar's
+                      content is Skills' job, in admin chrome — sending an admin out to
+                      the goalie site only ever showed them their own records. */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <button className="pl-btn pl-edit" onClick={() => handleEdit(pillar)} style={{ flex: 1 }}>
                       <Edit size={12} /> Edit
@@ -276,9 +254,6 @@ function AdminPillarsContent() {
                         <BookOpen size={12} /> Skills
                       </button>
                     </Link>
-                    <button className="pl-btn" onClick={() => window.open(`/pillars/${pillar.id}`, '_blank')} title="Preview">
-                      <Eye size={14} />
-                    </button>
                   </div>
                 </div>
               );
@@ -288,7 +263,7 @@ function AdminPillarsContent() {
 
         {/* Info Card */}
         <div style={{ position: 'relative', background: 'linear-gradient(135deg, rgba(55,181,255,0.06) 0%, rgba(14,165,233,0.04) 100%)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '16px', padding: '20px', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}66, transparent)` }} />
+          <div style={accentLineStyle} />
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: `rgba(55,181,255,0.15)`, border: '1px solid rgba(55,181,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Sparkles size={20} color={BLUE} />
