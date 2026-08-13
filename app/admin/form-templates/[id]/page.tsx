@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { formTemplateService } from '@/lib/database/services/form-template.service';
 import { FormTemplate, PILLARS } from '@/types';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -75,15 +75,29 @@ export default function TemplateDetailPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <Link href="/admin/form-templates" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '8px 14px', borderRadius: '10px', fontSize: '15px', fontWeight: 600, textDecoration: 'none' }}>
           <ArrowLeft size={15} /> Back to Templates
         </Link>
-        {template.isActive && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(34,197,94,0.12)', color: GREEN, padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
-            <CheckCircle2 size={12} /> Active
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {template.isActive && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(34,197,94,0.12)', color: GREEN, padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
+              <CheckCircle2 size={12} /> Active
+            </span>
+          )}
+          {/*
+            An archived template is not editable in place: saving an edit writes
+            a live new version, which would pull it back out of the archive
+            without saying so. Restore it from the templates list first.
+          */}
+          {template.isArchived ? (
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Archived — restore it from the templates list to edit.</span>
+          ) : (
+            <Link href={`/admin/form-templates/${template.id}/edit`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`, color: '#fff', padding: '9px 16px', borderRadius: '10px', fontSize: '15px', fontWeight: 700, textDecoration: 'none' }}>
+              <Pencil size={14} /> Edit Template
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Template Info */}
