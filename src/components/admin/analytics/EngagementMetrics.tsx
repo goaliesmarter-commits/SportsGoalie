@@ -41,9 +41,9 @@ export function EngagementMetrics({
       case 'evening':
         return <Sunset className="h-5 w-5 text-amber-500" />;
       case 'night':
-        return <Moon className="h-5 w-5 text-indigo-500" />;
+        return <Moon className="h-5 w-5 text-indigo-300" />;
       default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
+        return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -62,12 +62,18 @@ export function EngagementMetrics({
     }
   };
 
+  /**
+   * Streak tiers, as a translucent wash over the navy panel rather than the
+   * solid pastel fills these were. The `-100` backgrounds were built for a
+   * white page and rendered as bright slabs inside the dark shell; a low-alpha
+   * tint of the same hue keeps the tier legible without punching a hole in it.
+   */
   const getStreakLevel = (streak: number) => {
-    if (streak >= 30) return { label: 'On Fire!', color: 'text-red-600', bg: 'bg-red-100 border-red-200' };
-    if (streak >= 14) return { label: 'Amazing!', color: 'text-orange-600', bg: 'bg-orange-100 border-orange-200' };
-    if (streak >= 7) return { label: 'Great!', color: 'text-yellow-600', bg: 'bg-yellow-100 border-yellow-200' };
-    if (streak >= 3) return { label: 'Good!', color: 'text-green-600', bg: 'bg-green-100 border-green-200' };
-    return { label: 'Keep Going!', color: 'text-blue-600', bg: 'bg-blue-100 border-blue-200' };
+    if (streak >= 30) return { label: 'On Fire!', color: 'text-red-300', bg: 'bg-red-500/12 border-red-400/35' };
+    if (streak >= 14) return { label: 'Amazing!', color: 'text-orange-300', bg: 'bg-orange-500/12 border-orange-400/35' };
+    if (streak >= 7) return { label: 'Great!', color: 'text-yellow-300', bg: 'bg-yellow-500/12 border-yellow-400/35' };
+    if (streak >= 3) return { label: 'Good!', color: 'text-green-300', bg: 'bg-green-500/12 border-green-400/35' };
+    return { label: 'Keep Going!', color: 'text-sky-300', bg: 'bg-sky-500/12 border-sky-400/35' };
   };
 
   const streakLevel = getStreakLevel(currentStreak);
@@ -90,7 +96,7 @@ export function EngagementMetrics({
           <div className={`border-2 rounded-lg p-6 ${streakLevel.bg}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-white rounded-full">
+                <div className="p-3 bg-white/10 rounded-full">
                   <Flame className={`h-8 w-8 ${streakLevel.color}`} />
                 </div>
                 <div>

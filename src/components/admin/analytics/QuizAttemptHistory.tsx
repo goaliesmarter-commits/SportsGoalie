@@ -231,14 +231,14 @@ export function QuizAttemptHistory({ attempts, loading }: QuizAttemptHistoryProp
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className={`font-bold ${
-                          attempt.percentage >= 80 ? 'text-green-600' :
-                          attempt.percentage >= 60 ? 'text-yellow-600' :
-                          'text-red-600'
+                          attempt.percentage >= 80 ? 'text-green-400' :
+                          attempt.percentage >= 60 ? 'text-yellow-400' :
+                          'text-red-400'
                         }`}>
                           {attempt.percentage}%
                         </span>
-                        {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                        {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
+                        {trend === 'up' && <TrendingUp className="h-4 w-4 text-green-400" />}
+                        {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-400" />}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {attempt.score}/{attempt.maxScore} pts
@@ -248,11 +248,11 @@ export function QuizAttemptHistory({ attempts, loading }: QuizAttemptHistoryProp
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          <CheckCircle className="h-3 w-3 text-green-400" />
                           <span>{attempt.correctAnswers}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <XCircle className="h-3 w-3 text-red-500" />
+                          <XCircle className="h-3 w-3 text-red-400" />
                           <span>{attempt.incorrectAnswers}</span>
                         </div>
                       </div>

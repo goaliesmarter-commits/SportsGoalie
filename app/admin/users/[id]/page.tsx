@@ -499,7 +499,13 @@ function UserDetailsContent() {
               loadingAnalytics ? (
                 <div style={{ textAlign: 'center', padding: '48px', color: 'rgba(255,255,255,0.4)', fontSize: '15px' }}>Loading analytics…</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                /*
+                  These seven panels are shadcn Cards built for a light page,
+                  which is why this tab rendered as a stack of white slabs
+                  inside the navy shell. `.surface-dark` repoints the design
+                  tokens for everything inside it — see globals.css.
+                */
+                <div className="surface-dark" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {analytics && (
                     <EngagementMetrics
                       currentStreak={analytics.engagement.currentStreak}

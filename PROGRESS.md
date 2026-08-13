@@ -8,12 +8,19 @@
 
 **Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Last Updated:** 2026-08-03
+**Last Updated:** 2026-08-10
 **Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
 
 > ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
 
-> 🚨 **Immediate blocker:** Firestore rules and indexes from 2026-08-02 are written but **not deployed**. Production has two active form templates being read by code that only understands one, so the form a student receives is non-deterministic. See PROJECT_TRACKER.md.
+> ✅ **The former "immediate blocker" is resolved — it was never real.** This file claimed the
+> 2026-08-02 Firestore rules and indexes were written but not deployed. Verified against the live
+> `sportscoach-2a84d` project on 2026-08-10: all 24 declared indexes are present, and
+> `firebase deploy --only firestore:rules` reported the deployed ruleset already matched the repo
+> exactly. PROJECT_TRACKER.md had this right since 2026-08-03 ("Committed *and* deployed… the
+> Firestore rules are live too"); this file simply went eight days without being reconciled
+> against it. **When the two files disagree, trust PROJECT_TRACKER.md** — it is the one kept
+> current. See Block 4 #19 below for the full detail.
 
 ### SOW Compliance Requirements
 | Requirement | Frequency | Detail |
@@ -65,9 +72,34 @@
 | 16 | `(sport, pillar)` concurrency scoping | ✅ 2026-08-02 |
 | 17 | Baseline + growth analytics | ✅ 2026-08-02 |
 | 18 | Pillar dashboard | ✅ 2026-08-02 |
-| 19 | **Deploy rules + indexes, then app** | 🚨 Blocking |
-| 20 | Multi-URL deployment diagnostic | 🔲 1.5h billed, outstanding |
-| 21 | Live-data testing | 🔲 2.5h billed, blocked on #19 |
+| 19 | Deploy rules + indexes | ✅ 2026-08-10 — verified already live, see note below |
+| 20 | Multi-URL deployment diagnostic | ✅ 2026-08-03 — result in PROJECT_TRACKER.md "Deployment Topology" |
+| 21 | Live-data testing | 🔲 2.5h billed — **no longer blocked**, nothing stands in its way |
+
+> **#19 correction (2026-08-10).** This sat marked 🚨 Blocking since 2026-08-02 and it was
+> wrong. Checked against the live `sportscoach-2a84d` project: all 24 indexes in
+> `firestore.indexes.json` are deployed, including the three added in `bba4c15`, and
+> `firebase deploy --only firestore:rules` reported *"latest version of firestore.rules
+> already up to date, skipping upload"* — the deployed ruleset already matched the repo
+> byte for byte. Both halves had been live for some time. Nothing was ever blocked on
+> Firebase, and the 2026-08-02 claim that production was "serving a non-deterministic form"
+> did not hold.
+>
+> Consequence: the standing theory that standalone pillar check-ins were being rejected
+> because the old rule required `sessionId` is **dead** — that relaxation is live. Whether
+> anything is actually broken in the pillar track is now an open question that only #21 can
+> answer. Do not assume it works, and do not assume it doesn't.
+>
+> Also found while listing: the live project holds **34 composite indexes that are absent
+> from `firestore.indexes.json`**, covering `quiz_attempts`, `quizzes`, `skills`, `sports`,
+> `users`, `notifications`, `playlists`, `content`, `chat_sessions`, `coach_invitations`,
+> four more on `form_templates`, and — critically — `dynamic_charting_entries` and
+> `dynamic_charting_analytics`. `firebase deploy --only firestore:indexes --force` would
+> delete every one of them (verified in `firebase-tools` 15.12.0, `lib/firestore/api.js:85`;
+> without `--force` it prompts, defaulting to No). No data would be lost, but quiz history,
+> the skill/sport listings, the admin user list and the pillar analytics would all break
+> until the indexes rebuilt. **Never deploy indexes with `--force` against this project**
+> until the file is reconciled with what is live.
 | 22 | MindSet / Skating / Form templates | 🔲 Blocked on Michael's checkpoint wording |
 | 23 | Net Orientation, Game Performance, Practice, Lifestyle | 🔲 Blocked — no content from Michael |
 
@@ -87,7 +119,7 @@
 
 ### 2026-08-02 - [Concurrent Pillar Charting Engine](docs/sessions/2026-08/2026-08-02-concurrent-pillar-charting-engine.md)
 **Time:** 10h 30min | **Focus:** Feature - Charting Engine / Bug Fixes | **Block:** 4
-Scoped form-template concurrency by `(sport, pillar)` compound key, replacing the one-globally-active-template model that made MindSet/Skating/combined charts mutually exclusive. Replaced both broken deactivation methods with `deactivateTemplatesInScope()`. Added baseline tracking to analytics (first submission pins the baseline, computed from full history not the filtered window). Central `toDateSafe` in `src/lib/utils/timestamp.ts` fixing the mangled-Firestore-timestamp crash at source. Wrote the missing Growth Points security rules and fixed the `.finally()`/`.catch()` that swallowed every permission denial. Backfill dry run reported 0 documents needing update. **Rules and indexes not yet deployed — production is serving a non-deterministic form until they are.**
+Scoped form-template concurrency by `(sport, pillar)` compound key, replacing the one-globally-active-template model that made MindSet/Skating/combined charts mutually exclusive. Replaced both broken deactivation methods with `deactivateTemplatesInScope()`. Added baseline tracking to analytics (first submission pins the baseline, computed from full history not the filtered window). Central `toDateSafe` in `src/lib/utils/timestamp.ts` fixing the mangled-Firestore-timestamp crash at source. Wrote the missing Growth Points security rules and fixed the `.finally()`/`.catch()` that swallowed every permission denial. Backfill dry run reported 0 documents needing update. ~~**Rules and indexes not yet deployed — production is serving a non-deterministic form until they are.**~~ **Superseded 2026-08-10:** both were verified live against `sportscoach-2a84d`. Either they were deployed shortly after this session and the note was never updated, or it was wrong when written. Left visible rather than deleted, because this line is what kept #19 flagged as blocking for eight days.
 
 ### 2026-07-27 - [Seven Pillars Public Pages + Explore More](docs/sessions/2026-07/2026-07-27-seven-pillars-pages-and-explore-more.md)
 **Time:** 12h | **Focus:** Feature - Public Pillars / UI | **Block:** 3
@@ -586,7 +618,7 @@ Initial project analysis and progress tracking system implementation.
 
 ### Low Priority
 - Anthropic model ID duplicated across `app/api/chatbot/route.ts` and `src/lib/ai/claude.service.ts` — should be one constant
-- `.charting-dark` not applied to `/charting/sessions/[id]/chart` — `ChartingFormWrapper.tsx:220` sits on `bg-gray-50` inside the navy shell. Unresolved question, not a decided bug.
+- `.surface-dark` (renamed from `.charting-dark` 2026-08-13) not applied to `/charting/sessions/[id]/chart` — `ChartingFormWrapper.tsx:220` sits on `bg-gray-50` inside the navy shell. Unresolved question, not a decided bug.
 
 ### Technical Debt
 - **Swallowed promise rejections are a recurring pattern**, not isolated incidents — the Growth Points `.finally()`, the silent coach-invite email failure, and the silent baseline-save failure are the same shape. Worth one deliberate sweep rather than fixing them as they surface.

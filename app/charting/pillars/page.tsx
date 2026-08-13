@@ -143,7 +143,7 @@ export default function PillarChartsIndexPage() {
 
   return (
     <div
-      className="charting-dark"
+      className="surface-dark"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '980px', margin: '0 auto', width: '100%' }}
     >
       {/* ── HEADER PANEL ── */}

@@ -256,7 +256,7 @@ export default function PillarCheckInPage() {
 
   return (
     <div
-      className="charting-dark"
+      className="surface-dark"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '900px', margin: '0 auto', width: '100%' }}
     >
       {/* ── HEADER PANEL ── */}
@@ -353,6 +353,11 @@ export default function PillarCheckInPage() {
             // The page header already names the pillar and the section card
             // carries the course title — a third heading just repeats them.
             showFormHeader={false}
+            // Pillar check-ins are the development engine, so they read on the
+            // 5-Star scale. The value written is still 1-10 — the stars are how
+            // it's said, not what's stored. The Weak/Strong anchors stay as the
+            // fallback for any checkpoint whose range doesn't split into five.
+            scaleDisplay="stars"
             scaleAnchors={{ low: 'Weak', high: 'Strong' }}
           />
 

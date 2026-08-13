@@ -141,8 +141,13 @@ export class FormTemplateService extends BaseDatabaseService {
   }
 
   /**
-   * Updates a form template
-   * Creates a new version if the template is in use
+   * Updates a form template.
+   *
+   * A template that has already been filled in is never edited in place. Every
+   * stored entry keys its answers by field ID, so rewording or removing a field
+   * would retroactively change what past answers claim to say. The edit is
+   * written as a new version instead and the current one archived, leaving
+   * recorded entries pointing at the wording they were actually answered under.
    */
   async updateTemplate(
     templateId: string,
@@ -169,19 +174,7 @@ export class FormTemplateService extends BaseDatabaseService {
 
     // Check if we should create a new version
     if (createNewVersion || (currentTemplate.usageCount && currentTemplate.usageCount > 0)) {
-      // Create new version
-      const newTemplateData = {
-        ...currentTemplate,
-        ...updates,
-        version: currentTemplate.version + 1,
-        usageCount: 0,
-      };
-
-      // Archive the old version
-      await this.archiveTemplate(templateId);
-
-      // Create new version
-      return await this.createTemplate(newTemplateData);
+      return await this.createNextVersion(currentTemplate, updates);
     }
 
     // Validate updated template
@@ -222,6 +215,107 @@ export class FormTemplateService extends BaseDatabaseService {
     return {
       success: false,
       error: result.error,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Writes an edit as version n+1 and retires version n.
+   *
+   * Two things here were previously wrong in ways that only surface once a
+   * template is actually edited:
+   *
+   * 1. The version number was computed and then thrown away. This routed through
+   *    `createTemplate`, which hardcodes `version: 1` on everything it writes, so
+   *    every "new version" of a template came out as v1 again — leaving no way to
+   *    tell which of two archived templates came first.
+   * 2. The old version was archived *before* the replacement was written. If the
+   *    new version then failed to validate or the write failed, the admin was
+   *    left with the edit discarded and the only working template archived. The
+   *    replacement is created first now, and the old one retired only once its
+   *    successor exists.
+   */
+  private async createNextVersion(
+    current: FormTemplate,
+    updates: Partial<FormTemplate>
+  ): Promise<ApiResponse<{ id: string }>> {
+    // `id` and the timestamps describe the document being replaced. Carried over,
+    // they write a stale `id` field inside the new document and backdate it to
+    // the moment the original was created.
+    const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...carried } = current;
+
+    const nextVersion = {
+      ...carried,
+      ...updates,
+      version: current.version + 1,
+      usageCount: 0,
+      isArchived: false,
+    } as Omit<FormTemplate, 'id' | 'createdAt' | 'updatedAt'>;
+
+    // Validate before anything is written, so a rejected edit leaves the current
+    // version exactly as it was.
+    const validation = this.validateTemplate(nextVersion as FormTemplate);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        message: describeValidationFailure(validation.errors),
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: validation.errors.map((e) => e.message).join(', '),
+          details: validation.errors,
+        },
+        timestamp: new Date(),
+      };
+    }
+
+    // Stand down any other active template in this scope — but not the one being
+    // replaced, which stays live until its successor is safely written.
+    if (nextVersion.isActive && nextVersion.sport) {
+      await this.deactivateTemplatesInScope(
+        nextVersion.sport,
+        nextVersion.pillar ?? 'combined',
+        current.id
+      );
+    }
+
+    const created = await this.create<FormTemplate>(this.TEMPLATES_COLLECTION, nextVersion);
+    if (!created.success || !created.data) {
+      return {
+        success: false,
+        message: created.message || 'Could not save the new version. The current version is unchanged.',
+        error: created.error,
+        timestamp: new Date(),
+      };
+    }
+
+    const archived = await this.archiveTemplate(current.id);
+    if (!archived.success) {
+      // The new version is live; the old one simply did not get retired, which
+      // leaves two active templates in one scope. Reported rather than swallowed,
+      // because the admin has to resolve it by hand.
+      logger.error(
+        'New template version saved, but the previous version could not be archived',
+        'FormTemplateService',
+        { previousTemplateId: current.id, newTemplateId: created.data.id }
+      );
+      return {
+        success: true,
+        data: { id: created.data.id },
+        message: `Saved as version ${nextVersion.version}, but version ${current.version} could not be archived — archive it manually.`,
+        timestamp: new Date(),
+      };
+    }
+
+    logger.info('Form template saved as a new version', 'FormTemplateService', {
+      previousTemplateId: current.id,
+      newTemplateId: created.data.id,
+      version: nextVersion.version,
+    });
+
+    return {
+      success: true,
+      data: { id: created.data.id },
+      message: `Saved as version ${nextVersion.version}. Version ${current.version} has been archived.`,
       timestamp: new Date(),
     };
   }

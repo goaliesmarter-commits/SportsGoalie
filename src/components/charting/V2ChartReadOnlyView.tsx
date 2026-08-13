@@ -8,8 +8,10 @@ import {
 import {
   Timer, BarChart3, MessageSquare, ClipboardList,
   Flame, Sparkles, ShieldCheck, Brain, Eye, Video,
-  CheckCircle2, XCircle, Target, Mic, Flag, Pencil,
+  CheckCircle2, XCircle, Target, Mic, Flag, Pencil, Star,
+  Zap, Layers, Crosshair,
 } from 'lucide-react';
+import { FIVE_STAR_SCALE, stageForScore, starsFromScore } from '@/lib/scale/five-star';
 
 const BLUE = '#37b5ff';
 const PURPLE = '#7dd3fc';
@@ -49,7 +51,49 @@ function Stat({ label, value, suffix }: { label: string; value: React.ReactNode;
   );
 }
 
-function RatingBar({ value, max = 5 }: { value: number; max?: number }) {
+/**
+ * A recorded rating, read back to the coach.
+ *
+ * `stars` puts it on the 5-Star development scale, so the coach sees the same
+ * row of stars and the same stage name the goalie tapped instead of a bar the
+ * goalie never saw. It's opt-in because only some of these numbers are
+ * development ratings — Factor Ratio, Overall Game Factor and Game Retention
+ * measure how the game went, not what stage the goalie is at, and
+ * "Self-Coaching" would be nonsense on them. Those keep the bar.
+ *
+ * Colours are literal rather than themed: this view is dark by inline style,
+ * not inside the `.surface-dark` token scope.
+ */
+function RatingBar({ value, max = 5, stars = false }: { value: number; max?: number; stars?: boolean }) {
+  if (stars) {
+    const filled = starsFromScore(value, max);
+    const stage = stageForScore(value, max);
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+        <span
+          role="img"
+          aria-label={stage ? `${stage.name}, ${value} out of ${max}` : `${value} out of ${max}`}
+          style={{ display: 'inline-flex', gap: '2px' }}
+        >
+          {FIVE_STAR_SCALE.map(({ stars: position }) => {
+            const on = position <= filled;
+            return (
+              <Star
+                key={position}
+                size={13}
+                strokeWidth={1.5}
+                color={on ? '#f87171' : 'rgba(255,255,255,0.22)'}
+                fill={on ? '#f87171' : 'none'}
+              />
+            );
+          })}
+        </span>
+        {stage && <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff' }}>{stage.name}</span>}
+        <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{value}/{max}</span>
+      </div>
+    );
+  }
+
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   const barColor = pct >= 70 ? '#4ade80' : pct >= 40 ? BLUE : '#fb923c';
   return (
@@ -58,6 +102,50 @@ function RatingBar({ value, max = 5 }: { value: number; max?: number }) {
         <div style={{ height: '100%', borderRadius: '99px', width: `${pct}%`, background: barColor, boxShadow: `0 0 6px ${barColor}66`, transition: 'width 0.5s' }} />
       </div>
       <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.6)', minWidth: '28px', textAlign: 'right' }}>{value}/{max}</span>
+    </div>
+  );
+}
+
+/** A voice note the goalie recorded, usually against a rating they flagged. */
+function VoiceNote({ text }: { text: string }) {
+  return (
+    <div style={{ marginTop: '6px', display: 'flex', alignItems: 'flex-start', gap: '5px', borderRadius: '7px', background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)', padding: '6px 8px' }}>
+      <Mic size={10} color="rgba(248,113,113,0.5)" style={{ flexShrink: 0, marginTop: '1px' }} />
+      <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.5 }}>{text}</p>
+    </div>
+  );
+}
+
+/**
+ * One of the four technical Pillars, as the goalie rated it for that period.
+ *
+ * They rate Skating, 7AMS, the 6 Zone – 7 Point System™ and Form every period
+ * on the 5-Pillar chart, and this read-back used to skip straight past all four
+ * — recorded, stored, never shown to the coach.
+ *
+ * Every field is optional because the basic chart doesn't collect them, so an
+ * unrated Pillar is left out rather than drawn as a zero.
+ */
+function PillarRating({
+  label,
+  icon: Icon,
+  value,
+  voice,
+}: {
+  label: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  value?: number;
+  voice?: string;
+}) {
+  if (typeof value !== 'number') return null;
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
+        <Icon size={10} color="rgba(255,255,255,0.3)" />
+        <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)' }}>{label}</p>
+      </div>
+      <RatingBar value={value} stars />
+      {voice && <VoiceNote text={voice} />}
     </div>
   );
 }
@@ -110,11 +198,36 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+/**
+ * The frame around one section of the chart.
+ *
+ * Two callers, two very different surroundings. On its own admin page this view
+ * sits on the bare page background, so each section needs a frame to read as a
+ * unit. Inside the session-history drawer it is already three surfaces deep
+ * (page card → session row → drawer) and a fourth outline there just stacks
+ * concentric boxes that all look alike — the "container in a container in a
+ * container" effect. `flat` keeps the header and drops the box, leaving a
+ * hairline rule (see the root's `<style>`) to do the separating.
+ */
+function Section({ flat, children, style }: { flat?: boolean; children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={
+        flat
+          ? style
+          : { background: 'rgba(2,18,44,0.6)', border: '1px solid rgba(55,181,255,0.12)', borderRadius: '14px', padding: '16px', ...style }
+      }
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ── Section renderers ── */
 
-function PreGameSection({ data }: { data: V2PreGameData }) {
+function PreGameSection({ data, flat }: { data: V2PreGameData; flat?: boolean }) {
   return (
-    <div style={{ background: 'rgba(2,18,44,0.6)', border: '1px solid rgba(55,181,255,0.12)', borderRadius: '14px', padding: '16px' }}>
+    <Section flat={flat}>
       <SectionHeader icon={Timer} title="Pre-Game · Mind Management" />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
         <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
@@ -134,17 +247,17 @@ function PreGameSection({ data }: { data: V2PreGameData }) {
           <YesNoLine label="Target state achieved" value={data.targetStateAchieved} voice={data.targetStateVoiceNote} />
         </div>
       </div>
-    </div>
+    </Section>
   );
 }
 
-function PeriodsSection({ periods }: { periods: NonNullable<V2Fields['v2Periods']> }) {
+function PeriodsSection({ periods, flat }: { periods: NonNullable<V2Fields['v2Periods']>; flat?: boolean }) {
   const labels: Array<[keyof typeof periods, string]> = [['period1', 'P1'], ['period2', 'P2'], ['period3', 'P3'], ['overtime', 'OT']];
   const filled = labels.filter(([key]) => !!periods[key]);
   if (filled.length === 0) return null;
 
   return (
-    <div style={{ background: 'rgba(2,18,44,0.6)', border: '1px solid rgba(55,181,255,0.12)', borderRadius: '14px', padding: '16px' }}>
+    <Section flat={flat}>
       <SectionHeader icon={BarChart3} title="Periods" subtitle="Post-game, charted from memory" />
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${filled.length}, 1fr)`, gap: '8px' }}>
         {filled.map(([key, label]) => {
@@ -154,8 +267,13 @@ function PeriodsSection({ periods }: { periods: NonNullable<V2Fields['v2Periods'
             <div key={key} style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(55,181,255,0.1)', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <p style={{ fontSize: '12px', fontWeight: 800, color: '#fff' }}>{label}</p>
 
-              {/* Stat counters grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+              {/*
+                One recessed well holding all eight counters, rather than eight
+                individually outlined tiles inside the period card inside the
+                section. Darker-than-parent reads as inset where another light
+                border would just have been a third concentric frame.
+              */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px 4px', borderRadius: '9px', background: 'rgba(0,10,26,0.35)', padding: '9px 6px' }}>
                 {[
                   { label: 'Shots', value: p.shots ?? 0, color: 'rgba(255,255,255,0.6)' },
                   { label: 'Saves', value: p.saves ?? 0, color: '#4ade80' },
@@ -166,8 +284,8 @@ function PeriodsSection({ periods }: { periods: NonNullable<V2Fields['v2Periods'
                   { label: 'Emph. Applied', value: p.midChallengeCount ?? 0, color: 'rgba(255,255,255,0.6)' },
                   { label: 'Align. Owned', value: p.highChallengeCount ?? 0, color: '#fb923c' },
                 ].map(({ label: sl, value: sv, color }) => (
-                  <div key={sl} style={{ borderRadius: '6px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', padding: '5px 4px', textAlign: 'center' }}>
-                    <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '2px', letterSpacing: '0.5px' }}>{sl}</p>
+                  <div key={sl} style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: '3px', letterSpacing: '0.5px' }}>{sl}</p>
                     <p style={{ fontSize: '16px', fontWeight: 900, color, lineHeight: 1 }}>{sv}</p>
                   </div>
                 ))}
@@ -191,18 +309,40 @@ function PeriodsSection({ periods }: { periods: NonNullable<V2Fields['v2Periods'
                     );
                   })()}
                 </div>
-                <RatingBar value={p.mindControlRating} />
-                {p.mindControlVoiceNote && (
-                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'flex-start', gap: '5px', borderRadius: '7px', background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)', padding: '6px 8px' }}>
-                    <Mic size={10} color="rgba(248,113,113,0.5)" style={{ flexShrink: 0, marginTop: '1px' }} />
-                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.5 }}>{p.mindControlVoiceNote}</p>
-                  </div>
-                )}
+                {/* Set with the star row on the period screen — read back the same way. */}
+                <RatingBar value={p.mindControlRating} stars />
+                {p.mindControlVoiceNote && <VoiceNote text={p.mindControlVoiceNote} />}
               </div>
-              <div>
-                <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '5px' }}>Factor Ratio</p>
-                <RatingBar value={p.periodFactorRatio} />
-              </div>
+
+              {/*
+                The other four Pillars, kept next to Emotional Balance because
+                that is how the goalie rates them — one block of five, same five
+                stages. Absent on the basic chart, which only asks for MindSet.
+              */}
+              {[p.skatingRating, p.sevenAMSRating, p.sixZSRating, p.formRating].some(
+                (r) => typeof r === 'number'
+              ) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.3)' }}>Technical Pillars</p>
+                  <PillarRating label="Skating" icon={Zap} value={p.skatingRating} voice={p.skatingVoiceNote} />
+                  <PillarRating label="7AMS" icon={Target} value={p.sevenAMSRating} voice={p.sevenAMSVoiceNote} />
+                  <PillarRating label="6 Zone – 7 Point System™" icon={Layers} value={p.sixZSRating} voice={p.sixZSVoiceNote} />
+                  <PillarRating label="Form" icon={Crosshair} value={p.formRating} voice={p.formVoiceNote} />
+                </div>
+              )}
+
+              {/*
+                Only shown when the goalie actually rated it. This used to render
+                unconditionally, so a basic chart — which never asks the question —
+                still reported "Factor Ratio 1/5" to the coach, and on a five-pillar
+                chart a skipped question was indistinguishable from a low score.
+              */}
+              {typeof p.periodFactorRatio === 'number' && (
+                <div>
+                  <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '5px' }}>Factor Ratio</p>
+                  <RatingBar value={p.periodFactorRatio} />
+                </div>
+              )}
 
               {/* Goal classification */}
               {p.goals && p.goals.length > 0 && (
@@ -225,13 +365,13 @@ function PeriodsSection({ periods }: { periods: NonNullable<V2Fields['v2Periods'
           );
         })}
       </div>
-    </div>
+    </Section>
   );
 }
 
-function PostGameSection({ data }: { data: V2PostGameData }) {
+function PostGameSection({ data, flat }: { data: V2PostGameData; flat?: boolean }) {
   return (
-    <div style={{ background: 'rgba(2,18,44,0.6)', border: '1px solid rgba(55,181,255,0.12)', borderRadius: '14px', padding: '16px' }}>
+    <Section flat={flat}>
       <SectionHeader icon={MessageSquare} title="Post-Game Review" />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
         <Stat label="Good Goals" value={data.goodGoalCount} />
@@ -307,15 +447,15 @@ function PostGameSection({ data }: { data: V2PostGameData }) {
           </div>
         )}
       </div>
-    </div>
+    </Section>
   );
 }
 
-function PracticeSection({ data }: { data: NonNullable<V2Fields['v2Practice']> }) {
+function PracticeSection({ data, flat }: { data: NonNullable<V2Fields['v2Practice']>; flat?: boolean }) {
   const workedOnItems = data.practiceIndex?.filter(i => data.indexItemsWorkedOn?.includes(i.id));
 
   return (
-    <div style={{ background: 'rgba(2,18,44,0.6)', border: '1px solid rgba(55,181,255,0.12)', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <Section flat={flat} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <SectionHeader icon={Target} title="Practice Chart" subtitle="Index-driven reflection · New Practice Revolution" />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
@@ -404,33 +544,62 @@ function PracticeSection({ data }: { data: NonNullable<V2Fields['v2Practice']> }
           Practice was filmed{data.videoUrl ? ' · Video uploaded' : ' · Upload pending'}
         </div>
       )}
-    </div>
+    </Section>
   );
 }
 
 /* ── Main ── */
 
-interface V2ChartReadOnlyViewProps { entry: ChartingEntry; session: Session }
+interface V2ChartReadOnlyViewProps {
+  entry: ChartingEntry;
+  session: Session;
+  /**
+   * `framed` (default) gives each section its own card — right when this view
+   * sits directly on a page. `flat` drops those cards for callers that have
+   * already put the view inside a card of their own, so the sections don't read
+   * as yet another box in the stack.
+   */
+  variant?: 'framed' | 'flat';
+}
 
-export function V2ChartReadOnlyView({ entry, session }: V2ChartReadOnlyViewProps) {
+export function V2ChartReadOnlyView({ entry, session, variant = 'framed' }: V2ChartReadOnlyViewProps) {
   const v2 = entry as unknown as ChartingEntry & V2Fields;
   const hasV2 = !!v2.v2PreGame || !!v2.v2Periods || !!v2.v2PostGame || !!v2.v2Practice;
+  const flat = variant === 'flat';
 
   if (!hasV2) return <EmptyState message="No v2 chart data was submitted for this session yet." />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {session.type === 'practice' ? (
-        v2.v2Practice
-          ? <PracticeSection data={v2.v2Practice} />
-          : <EmptyState message="No practice chart submitted for this session." />
-      ) : (
-        <>
-          {v2.v2PreGame && <PreGameSection data={v2.v2PreGame} />}
-          {v2.v2Periods && <PeriodsSection periods={v2.v2Periods} />}
-          {v2.v2PostGame && <PostGameSection data={v2.v2PostGame} />}
-        </>
+    <>
+      {/*
+        Sections are conditional, so the divider between them is a CSS sibling
+        rule rather than an index check — whichever section renders first stays
+        rule-free. The tag sits outside the flex container on purpose: `<style>`
+        is display:none but still an element sibling, so inside it would hand
+        the first real section a border it shouldn't have.
+      */}
+      {flat && (
+        <style>{`
+          .v2-chart-flat > * + * {
+            border-top: 1px solid rgba(255,255,255,0.07);
+            padding-top: 16px;
+            margin-top: 4px;
+          }
+        `}</style>
       )}
-    </div>
+      <div className={flat ? 'v2-chart-flat' : undefined} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {session.type === 'practice' ? (
+          v2.v2Practice
+            ? <PracticeSection data={v2.v2Practice} flat={flat} />
+            : <EmptyState message="No practice chart submitted for this session." />
+        ) : (
+          <>
+            {v2.v2PreGame && <PreGameSection data={v2.v2PreGame} flat={flat} />}
+            {v2.v2Periods && <PeriodsSection periods={v2.v2Periods} flat={flat} />}
+            {v2.v2PostGame && <PostGameSection data={v2.v2PostGame} flat={flat} />}
+          </>
+        )}
+      </div>
+    </>
   );
 }

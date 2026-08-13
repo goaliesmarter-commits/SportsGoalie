@@ -31,6 +31,8 @@ import {
 import { format, formatDistanceToNow, subDays, subMonths } from 'date-fns';
 import { toDateSafe } from '@/lib/utils/timestamp';
 import { scaleToPercentage } from '@/lib/scoring/scale-score';
+import { isStarScale } from '@/lib/scale/five-star';
+import { StarScaleReadout } from '@/components/charting/StarScale';
 import {
   CYAN,
   MINT,
@@ -146,6 +148,15 @@ function CheckpointBar({
         </span>
       </div>
 
+      {/* The same stars the goalie taps on the check-in, reading back what they
+          recorded. Half-filled where the number sits between two rungs — an
+          average across a month rarely lands exactly on one. */}
+      {field?.type === 'scale' && isStarScale(min, max) && (
+        <div style={{ marginBottom: '8px' }}>
+          <StarScaleReadout score={current} max={max} />
+        </div>
+      )}
+
       <div style={{ position: 'relative', height: '9px', background: 'rgba(255,255,255,0.07)', borderRadius: '99px', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: '0 auto 0 0', width: `${currentPct}%`, background: `linear-gradient(90deg, ${CYAN}, ${MINT})`, borderRadius: '99px', transition: 'width 0.3s ease' }} />
         {hasBaseline && (
@@ -243,6 +254,16 @@ function EntryCard({
                               )}
                             </span>
                           </div>
+                          {field.type === 'scale' &&
+                            typeof response?.value === 'number' &&
+                            isStarScale(field.validation?.min ?? 1, field.validation?.max ?? 10) && (
+                              <div style={{ marginTop: '3px' }}>
+                                <StarScaleReadout
+                                  score={response.value}
+                                  max={field.validation?.max ?? 10}
+                                />
+                              </div>
+                            )}
                           {response?.comments && (
                             <div style={{ display: 'flex', gap: '6px', marginTop: '4px', fontSize: '11.5px', color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', lineHeight: 1.5 }}>
                               <MessageSquare size={11} style={{ flexShrink: 0, marginTop: '3px' }} />
@@ -420,7 +441,7 @@ export default function PillarHistoryPage() {
 
   return (
     <div
-      className="charting-dark"
+      className="surface-dark"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '900px', margin: '0 auto', width: '100%' }}
     >
       {/* ── HEADER PANEL ── */}

@@ -40,7 +40,7 @@ export function CourseProgress({ courses, loading }: CourseProgressProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge variant="default" className="bg-green-500/15 text-green-200 border-green-400/30">Completed</Badge>;
       case 'in_progress':
         return <Badge variant="default">In Progress</Badge>;
       default:
@@ -51,11 +51,11 @@ export function CourseProgress({ courses, loading }: CourseProgressProps) {
   const getQuizStatusIcon = (status: string) => {
     switch (status) {
       case 'passed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-400" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-400" />;
       default:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />;
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -185,7 +185,7 @@ export function CourseProgress({ courses, loading }: CourseProgressProps) {
                       {course.skills.map((skill) => (
                         <div
                           key={skill.skillId}
-                          className="bg-background rounded-lg p-3 border"
+                          className="bg-white/5 rounded-lg p-3 border"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">

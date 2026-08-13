@@ -6,7 +6,7 @@ export interface SelectorOption {
 }
 
 interface RotatingNumberSelectorProps {
-  value: string | number | null;
+  value: string | number | null | undefined;
   onChange: (value: string | number) => void;
   options: SelectorOption[];
   label?: string;
@@ -18,7 +18,14 @@ export function RotatingNumberSelector({
   onChange,
   options,
 }: RotatingNumberSelectorProps) {
-  const effectiveValue = value !== null ? value : (options[0]?.value ?? null);
+  /**
+   * No value means no button is lit.
+   *
+   * This used to fall back to `options[0]`, which lit the first option — border,
+   * checkmark and all — on a field nobody had touched. That reads as a deliberate
+   * answer, so an unanswered question and a genuine "1" looked identical.
+   */
+  const effectiveValue = value ?? null;
 
   return (
     <div className="w-full overflow-x-auto scrollbar-hide">

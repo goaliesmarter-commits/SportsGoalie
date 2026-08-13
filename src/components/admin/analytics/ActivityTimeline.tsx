@@ -47,49 +47,54 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'quiz_completed':
-        return <Trophy className="h-5 w-5 text-yellow-600" />;
+        return <Trophy className="h-5 w-5 text-yellow-400" />;
       case 'skill_started':
-        return <BookOpen className="h-5 w-5 text-blue-600" />;
+        return <BookOpen className="h-5 w-5 text-sky-400" />;
       case 'skill_completed':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-green-400" />;
       case 'sport_enrolled':
-        return <Activity className="h-5 w-5 text-purple-600" />;
+        return <Activity className="h-5 w-5 text-purple-400" />;
       case 'achievement_unlocked':
-        return <Award className="h-5 w-5 text-amber-600" />;
+        return <Award className="h-5 w-5 text-amber-400" />;
       default:
-        return <Activity className="h-5 w-5 text-gray-600" />;
+        return <Activity className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
+  /**
+   * The ring behind each timeline icon. These were `-50` fills over a white
+   * page; on the navy panel a low-alpha tint of the same hue keeps the activity
+   * type readable at a glance without the ring reading as a bright dot.
+   */
   const getActivityColor = (type: string) => {
     switch (type) {
       case 'quiz_completed':
-        return 'border-yellow-200 bg-yellow-50';
+        return 'border-yellow-400/35 bg-yellow-500/12';
       case 'skill_started':
-        return 'border-blue-200 bg-blue-50';
+        return 'border-sky-400/35 bg-sky-500/12';
       case 'skill_completed':
-        return 'border-green-200 bg-green-50';
+        return 'border-green-400/35 bg-green-500/12';
       case 'sport_enrolled':
-        return 'border-purple-200 bg-purple-50';
+        return 'border-purple-400/35 bg-purple-500/12';
       case 'achievement_unlocked':
-        return 'border-amber-200 bg-amber-50';
+        return 'border-amber-400/35 bg-amber-500/12';
       default:
-        return 'border-gray-200 bg-gray-50';
+        return 'border-white/15 bg-white/5';
     }
   };
 
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'quiz_completed':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Quiz</Badge>;
+        return <Badge className="bg-yellow-500/15 text-yellow-200 border-yellow-400/30">Quiz</Badge>;
       case 'skill_started':
-        return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Skill Started</Badge>;
+        return <Badge className="bg-sky-500/15 text-sky-200 border-sky-400/30">Skill Started</Badge>;
       case 'skill_completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Skill Completed</Badge>;
+        return <Badge className="bg-green-500/15 text-green-200 border-green-400/30">Skill Completed</Badge>;
       case 'sport_enrolled':
-        return <Badge className="bg-purple-100 text-purple-700 border-purple-200">Enrolled</Badge>;
+        return <Badge className="bg-purple-500/15 text-purple-200 border-purple-400/30">Enrolled</Badge>;
       case 'achievement_unlocked':
-        return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Achievement</Badge>;
+        return <Badge className="bg-amber-500/15 text-amber-200 border-amber-400/30">Achievement</Badge>;
       default:
         return <Badge variant="outline">Activity</Badge>;
     }
@@ -137,7 +142,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                       {activity.type === 'quiz_completed' && activity.metadata && (
                         <div className="flex items-center space-x-2 pt-1">
                           {activity.metadata.passed && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="bg-green-500/15 text-green-200 border-green-400/30">
                               ✓ Passed
                             </Badge>
                           )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Square, Loader2, Pencil } from 'lucide-react';
+import { Mic, MicOff, Square, Loader2 } from 'lucide-react';
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -18,15 +18,23 @@ interface SpeechRecognitionEvent {
 export function VoiceRecorder({
   onTranscriptionComplete,
   initialText = '',
-  placeholder = 'Tap the microphone to record...',
+  placeholder = 'Speak or type your note...',
 }: VoiceRecorderProps) {
   const [text, setText] = useState(initialText);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<unknown>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  /**
+   * `emittedRef` — the last value we handed up to the parent.
+   * `lastPropRef` — the last value the parent handed down.
+   *
+   * Together they let the sync effect below tell "the parent swapped in a
+   * different note" apart from "the parent is echoing back what we just typed".
+   */
+  const emittedRef = useRef(initialText);
+  const lastPropRef = useRef(initialText);
 
   // Check for Speech Recognition support
   useEffect(() => {
@@ -34,9 +42,34 @@ export function VoiceRecorder({
                (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     if (!SR) {
       setSupported(false);
-      setIsEditing(true); // Fall back to manual text entry
     }
   }, []);
+
+  /**
+   * Adopt `initialText` when the parent genuinely changes it.
+   *
+   * `useState(initialText)` reads the prop once, so without this the box keeps
+   * whatever it was showing when it first mounted. That bit in two places:
+   * switching P1 → P2 on the periods screen reuses this same component instance
+   * (the tabs swap data, not the tree), so period 1's note stayed on screen and
+   * any edit to it then saved into period 2; and the Mind Vault form's
+   * post-save `setContent('')` never cleared the box.
+   *
+   * Gated on the prop actually moving — not just differing from local state —
+   * so a parent that lags a render behind our own `onChange` can't stomp on the
+   * field mid-keystroke.
+   */
+  useEffect(() => {
+    if (initialText === lastPropRef.current) return;
+    lastPropRef.current = initialText;
+    if (initialText === emittedRef.current) return;
+    setText(initialText);
+  }, [initialText]);
+
+  const commit = useCallback((value: string) => {
+    emittedRef.current = value;
+    onTranscriptionComplete(value);
+  }, [onTranscriptionComplete]);
 
   const startRecording = useCallback(() => {
     const SR = (window as unknown as Record<string, unknown>).SpeechRecognition ||
@@ -49,7 +82,9 @@ export function VoiceRecorder({
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    let finalTranscript = text;
+    // Dictation appends to whatever is already in the box — typed or spoken
+    // earlier — so the two inputs compose instead of overwriting each other.
+    let finalTranscript = text.trim() ? `${text.trimEnd()} ` : '';
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
@@ -76,16 +111,17 @@ export function VoiceRecorder({
     recognition.onend = () => {
       setIsRecording(false);
       setIsProcessing(false);
-      if (finalTranscript.trim()) {
-        setText(finalTranscript.trim());
-        onTranscriptionComplete(finalTranscript.trim());
+      const final = finalTranscript.trim();
+      if (final) {
+        setText(final);
+        commit(final);
       }
     };
 
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-  }, [text, onTranscriptionComplete]);
+  }, [text, commit]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
@@ -97,7 +133,7 @@ export function VoiceRecorder({
 
   const handleTextChange = (newText: string) => {
     setText(newText);
-    onTranscriptionComplete(newText);
+    commit(newText);
   };
 
   return (
@@ -109,7 +145,7 @@ export function VoiceRecorder({
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isProcessing || !supported}
           className={`
-            relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+            relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0
             ${isRecording
               ? 'bg-red-600 text-white shadow-md shadow-red-600/30 scale-110'
               : isProcessing
@@ -139,60 +175,34 @@ export function VoiceRecorder({
 
         <div className="flex-1 text-sm">
           {isRecording ? (
-            <p className="text-red-600 font-medium">Recording... tap to stop</p>
+            <p className="text-red-400 font-medium">Recording… tap to stop</p>
           ) : isProcessing ? (
-            <p className="text-white/50">Processing...</p>
+            <p className="text-white/50">Processing…</p>
           ) : !supported ? (
-            <p className="text-white/40">Voice not available — type below</p>
+            <p className="text-white/40">Voice not available in this browser — type below</p>
           ) : text ? (
-            <p className="text-white/50">Tap mic to re-record, or edit below</p>
+            <p className="text-white/50">Tap the mic to add more, or edit below</p>
           ) : (
-            <p className="text-white/40">{placeholder}</p>
+            <p className="text-white/40">Tap the mic to speak, or just type below</p>
           )}
         </div>
-
-        {/* Edit toggle (when there's text and not already editing) */}
-        {text && !isEditing && !isRecording && (
-          <button
-            type="button"
-            onClick={() => {
-              setIsEditing(true);
-              setTimeout(() => textareaRef.current?.focus(), 100);
-            }}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-white/40 hover:text-[#37b5ff] hover:bg-[rgba(55,181,255,0.1)] transition-colors"
-            aria-label="Edit transcription"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-        )}
       </div>
 
-      {/* Transcription display / edit area */}
-      {(text || isEditing || !supported) && (
-        <div className="relative">
-          {isEditing || !supported ? (
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => handleTextChange(e.target.value)}
-              onBlur={() => { if (supported && text) setIsEditing(false); }}
-              placeholder={placeholder}
-              rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/[0.06] text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/60 resize-none transition-colors"
-            />
-          ) : text ? (
-            <div
-              onClick={() => {
-                setIsEditing(true);
-                setTimeout(() => textareaRef.current?.focus(), 100);
-              }}
-              className="px-4 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-sm text-white/80 leading-relaxed cursor-pointer hover:bg-white/[0.08] transition-colors"
-            >
-              {text}
-            </div>
-          ) : null}
-        </div>
-      )}
+      {/*
+        The note field is always here and always editable.
+
+        It used to render only once `text` was non-empty, and the only way to
+        open it for editing was a pencil button that itself required text — so
+        on any browser with speech support there was no way to type a note until
+        you had recorded one first. Voice is the fast path, not the only path.
+      */}
+      <textarea
+        value={text}
+        onChange={(e) => handleTextChange(e.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/[0.06] text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[rgba(55,181,255,0.3)] focus:border-[rgba(55,181,255,0.6)] resize-none transition-colors"
+      />
     </div>
   );
 }

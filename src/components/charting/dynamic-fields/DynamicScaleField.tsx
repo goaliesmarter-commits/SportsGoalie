@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { MessageSquarePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DynamicFieldProps } from './DynamicField';
+import { StarScaleInput } from '../StarScale';
+import { isStarScale } from '@/lib/scale/five-star';
 
 /**
  * Past this many steps the segmented control gets too cramped to tap, so we fall
@@ -22,6 +24,7 @@ export const DynamicScaleField: React.FC<DynamicFieldProps> = ({
   disabled,
   className = '',
   scaleAnchors,
+  scaleDisplay = 'numeric',
 }) => {
   // `?? ` rather than `|| ` so a legitimate min of 0 isn't coerced up to 1.
   const min = field.validation?.min ?? 1;
@@ -57,6 +60,14 @@ export const DynamicScaleField: React.FC<DynamicFieldProps> = ({
   const steps = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   const useSegments = steps.length <= MAX_SEGMENTS;
 
+  // The 5-Star development scale, where the consumer asks for it and the range
+  // divides into five rungs. Not every scale field is a development rating —
+  // the Hockey tracker's "Degree of Challenge" measures how hard a period was,
+  // and "Self-Coaching" would be nonsense on it — so this is opt-in per screen
+  // rather than applied to every 1-10 field. The stored value is unchanged
+  // either way: still 1-10, still what the charts read.
+  const useStars = scaleDisplay === 'stars' && isStarScale(min, max);
+
   return (
     <div className={cn('space-y-3.5', className)}>
       {/* Label on the left, the live reading on the right */}
@@ -71,25 +82,37 @@ export const DynamicScaleField: React.FC<DynamicFieldProps> = ({
           )}
         </div>
 
-        <div
-          className={cn(
-            'flex shrink-0 items-baseline gap-0.5 rounded-lg px-3 py-1.5 tabular-nums transition-colors',
-            hasValue ? 'bg-primary/15' : 'bg-muted'
-          )}
-        >
-          <span
+        {/* In star mode the row carries its own reading — the stage name and the
+            number — so a second big number here would just be the same fact twice. */}
+        {!useStars && (
+          <div
             className={cn(
-              'text-2xl font-extrabold leading-none',
-              hasValue ? 'text-primary' : 'text-muted-foreground'
+              'flex shrink-0 items-baseline gap-0.5 rounded-lg px-3 py-1.5 tabular-nums transition-colors',
+              hasValue ? 'bg-primary/15' : 'bg-muted'
             )}
           >
-            {hasValue ? scaleValue : '–'}
-          </span>
-          <span className="text-xs font-semibold text-muted-foreground">/{max}</span>
-        </div>
+            <span
+              className={cn(
+                'text-2xl font-extrabold leading-none',
+                hasValue ? 'text-primary' : 'text-muted-foreground'
+              )}
+            >
+              {hasValue ? scaleValue : '–'}
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">/{max}</span>
+          </div>
+        )}
       </div>
 
-      {useSegments ? (
+      {useStars ? (
+        <StarScaleInput
+          score={hasValue ? scaleValue : null}
+          onChange={handleSelect}
+          max={max}
+          disabled={disabled}
+          label={field.label}
+        />
+      ) : useSegments ? (
         <div className="space-y-2">
           {/* Strength meter: everything up to the pick fills in, so the rating
               reads at a glance instead of needing the number underneath it. */}

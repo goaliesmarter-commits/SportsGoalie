@@ -59,9 +59,9 @@ export function QuizPerformanceChart({ data }: QuizPerformanceChartProps) {
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Passed</p>
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-green-400" />
               </div>
-              <p className="text-2xl font-bold mt-2 text-green-600">{passedQuizzes}</p>
+              <p className="text-2xl font-bold mt-2 text-green-400">{passedQuizzes}</p>
               <p className="text-xs text-muted-foreground">
                 {totalQuizzes > 0 ? Math.round((passedQuizzes / totalQuizzes) * 100) : 0}% pass rate
               </p>
@@ -76,9 +76,9 @@ export function QuizPerformanceChart({ data }: QuizPerformanceChartProps) {
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Best Score</p>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <TrendingUp className="h-4 w-4 text-sky-400" />
               </div>
-              <p className="text-2xl font-bold mt-2 text-blue-600">{bestOverallScore}%</p>
+              <p className="text-2xl font-bold mt-2 text-sky-400">{bestOverallScore}%</p>
             </div>
           </div>
 
