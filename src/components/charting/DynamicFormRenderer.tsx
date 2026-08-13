@@ -31,6 +31,8 @@ export interface DynamicFormRendererProps {
   showFormHeader?: boolean;
   /** Word labels for the ends of `scale` fields — see DynamicFieldProps. */
   scaleAnchors?: { low: string; high: string };
+  /** How `scale` fields are rated — see DynamicFieldProps. */
+  scaleDisplay?: 'stars' | 'numeric';
 }
 
 /**
@@ -50,6 +52,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
   initialSectionIndex,
   showFormHeader = true,
   scaleAnchors,
+  scaleDisplay,
 }) => {
   const [responses, setResponses] = useState<FormResponses>(initialValues);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
@@ -292,6 +295,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                   error={errors[errorKey]}
                   disabled={disabled}
                   scaleAnchors={scaleAnchors}
+                  scaleDisplay={scaleDisplay}
                 />
               </div>
             );
@@ -367,6 +371,7 @@ export const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
                       error={errors[errorKey]}
                       disabled={disabled}
                       scaleAnchors={scaleAnchors}
+                      scaleDisplay={scaleDisplay}
                     />
                   );
                 })}

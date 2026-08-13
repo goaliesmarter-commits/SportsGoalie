@@ -24,6 +24,14 @@ export interface DynamicFieldProps {
    * the consumer supplies them. Omitted means numbers only.
    */
   scaleAnchors?: { low: string; high: string };
+  /**
+   * How a `scale` field is rated. `stars` puts it on the 5-Star development
+   * scale; `numeric` keeps the 1-N control. Opt-in rather than automatic,
+   * because not every scale is a development rating — a "Degree of Challenge"
+   * measures the period, not the goalie. Either way the value stored is the
+   * same number, so analytics and charts don't move.
+   */
+  scaleDisplay?: 'stars' | 'numeric';
 }
 
 /**
@@ -38,6 +46,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
   disabled,
   className,
   scaleAnchors,
+  scaleDisplay,
 }) => {
   // Render the appropriate field component based on type
   switch (field.type) {
@@ -99,6 +108,7 @@ export const DynamicField: React.FC<DynamicFieldProps> = ({
           disabled={disabled}
           className={className}
           scaleAnchors={scaleAnchors}
+          scaleDisplay={scaleDisplay}
         />
       );
 

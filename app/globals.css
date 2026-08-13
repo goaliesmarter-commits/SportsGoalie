@@ -235,24 +235,31 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Navy charting theme (scoped)
+   Navy surface theme (scoped)
 
-   DynamicFormRenderer and the dynamic field components are shared with the
-   session charting flow, which still sits on a light `bg-gray-50` page. Rather
-   than fork those components or thread a `variant` prop through eight field
-   types, this class repoints the shadcn design tokens to the app's navy palette
-   for everything inside it. Any page that wraps the renderer in
-   `.charting-dark` gets the dark treatment; every other consumer is untouched.
+   Several parts of the app are built from shadcn components that default to a
+   light page — the dynamic charting form, and the admin student-analytics tab.
+   Rather than fork those components or thread a `variant` prop through every
+   field and card, this class repoints the shadcn design tokens to the app's
+   navy palette for everything inside it. Any page that wraps its content in
+   `.surface-dark` gets the dark treatment; every other consumer is untouched.
+
+   Named for the surface rather than the feature because it now backs both
+   `/charting/pillars/*` and the analytics tab on `/admin/users/[id]`.
 
    Palette matches the charting hub and session pages: ground #041830, panel
    gradient #0c2e56 → #04213f → #0a2d52, cyan #37b5ff.
    ────────────────────────────────────────────────────────────────────────── */
-.charting-dark {
+.surface-dark {
   --card: #0b3059;
   --card-foreground: #ffffff;
   --popover: #0b3059;
   --popover-foreground: #ffffff;
   --foreground: #ffffff;
+
+  /* Anything using `bg-background` — recharts tooltips, the nested skill rows
+     in Course Progress — renders as a white slab without this. */
+  --background: #0a2b50;
 
   --muted: rgba(255, 255, 255, 0.1);
   /* Was 0.45 — roughly 3:1 against the panel, which is why field descriptions,
@@ -280,7 +287,7 @@
    page ground behind it — so the panel sank into the background instead of
    lifting off it. This one stays a consistent step lighter than the ground,
    which is what gives the white text something to sit on. */
-.charting-dark [data-slot='card'] {
+.surface-dark [data-slot='card'] {
   background: linear-gradient(165deg, #0e3763 0%, #0a2c50 100%);
   border-color: rgba(55, 181, 255, 0.2);
   box-shadow:
@@ -288,14 +295,14 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-.charting-dark [data-slot='card-header']:hover {
+.surface-dark [data-slot='card-header']:hover {
   background: rgba(55, 181, 255, 0.06);
 }
 
 /* Checkpoint rows are separated by hairlines rather than each being its own
    bordered box — sixteen nested boxes inside a panel is what made this read as
    crammed. Kept brighter than --border, which is cyan-tinted and vanishes here. */
-.charting-dark [data-slot='card-content'] > .divide-y > * + * {
+.surface-dark [data-slot='card-content'] > .divide-y > * + * {
   border-top-color: rgba(255, 255, 255, 0.09);
 }
 
@@ -311,13 +318,13 @@
    unselected — so picking 5 looked like picking 4. Mutually exclusive attribute
    values remove the dependency entirely: no rule here can match both states, so
    selection can't be undone by hover, focus, or any later addition. */
-.charting-dark button[data-segment][data-filled='false'] {
+.surface-dark button[data-segment][data-filled='false'] {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.65);
 }
 
-.charting-dark button[data-segment][data-filled='false']:hover:not(:disabled) {
+.surface-dark button[data-segment][data-filled='false']:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.13);
   border-color: rgba(55, 181, 255, 0.45);
   color: #ffffff;
@@ -325,35 +332,64 @@
 
 /* Both the resting and hover rules are spelled out. The hover one carries the
    same colours on purpose — a picked segment must not change under the pointer. */
-.charting-dark button[data-segment][data-filled='true'],
-.charting-dark button[data-segment][data-filled='true']:hover {
+.surface-dark button[data-segment][data-filled='true'],
+.surface-dark button[data-segment][data-filled='true']:hover {
   background: #37b5ff;
   border-color: transparent;
   color: #04213f;
   box-shadow: 0 2px 10px rgba(55, 181, 255, 0.22);
 }
 
-.charting-dark [data-slot='textarea'],
-.charting-dark [data-slot='input'] {
+.surface-dark [data-slot='textarea'],
+.surface-dark [data-slot='input'] {
   background: rgba(255, 255, 255, 0.04);
   color: #ffffff;
 }
 
 /* The Slider primitive hardcodes a light track and a white thumb ring. */
-.charting-dark input[type='range'] {
+.surface-dark input[type='range'] {
   background: rgba(255, 255, 255, 0.1);
 }
-.charting-dark input[type='range']::-webkit-slider-thumb {
+.surface-dark input[type='range']::-webkit-slider-thumb {
   border-color: #04213f;
   box-shadow: 0 0 0 3px rgba(55, 181, 255, 0.25);
 }
-.charting-dark input[type='range']::-moz-range-thumb {
+.surface-dark input[type='range']::-moz-range-thumb {
   border-color: #04213f;
   box-shadow: 0 0 0 3px rgba(55, 181, 255, 0.25);
 }
 
-.charting-dark :is(h1, h2, h3, h4, h5, h6) {
+.surface-dark :is(h1, h2, h3, h4, h5, h6) {
   color: #ffffff;
+}
+
+/* Row separators in tables and divided lists. `--border` is cyan-tinted and
+   near-invisible when it's a hairline between two rows of the same panel, so
+   these get the same neutral white as the card-content rule above. */
+.surface-dark :is(thead, tbody, tfoot) tr,
+.surface-dark .divide-y > * + * {
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+/* ── Recharts ──────────────────────────────────────────────────────────────
+   Recharts writes its greys as SVG presentation attributes (`fill="#666"` on
+   tick labels, `stroke="#ccc"` on grid lines) rather than reading our tokens.
+   Presentation attributes lose to any CSS rule, so these override without
+   `!important` and without touching the chart components' props.
+
+   Series colours are deliberately left alone — the legend takes its text
+   colour from the line's own stroke, and those are already vivid enough to
+   read on navy. */
+.surface-dark :is(.recharts-cartesian-axis-tick-value, .recharts-label) {
+  fill: rgba(255, 255, 255, 0.65);
+}
+
+.surface-dark .recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.surface-dark .recharts-tooltip-cursor {
+  fill: rgba(255, 255, 255, 0.06);
 }
 
 @keyframes marquee {
