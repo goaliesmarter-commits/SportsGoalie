@@ -89,7 +89,10 @@ function createEmptyPeriod(): V2PeriodData {
     goals: [],
     mindControlRating: 3,
     mindControlVoiceNote: undefined,
-    periodFactorRatio: 1,
+    // Factor Ratio starts unanswered, like the four technical Pillars. Seeding
+    // it with 1 meant an untouched period saved as "low challenge" and counted
+    // as real data in every average downstream.
+    periodFactorRatio: undefined,
   };
 }
 
@@ -423,6 +426,16 @@ export default function V2PeriodsPage() {
                 onChange={(val) => updatePeriod('periodFactorRatio', val as number)}
                 options={FACTOR_RATIO_OPTIONS}
               />
+              {/*
+                Nothing is pre-selected, so say so — an empty row of buttons on
+                its own reads as a rendering glitch rather than a question.
+              */}
+              {activePeriod.periodFactorRatio === undefined && (
+                <p className="text-[11px] text-white/35 mt-2">
+                  Not rated yet — leave it blank if you&apos;re not sure. Skipped periods are
+                  left out of your averages rather than counted as a 1.
+                </p>
+              )}
             </ContextualHelp>
           </div>
         )}

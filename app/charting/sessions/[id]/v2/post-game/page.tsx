@@ -227,17 +227,26 @@ export default function V2PostGamePage() {
     const totalGoals = goodGoals + badGoals;
     const goodDecisionRate = totalGoals > 0 ? Math.round((goodGoals / totalGoals) * 100) : 0;
 
-    // Factor Ratio Summary
-    const factorRatioAvg = activePeriods.length > 0
-      ? activePeriods.reduce((sum, p) => sum + (p.periodFactorRatio || 0), 0) / activePeriods.length
-      : 0;
-
-    // Per-period factor ratios for visual breakdown
+    // Per-period factor ratios for the visual breakdown. Factor Ratio is
+    // optional, so an unrated period is left out entirely rather than folded in
+    // as a zero — otherwise skipping the question would drag the game's average
+    // challenge below its lowest possible answer.
     const periodFactorRatios: { label: string; value: number }[] = [];
-    if (periodData.period1) periodFactorRatios.push({ label: 'P1', value: periodData.period1.periodFactorRatio || 0 });
-    if (periodData.period2) periodFactorRatios.push({ label: 'P2', value: periodData.period2.periodFactorRatio || 0 });
-    if (periodData.period3) periodFactorRatios.push({ label: 'P3', value: periodData.period3.periodFactorRatio || 0 });
-    if (periodData.overtime) periodFactorRatios.push({ label: 'OT', value: periodData.overtime.periodFactorRatio || 0 });
+    for (const [label, period] of [
+      ['P1', periodData.period1],
+      ['P2', periodData.period2],
+      ['P3', periodData.period3],
+      ['OT', periodData.overtime],
+    ] as const) {
+      if (typeof period?.periodFactorRatio === 'number') {
+        periodFactorRatios.push({ label, value: period.periodFactorRatio });
+      }
+    }
+
+    // Factor Ratio Summary — averaged over the rated periods only.
+    const factorRatioAvg = periodFactorRatios.length > 0
+      ? periodFactorRatios.reduce((sum, r) => sum + r.value, 0) / periodFactorRatios.length
+      : 0;
 
     return { mindControlAvg, goodGoals, badGoals, goodDecisionRate, factorRatioAvg, periodFactorRatios };
   }, [periodData]);
@@ -637,7 +646,12 @@ export default function V2PostGamePage() {
                     </div>
                   </div>
                 );
-              })() : (
+              })() : hasPeriodData ? (
+                <p className="text-xs text-white/35">
+                  No period was rated for challenge level. Factor Ratio is optional — skipped
+                  periods are left out of this breakdown rather than shown as a zero.
+                </p>
+              ) : (
                 <p className="text-xs text-white/35">Complete Period Charting to see visual breakdown.</p>
               )}
             </div>

@@ -526,7 +526,14 @@ export interface V2PeriodData {
   mindControlRating: number; // 1-5 stars
   mindControlChallengeLevel?: 'low' | 'mid' | 'high'; // specificity flow: captured if 1-2
   mindControlVoiceNote?: string; // situation notes: captured if 1-2
-  periodFactorRatio: number; // 1-5
+  /**
+   * How hard the period was — the opposition, not the goalie. 1-5, and
+   * optional: it used to default to 1, which is indistinguishable from a
+   * deliberate "low challenge" both on screen and in the stored data, so every
+   * unanswered period quietly dragged the game average toward 1. Absent means
+   * unanswered, and every consumer skips it rather than counting it as zero.
+   */
+  periodFactorRatio?: number; // 1-5
   // ── 4 Pillar Ratings (Skating · 7AMS · 6ZS · Form) ───────────────────────
   skatingRating?: number; // 1-5
   skatingVoiceNote?: string;

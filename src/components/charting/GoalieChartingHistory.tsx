@@ -186,7 +186,12 @@ export function GoalieChartingHistory({ studentId, onOpenSession }: GoalieCharti
 
               {expanded && entry && (
                 <div style={{ borderTop: '1px solid rgba(55,181,255,0.1)', background: 'rgba(2,18,44,0.5)', padding: '16px' }}>
-                  <V2ChartReadOnlyView entry={entry} session={session} />
+                  {/*
+                    Flat: this drawer already sits inside the session card, which
+                    sits inside the page card. Framed sections here would be the
+                    fourth outline in the stack.
+                  */}
+                  <V2ChartReadOnlyView entry={entry} session={session} variant="flat" />
                   {onOpenSession && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
                       <button onClick={() => onOpenSession(session.id)}

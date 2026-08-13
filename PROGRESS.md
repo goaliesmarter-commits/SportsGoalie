@@ -618,7 +618,7 @@ Initial project analysis and progress tracking system implementation.
 
 ### Low Priority
 - Anthropic model ID duplicated across `app/api/chatbot/route.ts` and `src/lib/ai/claude.service.ts` — should be one constant
-- `.charting-dark` not applied to `/charting/sessions/[id]/chart` — `ChartingFormWrapper.tsx:220` sits on `bg-gray-50` inside the navy shell. Unresolved question, not a decided bug.
+- `.surface-dark` (renamed from `.charting-dark` 2026-08-13) not applied to `/charting/sessions/[id]/chart` — `ChartingFormWrapper.tsx:220` sits on `bg-gray-50` inside the navy shell. Unresolved question, not a decided bug.
 
 ### Technical Debt
 - **Swallowed promise rejections are a recurring pattern**, not isolated incidents — the Growth Points `.finally()`, the silent coach-invite email failure, and the silent baseline-save failure are the same shape. Worth one deliberate sweep rather than fixing them as they surface.

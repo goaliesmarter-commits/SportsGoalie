@@ -108,6 +108,15 @@
       ]
     },
     {
+      "collectionGroup": "video_quiz_progress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "video_quizzes",
       "queryScope": "COLLECTION",
       "fields": [

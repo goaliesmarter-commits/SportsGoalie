@@ -1113,18 +1113,22 @@ export class ChartingService extends BaseDatabaseService {
 
     // Period aggregation
     type PeriodKey = 'period1' | 'period2' | 'period3' | 'overtime';
+    // `factorCount` is tracked separately from `count`: Factor Ratio is optional,
+    // so dividing its sum by the period count would score every unrated period
+    // as a zero and pull the average below the scale's own floor of 1.
     const periodAgg: Record<PeriodKey, {
       count: number;
       mindSum: number;
       factorSum: number;
+      factorCount: number;
       goalsAgainst: number;
       good: number;
       bad: number;
     }> = {
-      period1: { count: 0, mindSum: 0, factorSum: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      period2: { count: 0, mindSum: 0, factorSum: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      period3: { count: 0, mindSum: 0, factorSum: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      overtime: { count: 0, mindSum: 0, factorSum: 0, goalsAgainst: 0, good: 0, bad: 0 },
+      period1: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
+      period2: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
+      period3: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
+      overtime: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
     };
 
     // Post-Game aggregation
@@ -1157,7 +1161,10 @@ export class ChartingService extends BaseDatabaseService {
           const agg = periodAgg[key];
           agg.count++;
           agg.mindSum += p.mindControlRating || 0;
-          agg.factorSum += p.periodFactorRatio || 0;
+          if (typeof p.periodFactorRatio === 'number') {
+            agg.factorSum += p.periodFactorRatio;
+            agg.factorCount++;
+          }
           agg.goalsAgainst += p.goalsAgainst || 0;
           const goods = p.goals?.filter((g) => g.isGoodGoal).length || 0;
           const bads = (p.goals?.length || 0) - goods;
@@ -1183,7 +1190,7 @@ export class ChartingService extends BaseDatabaseService {
         period: key,
         sampleSize: a.count,
         avgMindControl: this.safeAvg(a.mindSum, a.count),
-        avgFactorRatio: this.safeAvg(a.factorSum, a.count),
+        avgFactorRatio: this.safeAvg(a.factorSum, a.factorCount),
         totalGoalsAgainst: a.goalsAgainst,
         totalGoodGoals: a.good,
         totalBadGoals: a.bad,
@@ -1195,9 +1202,12 @@ export class ChartingService extends BaseDatabaseService {
       sampledPeriods.length > 0
         ? sampledPeriods.reduce((s, p) => s + p.avgMindControl, 0) / sampledPeriods.length
         : 0;
+    // A rated Factor Ratio is always 1-5, so a zero average means that period
+    // had no ratings at all — exclude it rather than let it drag the overall down.
+    const factorRatedPeriods = sampledPeriods.filter((p) => p.avgFactorRatio > 0);
     const overallAvgFactorRatio =
-      sampledPeriods.length > 0
-        ? sampledPeriods.reduce((s, p) => s + p.avgFactorRatio, 0) / sampledPeriods.length
+      factorRatedPeriods.length > 0
+        ? factorRatedPeriods.reduce((s, p) => s + p.avgFactorRatio, 0) / factorRatedPeriods.length
         : 0;
 
     const totalGoalsAgainst = periods.reduce((s, p) => s + p.totalGoalsAgainst, 0);

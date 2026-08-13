@@ -24,33 +24,33 @@ export function SkillPerformanceTable({ data }: SkillPerformanceTableProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'introduction':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-sky-500/15 text-sky-200 border-sky-400/30';
       case 'development':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'bg-yellow-500/15 text-yellow-200 border-yellow-400/30';
       case 'refinement':
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-red-500/15 text-red-200 border-red-400/30';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'bg-white/8 text-white/70 border-white/15';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+        return <CheckCircle2 className="h-4 w-4 text-green-400" />;
       case 'in_progress':
-        return <PlayCircle className="h-4 w-4 text-blue-600" />;
+        return <PlayCircle className="h-4 w-4 text-sky-400" />;
       default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
+        return <Circle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200">Completed</Badge>;
+        return <Badge className="bg-green-500/15 text-green-200 border-green-400/30">Completed</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-700 border-blue-200">In Progress</Badge>;
+        return <Badge className="bg-sky-500/15 text-sky-200 border-sky-400/30">In Progress</Badge>;
       default:
         return <Badge variant="outline">Not Started</Badge>;
     }
@@ -90,16 +90,16 @@ export function SkillPerformanceTable({ data }: SkillPerformanceTableProps) {
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-muted-foreground">Completed</p>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
               </div>
-              <p className="text-2xl font-bold text-green-600">{completedSkills}</p>
+              <p className="text-2xl font-bold text-green-400">{completedSkills}</p>
             </div>
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-muted-foreground">In Progress</p>
-                <PlayCircle className="h-4 w-4 text-blue-600" />
+                <PlayCircle className="h-4 w-4 text-sky-400" />
               </div>
-              <p className="text-2xl font-bold text-blue-600">{inProgressSkills}</p>
+              <p className="text-2xl font-bold text-sky-400">{inProgressSkills}</p>
             </div>
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
@@ -167,7 +167,7 @@ export function SkillPerformanceTable({ data }: SkillPerformanceTableProps) {
                         <td className="px-4 py-3">
                           {skill.quizScore !== null ? (
                             <div className="flex items-center space-x-1">
-                              <Trophy className="h-3 w-3 text-yellow-600" />
+                              <Trophy className="h-3 w-3 text-yellow-400" />
                               <span className="font-medium text-sm">{skill.quizScore}%</span>
                             </div>
                           ) : (

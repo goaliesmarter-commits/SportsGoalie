@@ -288,7 +288,7 @@ export default function ChartingAnalyticsPage() {
     const raw = entry as unknown as Record<string, unknown>;
     return {
       preGame: raw.v2PreGame as { routineCompleted: boolean; anxietyPresent: boolean; targetStateAchieved: boolean; mentalStateRating: number } | undefined,
-      periods: raw.v2Periods as Record<'period1' | 'period2' | 'period3' | 'overtime', { mindControlRating: number; periodFactorRatio: number; goalsAgainst: number; shots: number; saves: number; standardSaves: number; keySaves: number; weakGoals: number; midChallengeCount: number; highChallengeCount: number; goals?: { isGoodGoal: boolean }[] } | undefined> | undefined,
+      periods: raw.v2Periods as Record<'period1' | 'period2' | 'period3' | 'overtime', { mindControlRating: number; periodFactorRatio?: number; goalsAgainst: number; shots: number; saves: number; standardSaves: number; keySaves: number; weakGoals: number; midChallengeCount: number; highChallengeCount: number; goals?: { isGoodGoal: boolean }[] } | undefined> | undefined,
       postGame: raw.v2PostGame as { overallGameFactorRating: number; gameRetentionRating: number; goodDecisionRate: number; mindVaultEntry?: string } | undefined,
       practice: raw.v2Practice as { practiceValueRating: number; technicalEyeDevelopmentRating: number; designatedTrainingReceived: boolean; designatedTrainingDuration?: number; videoCaptured: boolean; practiceIndex?: { category: 'immediate_development' | 'refinement' | 'maintenance' }[]; indexItemsWorkedOn?: string[]; improvementRatings?: { rating: number }[]; mindVaultEntry?: string } | undefined,
     };
@@ -297,7 +297,9 @@ export default function ChartingAnalyticsPage() {
   const calculateV2GameStats = () => {
     const filtered = getFilteredEntries();
     let totalV2 = 0, mindSample = 0, routine = 0, anxiety = 0, targetState = 0, mentalStateSum = 0;
-    let periodSamples = 0, mindSum = 0, factorSum = 0, goalsAgainst = 0, goodGoals = 0, badGoals = 0;
+    // Factor Ratio is optional, so it gets its own sample count — dividing it by
+    // `periodSamples` would treat every unrated period as a zero.
+    let periodSamples = 0, mindSum = 0, factorSum = 0, factorSamples = 0, goalsAgainst = 0, goodGoals = 0, badGoals = 0;
     let totalShots = 0, totalSaves = 0, totalStandardSaves = 0, totalKeySaves = 0, totalWeakGoals = 0, totalMidChallenge = 0, totalHighChallenge = 0;
     let postSample = 0, overallFactorSum = 0, retentionSum = 0, decisionSum = 0, vaultCount = 0;
 
@@ -312,7 +314,7 @@ export default function ChartingAnalyticsPage() {
           if (!p) return;
           periodSamples++;
           mindSum += p.mindControlRating || 0;
-          factorSum += p.periodFactorRatio || 0;
+          if (typeof p.periodFactorRatio === 'number') { factorSum += p.periodFactorRatio; factorSamples++; }
           goalsAgainst += p.goalsAgainst || 0;
           totalShots        += p.shots             || 0;
           totalSaves        += p.saves             || 0;
@@ -332,7 +334,7 @@ export default function ChartingAnalyticsPage() {
     if (totalV2 === 0) return null;
     const avg = (sum: number, count: number) => (count > 0 ? sum / count : 0);
     const savePct = totalShots > 0 ? ((totalShots - goalsAgainst) / totalShots) * 100 : 0;
-    return { totalV2, mindSample, routinePct: avg(routine, mindSample) * 100, anxietyPct: avg(anxiety, mindSample) * 100, targetStatePct: avg(targetState, mindSample) * 100, avgMentalState: avg(mentalStateSum, mindSample), periodSamples, avgMindControl: avg(mindSum, periodSamples), avgFactorRatio: avg(factorSum, periodSamples), goalsAgainst, goodGoals, badGoals, goodBadRatio: badGoals > 0 ? goodGoals / badGoals : goodGoals, totalShots, totalSaves, totalStandardSaves, totalKeySaves, totalWeakGoals, totalMidChallenge, totalHighChallenge, savePct, postSample, avgOverallFactor: avg(overallFactorSum, postSample), avgRetention: avg(retentionSum, postSample), avgGoodDecisionRate: avg(decisionSum, postSample), vaultCount };
+    return { totalV2, mindSample, routinePct: avg(routine, mindSample) * 100, anxietyPct: avg(anxiety, mindSample) * 100, targetStatePct: avg(targetState, mindSample) * 100, avgMentalState: avg(mentalStateSum, mindSample), periodSamples, avgMindControl: avg(mindSum, periodSamples), factorSamples, avgFactorRatio: avg(factorSum, factorSamples), goalsAgainst, goodGoals, badGoals, goodBadRatio: badGoals > 0 ? goodGoals / badGoals : goodGoals, totalShots, totalSaves, totalStandardSaves, totalKeySaves, totalWeakGoals, totalMidChallenge, totalHighChallenge, savePct, postSample, avgOverallFactor: avg(overallFactorSum, postSample), avgRetention: avg(retentionSum, postSample), avgGoodDecisionRate: avg(decisionSum, postSample), vaultCount };
   };
 
   const calculateV2PracticeStats = () => {
@@ -553,7 +555,8 @@ export default function ChartingAnalyticsPage() {
               <div style={{ borderRadius: '18px', background: 'linear-gradient(160deg, #0c2e56 0%, #04213f 30%, #0a2d52 100%)', border: `1px solid rgba(248,113,113,0.18)`, padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <StatTile label="Emotional Balance Avg" value={v2GameStats.avgMindControl.toFixed(1)} unit="/ 5" sub={`${v2GameStats.periodSamples} periods`} accent={VIOLET} />
-                  <StatTile label="Factor Ratio Avg" value={v2GameStats.avgFactorRatio.toFixed(1)} unit="/ 5" sub="Across periods" accent={CORAL} />
+                  {/* Factor Ratio is optional — with nothing rated there is no average to show, and "0.0 / 5" would read as a real score below the scale's floor. */}
+                  <StatTile label="Factor Ratio Avg" value={v2GameStats.factorSamples > 0 ? v2GameStats.avgFactorRatio.toFixed(1) : '—'} unit={v2GameStats.factorSamples > 0 ? '/ 5' : undefined} sub={v2GameStats.factorSamples > 0 ? `${v2GameStats.factorSamples} rated` : 'Not rated'} accent={CORAL} />
                   <StatTile label="Good / Weak Goals" value={`${v2GameStats.goodGoals} / ${v2GameStats.badGoals}`} sub={`Ratio ${v2GameStats.goodBadRatio.toFixed(2)}:1`} accent={MINT} />
                   <StatTile label="Goals Against" value={v2GameStats.goalsAgainst} sub="Total across sessions" accent={CORAL} />
                 </div>

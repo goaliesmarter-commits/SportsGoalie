@@ -16,6 +16,22 @@ interface ProgressOverTimeChartProps {
   data: ProgressData[];
 }
 
+/**
+ * Series colours, as literals.
+ *
+ * The skills line used to be `hsl(var(--primary))`, but `--primary` holds a
+ * whole colour (`oklch(…)` on the light theme, `#37b5ff` in `.surface-dark`) —
+ * not the three HSL channels that wrapper expects. `hsl(#37b5ff)` is invalid
+ * CSS, so recharts fell back to black and the line was invisible against the
+ * chart. Recharts writes these straight into SVG attributes and can't read
+ * tokens anyway, so they're spelled out.
+ */
+const SERIES = {
+  skills: '#37b5ff',
+  quizzes: '#34d399',
+  score: '#fb7185',
+} as const;
+
 export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
   // Calculate summary stats
   const totalSkills = data.length > 0 ? data[data.length - 1].skillsCompleted : 0;
@@ -70,7 +86,7 @@ export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Avg Score</p>
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-green-400" />
               </div>
               <p className="text-2xl font-bold mt-2">{avgScore}%</p>
             </div>
@@ -133,9 +149,9 @@ export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
                     type="monotone"
                     dataKey="skillsCompleted"
                     name="Skills Completed"
-                    stroke="hsl(var(--primary))"
+                    stroke={SERIES.skills}
                     strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                    dot={{ fill: SERIES.skills, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                   <Line
@@ -143,9 +159,9 @@ export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
                     type="monotone"
                     dataKey="quizzesTaken"
                     name="Quizzes Taken"
-                    stroke="hsl(142, 76%, 36%)"
+                    stroke={SERIES.quizzes}
                     strokeWidth={2}
-                    dot={{ fill: "hsl(142, 76%, 36%)", r: 4 }}
+                    dot={{ fill: SERIES.quizzes, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                   <Line
@@ -153,9 +169,9 @@ export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
                     type="monotone"
                     dataKey="averageScore"
                     name="Avg Score"
-                    stroke="hsl(346, 87%, 43%)"
+                    stroke={SERIES.score}
                     strokeWidth={2}
-                    dot={{ fill: "hsl(346, 87%, 43%)", r: 4 }}
+                    dot={{ fill: SERIES.score, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
