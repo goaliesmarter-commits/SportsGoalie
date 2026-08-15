@@ -17,7 +17,21 @@
     linear-gradient(90deg, rgba(55, 181, 255, 0.1) 1px, transparent 1px);
 }
 
+/* Video preview frames: keep the 16:9 box, but cap the width so the derived
+   height can never push the player's controls / the form below it off screen.
+   `--video-chrome` is the vertical space the surrounding UI needs (page header,
+   tabs, controls, sticky footer); set it per context with [--video-chrome:30rem]. */
+.video-fit-frame {
+  width: 100%;
+  margin-inline: auto;
+  max-width: calc(max(7rem, 100vh - var(--video-chrome, 24rem)) * 16 / 9);
+  max-width: calc(max(7rem, 100svh - var(--video-chrome, 24rem)) * 16 / 9);
+}
+
 @custom-variant dark (&:is(.dark *));
+
+/* Short viewports — laptop screens, where vertical space is the constraint. */
+@custom-variant short (@media (max-height: 900px));
 
 @theme inline {
   --color-background: var(--background);

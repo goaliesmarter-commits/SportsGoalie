@@ -326,7 +326,7 @@ export function VideoUploader({
     if (uploadState === 'success' && videoUrl) {
       return (
         <div className="space-y-4">
-          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+          <div className="video-fit-frame [--video-chrome:38rem] short:[--video-chrome:32rem] relative aspect-video bg-black rounded-lg overflow-hidden">
             <video
               ref={videoRef}
               src={videoUrl}
@@ -452,9 +452,9 @@ export function VideoUploader({
       className={cn('overflow-hidden rounded-xl border', className)}
       style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(96,205,255,0.18)' }}
     >
-      <div className="p-4">
+      <div className="p-4 short:p-3">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'upload' | 'url')}>
-          <TabsList className="grid w-full grid-cols-2 mb-4 rounded-xl bg-white/5 border border-white/10 p-1">
+          <TabsList className="grid w-full grid-cols-2 mb-4 short:mb-2 rounded-xl bg-white/5 border border-white/10 p-1">
             <TabsTrigger value="upload" className="rounded-lg text-white/50 data-[state=active]:bg-[#f87171] data-[state=active]:text-white">Upload Video</TabsTrigger>
             <TabsTrigger value="url" className="rounded-lg text-white/50 data-[state=active]:bg-[#f87171] data-[state=active]:text-white">Video URL</TabsTrigger>
           </TabsList>
@@ -466,7 +466,7 @@ export function VideoUploader({
           <TabsContent value="url">
             {uploadState === 'success' && videoUrl ? (
               <div className="space-y-4">
-                <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                <div className="video-fit-frame [--video-chrome:38rem] short:[--video-chrome:32rem] relative aspect-video bg-black rounded-lg overflow-hidden">
                   {isExternalPlatform ? (
                     <ReactPlayer
                       url={videoUrl}
