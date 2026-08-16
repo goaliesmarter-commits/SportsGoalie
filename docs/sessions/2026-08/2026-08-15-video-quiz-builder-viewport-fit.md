@@ -1,10 +1,10 @@
 # Session: Video Quiz Builder — Viewport Fit
 
-**Date:** 2026-08-15
-**Time Spent:** 4h
-**Focus:** Bug Fix - Responsive Layout + Contrast (Coach → Create Video Quiz)
+**Date:** 2026-08-15 (ran past midnight into 08-16)
+**Time Spent:** 7.25h (4h layout + contrast, 3.25h toasts + button zoom)
+**Focus:** Bug Fix - Responsive Layout, Contrast and Interaction Polish (Coach → Create Video Quiz)
 **Block:** 2 Depth & Quality
-**Commits:** `a0ae4ac`, `fe906fe`
+**Commits:** `a0ae4ac`, `fe906fe`, `76d039e`
 
 ---
 
@@ -125,6 +125,45 @@ and the two secondary lines merged into one) plus `max-sm:p-3`. Re-measured:
 | 390×780 | +154px |
 | 360×640 | −10px (marginally better than the −12 that state already had) |
 
+### Second follow-up — timestamp toasts and the growing button (`76d039e`)
+
+Two more from Coach Mike off a screenshot of the Add-New-Question form.
+
+**"Do not show those timestamps."** Two toasts announced numbers that were already on screen:
+"Add Question Here" reported `Question timestamp set to 0:07` while writing 0:07 into the visible
+timestamp field a few pixels away, and the video-loaded toast carried `Duration detected: 3m 12s`
+next to a progress bar already showing it. Both readouts removed; the toasts that remain
+(`Question added successfully`, validation errors) say something the UI does not.
+
+**"When you click it or hover on it, it becomes large in size."** Not a builder bug — the shared
+`Button` (`src/components/ui/button.tsx`) carries `transform hover:scale-105 active:scale-95` on
+*every* variant, so it is an app-wide default. In a dense builder the full-width "+ Add Question"
+button jumping 5% under the cursor reads as a glitch and shoves its neighbours. Stripping it from
+the component would restyle every button in the app off the back of one screen's complaint, so
+instead a `.no-button-zoom` scope switches it off for its subtree, applied to both coach quiz pages
+and to `VideoQuestionBuilder` itself (so it holds wherever the builder is embedded).
+
+The rule has to reset `--tw-scale-x/y/z`, not `scale`:
+
+```css
+.no-button-zoom :is(button, [role='button']):hover,
+.no-button-zoom :is(button, [role='button']):active {
+  --tw-scale-x: 100%; --tw-scale-y: 100%; --tw-scale-z: 100%;
+  transform: none;
+}
+```
+
+Verified with a temporary Playwright harness (deleted) reading `getBoundingClientRect` plus computed
+`scale`/`transform` at rest, hover and press, at 1280×800:
+
+| Button | rest | hover | press |
+|---|---|---|---|
+| scoped (`.no-button-zoom`) | 1072×36 | 1072×36 | 1072×36 |
+| scoped, outline variant | 82.7×36 | 82.7×36 | 82.7×36 |
+| unscoped control | 1072×36 | 1125.6×37.8 | 1018.4×34.2 |
+
+The control still moving is the point: nothing outside the two quiz screens changed.
+
 ---
 
 ## Files Created
@@ -143,6 +182,9 @@ and the two secondary lines merged into one) plus `max-sm:p-3`. Re-measured:
 | `app/coach/content/quiz/create/page.tsx` | Header/footer/tab chrome trimmed under `short:`; Video-tab blurb and library picker merged onto one row; `surface="light"` |
 | `app/coach/content/quiz/[id]/edit/page.tsx` | `surface="light"` — same white card, same invisible drop zone |
 | `src/components/coach/video-uploader.tsx` (2nd pass) | `surface` prop + token map; explicit "Click here to upload a video" / Choose File affordance; keyboard reachable; empty state compacted under `short:` / `max-sm:` |
+| `app/globals.css` (3rd pass) | `.no-button-zoom` — resets `--tw-scale-*` on hover/active for buttons in its subtree |
+| `src/components/admin/VideoQuestionBuilder.tsx` (3rd pass) | Both timestamp toasts removed; `no-button-zoom` on the builder root |
+| `app/coach/content/quiz/create/page.tsx`, `[id]/edit/page.tsx` (3rd pass) | `no-button-zoom` on the page roots |
 
 ---
 
@@ -167,6 +209,7 @@ None. The fix is complete and uncommitted work is now committed.
 1. Deploy — production tracks `combined`, so pushing this branch ships it. Confirm with Michael
    which URL he is testing on before telling him it is fixed (see the standing PROJECT_TRACKER item).
 2. ~~`VideoUploader` low contrast on the white card~~ — fixed in `fe906fe`, see above.
+   ~~Timestamp toasts / button zoom~~ — fixed in `76d039e`, see above.
 3. Audit the other five `VideoUploader` call sites the same way when convenient. They are on navy
    panels and were left on the `dark` default without being re-screenshotted this session.
 4. Michael said more items are coming behind this one — expect them.
@@ -193,3 +236,15 @@ same card and is a candidate.
 Third, procedural: adding to a layout that was just measured invalidates the measurement. Enlarging
 the empty drop zone silently re-broke the 1366×600 fit from earlier the same day. Re-running the
 measurement caught it; trusting the earlier green result would not have.
+
+Fourth, two traps that between them cost most of the button fix — both invisible in the source:
+
+- **The minifier merges `scale` into `transform`.** A rule declaring `scale: none; transform: none;`
+  ships as `transform: none` alone, and Tailwind v4 animates scale purely through
+  `scale: var(--tw-scale-x) var(--tw-scale-y)` — so the override did nothing while looking correct
+  in the editor. Reset the `--tw-*` variables a utility reads, not the shorthand it writes. Reading
+  the *served* CSS chunk, not the source file, is what found this.
+- **Turbopack does not always rebuild `app/globals.css`.** Edits kept serving the previous rule even
+  after `rm -rf .next/cache` and a restart, which made a correct fix look broken twice. Only
+  `rm -rf .next` (whole directory) picked the change up. Worth doing before concluding that any CSS
+  change "doesn't work".
