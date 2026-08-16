@@ -118,9 +118,9 @@ export default function CoachContentPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <style>{`
-        .content-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        @media (min-width: 640px)  { .content-grid { grid-template-columns: 1fr 1fr; } }
-        @media (min-width: 1024px) { .content-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .content-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+        @media (min-width: 640px)  { .content-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+        @media (min-width: 1024px) { .content-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); } }
         .content-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (max-width: 480px) { .content-stats { grid-template-columns: 1fr; } }
         .content-header { padding: 20px 20px; }
