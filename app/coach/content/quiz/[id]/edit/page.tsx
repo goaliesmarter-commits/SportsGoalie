@@ -455,6 +455,7 @@ export default function EditVideoQuizPage() {
                   coachId={user.id}
                   onVideoUploaded={handleVideoUploaded}
                   initialVideoUrl={videoUrl}
+                  surface="light"
                 />
                 {videoDuration > 0 && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
