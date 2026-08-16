@@ -94,9 +94,9 @@ export function VideoQuestionBuilder({
       if (duration && !isNaN(duration) && isFinite(duration)) {
         const roundedDuration = Math.floor(duration);
         setDetectedDuration(roundedDuration);
-        toast.success('Video loaded successfully', {
-          description: `Duration detected: ${Math.floor(roundedDuration / 60)}m ${roundedDuration % 60}s`,
-        });
+        // Duration is shown next to the progress bar; repeating it in a corner
+        // popup was the other timestamp readout Michael asked us to drop.
+        toast.success('Video loaded successfully');
       }
     }
   };
@@ -148,7 +148,8 @@ export function VideoQuestionBuilder({
       timestamp: Math.floor(currentTime),
     });
     setIsPlaying(false);
-    toast.success(`Question timestamp set to ${formatTimestamp(Math.floor(currentTime))}`);
+    // No toast here: the timestamp it announced is already visible in the form
+    // field it just filled in, so the popup was noise on every click.
 
     // Scroll to the add question form
     const addQuestionForm = document.getElementById('add-question-form');
@@ -511,20 +512,22 @@ export function VideoQuestionBuilder({
   };
 
   return (
-    <div className="space-y-6">
+    // `no-button-zoom` here rather than only on the page, so the builder behaves
+    // the same wherever it is embedded (coach and admin quiz screens).
+    <div className="no-button-zoom space-y-6">
       {/* Video Player Section */}
-      <Card>
+      <Card className="gap-4 py-4 short:gap-2 short:py-3">
         <CardHeader>
           <CardTitle>Video Preview & Controls</CardTitle>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 short:hidden">
             Watch the video and pause at any moment to add a question at that timestamp
           </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4 short:space-y-2">
             {/* Video Player */}
             <div
-              className="relative bg-black rounded-lg overflow-hidden aspect-video cursor-pointer group"
+              className="video-fit-frame [--video-chrome:36rem] short:[--video-chrome:28rem] relative bg-black rounded-lg overflow-hidden aspect-video cursor-pointer group"
               onClick={handlePlayPause}
             >
               <ReactPlayer
@@ -564,9 +567,9 @@ export function VideoQuestionBuilder({
             </div>
 
             {/* Custom Controls */}
-            <div className="space-y-4">
+            <div className="space-y-4 short:space-y-2">
               {/* Progress Bar */}
-              <div className="space-y-2">
+              <div className="space-y-2 short:space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">{formatTimestamp(currentTime)}</span>
                   <span className="text-gray-500">
@@ -587,8 +590,8 @@ export function VideoQuestionBuilder({
               </div>
 
               {/* Control Buttons */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="icon"
@@ -603,7 +606,7 @@ export function VideoQuestionBuilder({
                     variant="default"
                     size="icon"
                     onClick={handlePlayPause}
-                    className="h-12 w-12 bg-red-600 text-white hover:bg-red-700"
+                    className="h-12 w-12 short:h-10 short:w-10 bg-red-600 text-white hover:bg-red-700"
                   >
                     {isPlaying ? (
                       <Pause className="h-6 w-6" />
@@ -676,7 +679,7 @@ export function VideoQuestionBuilder({
                   onClick={handleAddQuestionAtCurrentTime}
                   variant="default"
                   size="lg"
-                  className="gap-2 bg-gradient-to-r from-red-600 to-blue-600 text-white hover:from-red-700 hover:to-blue-700"
+                  className="gap-2 short:h-9 bg-gradient-to-r from-red-600 to-blue-600 text-white hover:from-red-700 hover:to-blue-700"
                 >
                   <Plus className="h-5 w-5" />
                   Add Question Here
