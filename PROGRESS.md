@@ -8,7 +8,7 @@
 
 **Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Last Updated:** 2026-08-16
+**Last Updated:** 2026-08-16 (evening)
 **Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
 
 > ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
@@ -116,6 +116,10 @@
 > **Full session details:** See `docs/sessions/YYYY-MM/` for detailed session logs
 >
 > ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
+
+### 2026-08-16 - [Coach Content Library — Grid Overflow Fix](docs/sessions/2026-08/2026-08-16-coach-content-grid-overflow.md)
+**Time:** 0.9h | **Focus:** Bug Fix - Responsive Layout | **Block:** 2
+Coach Mike reported content-library cards cut off on the right with no scrollbar, reading it as a regression from the viewport-fit work above. `git log --name-only` across every commit in that work confirmed none touched `app/coach/content/page.tsx` or any shared layout/sidebar file — pre-existing bug, not introduced by this branch. Root cause: `.content-grid` used bare `1fr` tracks, which default to `min-width: auto` — below ~1440px the third column's cards needed more than an even split and pushed 130px past the grid's own edge, capped at a constant 1425.4px total width regardless of further narrowing. A pre-existing `html { overflow-x: hidden }` swallowed the overflow silently instead of producing a scrollbar, which is why it read as cards being cut off rather than needing a scroll. First attempted fix (`min-width: 0` on the grid container, reasoning it was a flex item of the column-flex `<main>` around it) measured no change — the container was never the constrained box; its own grid-item children were. Fixed by swapping every `1fr` for `minmax(0, 1fr)` across all three breakpoints. Verified with an unauthenticated Playwright reproduction (rebuilt once after an initial simplified version produced a false-positive overflow of its own) across 7 viewports: no horizontal overflow at any width after the fix, unchanged layout at wide viewports. Same bare-`1fr` pattern exists on 9 other pages, unreported and left alone.
 
 ### 2026-08-15 - [Video Quiz Builder — Viewport Fit](docs/sessions/2026-08/2026-08-15-video-quiz-builder-viewport-fit.md)
 **Time:** 7.25h | **Focus:** Bug Fix - Responsive Layout, Contrast, Interaction Polish | **Block:** 2
@@ -446,24 +450,24 @@ Initial project analysis and progress tracking system implementation.
 | Phase | Time Spent | Status |
 |-------|-----------|--------|
 | Phase 1 | ~160 hours (estimated) | ✅ Complete |
-| Phase 2 | 420.75 hours | 🔄 In Progress |
-| **Total** | **~580.75 hours** | - |
+| Phase 2 | 421.65 hours | 🔄 In Progress |
+| **Total** | **~581.65 hours** | - |
 
-> **Phase 2 = 58h logged (Feb 17 – Mar 12) + 355.5h reconstructed (Mar 13 – Aug 2) + 7.25h logged (Aug 15).** The reconstructed portion is estimated from commit scope and from two contemporaneous work-log documents; it is not a measured time log. Treat it as an order-of-magnitude record of effort, not as a billing source. The Aug 15 figure is measured elapsed working time.
+> **Phase 2 = 58h logged (Feb 17 – Mar 12) + 355.5h reconstructed (Mar 13 – Aug 2) + 7.25h logged (Aug 15) + 0.9h logged (Aug 16).** The reconstructed portion is estimated from commit scope and from two contemporaneous work-log documents; it is not a measured time log. Treat it as an order-of-magnitude record of effort, not as a billing source. The Aug 15/16 figures are measured elapsed working time.
 
 ### By Category (Phase 2)
 | Category | Time Spent | Percentage |
 |----------|-----------|------------|
 | Development (features) | 265h | 63% |
 | UI / Design System | 68h | 16% |
-| Debugging / Bug Fixes | 49.25h | 12% |
+| Debugging / Bug Fixes | 50.15h | 12% |
 | Refactor | 14h | 3% |
 | Documentation | 12.25h | 3% |
 | Build / Infrastructure | 8h | 2% |
 | Testing | 2.5h | <1% |
 | Security | 1.5h | <1% |
 | Version Control | 0.25h | <1% |
-| **Total** | **420.75h** | **100%** |
+| **Total** | **421.65h** | **100%** |
 
 > Category split for the reconstructed period is apportioned from each session's Focus label, not from per-task records. The pre-2026-03-13 figures are the original logged ones.
 
@@ -481,8 +485,8 @@ Initial project analysis and progress tracking system implementation.
 | 2026-05 | 47.25h | Animated backgrounds, pillar pages, goalie invitations, email delivery, pricing, admin redesign, language lock | 5 |
 | 2026-06 | 144h | Coach onboarding, coach panel, baseline questionnaire, L-Index, blue design system, parent + coach charting modules, Growth Points, video review | 10 |
 | 2026-07 | 41h | Mobile responsiveness, baseline scores, contact form, invitations + admin invite management, video library, invite validation, Seven Pillars public pages | 7 |
-| 2026-08 (to 15th) | 17.75h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit | 2 |
-| **Total** | **362.75h** | - | **40** |
+| 2026-08 (to 16th) | 18.65h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit, content library grid overflow fix | 3 |
+| **Total** | **363.65h** | - | **41** |
 
 ---
 
