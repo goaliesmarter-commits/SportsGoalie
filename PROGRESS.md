@@ -118,8 +118,8 @@
 > ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
 
 ### 2026-08-15 - [Video Quiz Builder — Viewport Fit](docs/sessions/2026-08/2026-08-15-video-quiz-builder-viewport-fit.md)
-**Time:** 3h | **Focus:** Bug Fix - Responsive Layout | **Block:** 2
-Coach Mike reported the player on `/coach/content/quiz/create` filling a 13" laptop screen, pushing the controls and Add-Question form below the fold. The player boxes were plain full-width `aspect-video` divs with no height ceiling on a page with sticky header *and* sticky footer. Added `.video-fit-frame` in `app/globals.css` — caps the *width* to `(100svh − --video-chrome) × 16/9` so the derived height can never exceed what the surrounding UI leaves — plus a `short` variant (`max-height: 900px`) since the constraint is vertical and no width breakpoint can express it. Applied at all three player sites with per-context budgets, and trimmed page chrome under `short:`. Verified with Playwright across 7 viewports against a temporary harness (deleted after): at 1280×690 the video renders 430×242 with the progress bar, transport controls and "Add Question Here" all ~31px clear of the footer. One trap worth remembering — the unlayered `.video-fit-frame` rule outranked Tailwind v4's `@layer utilities` arbitrary property, so a class-level `--video-chrome` declaration silently swallowed every per-site override; reading it via `var(--x, default)` is the form that works.
+**Time:** 4h | **Focus:** Bug Fix - Responsive Layout + Contrast | **Block:** 2
+Coach Mike reported the player on `/coach/content/quiz/create` filling a 13" laptop screen, pushing the controls and Add-Question form below the fold. The player boxes were plain full-width `aspect-video` divs with no height ceiling on a page with sticky header *and* sticky footer. Added `.video-fit-frame` in `app/globals.css` — caps the *width* to `(100svh − --video-chrome) × 16/9` so the derived height can never exceed what the surrounding UI leaves — plus a `short` variant (`max-height: 900px`) since the constraint is vertical and no width breakpoint can express it. Applied at all three player sites with per-context budgets, and trimmed page chrome under `short:`. Verified with Playwright across 7 viewports against a temporary harness (deleted after): at 1280×690 the video renders 430×242 with the progress bar, transport controls and "Add Question Here" all ~31px clear of the footer. One trap worth remembering — the unlayered `.video-fit-frame` rule outranked Tailwind v4's `@layer utilities` arbitrary property, so a class-level `--video-chrome` declaration silently swallowed every per-site override; reading it via `var(--x, default)` is the form that works. Follow-up in the same session (`fe906fe`): the uploader on that tab was a dead end, not just low contrast — `VideoUploader` hard-codes white-on-dark, and on the page's white card the drop zone had no visible border *and* no visible instructions, leaving the red *tab* as the only thing a coach could see. Added a `surface` prop defaulting to `dark` (the five navy call sites are untouched), an explicit "Click here to upload a video" / Choose File affordance, and keyboard reachability. The taller empty state re-broke the 1366×600 fit from earlier the same day (−74px) until it was compacted under `short:` — caught by re-measuring rather than trusting the earlier green run.
 
 ### 2026-08-02 - [Concurrent Pillar Charting Engine](docs/sessions/2026-08/2026-08-02-concurrent-pillar-charting-engine.md)
 **Time:** 10h 30min | **Focus:** Feature - Charting Engine / Bug Fixes | **Block:** 4
@@ -446,24 +446,24 @@ Initial project analysis and progress tracking system implementation.
 | Phase | Time Spent | Status |
 |-------|-----------|--------|
 | Phase 1 | ~160 hours (estimated) | ✅ Complete |
-| Phase 2 | 416.5 hours | 🔄 In Progress |
-| **Total** | **~576.5 hours** | - |
+| Phase 2 | 417.5 hours | 🔄 In Progress |
+| **Total** | **~577.5 hours** | - |
 
-> **Phase 2 = 58h logged (Feb 17 – Mar 12) + 355.5h reconstructed (Mar 13 – Aug 2) + 3h logged (Aug 15).** The reconstructed portion is estimated from commit scope and from two contemporaneous work-log documents; it is not a measured time log. Treat it as an order-of-magnitude record of effort, not as a billing source. The Aug 15 figure is measured elapsed working time.
+> **Phase 2 = 58h logged (Feb 17 – Mar 12) + 355.5h reconstructed (Mar 13 – Aug 2) + 4h logged (Aug 15).** The reconstructed portion is estimated from commit scope and from two contemporaneous work-log documents; it is not a measured time log. Treat it as an order-of-magnitude record of effort, not as a billing source. The Aug 15 figure is measured elapsed working time.
 
 ### By Category (Phase 2)
 | Category | Time Spent | Percentage |
 |----------|-----------|------------|
 | Development (features) | 265h | 64% |
 | UI / Design System | 68h | 16% |
-| Debugging / Bug Fixes | 45h | 11% |
+| Debugging / Bug Fixes | 46h | 11% |
 | Refactor | 14h | 3% |
 | Documentation | 12.25h | 3% |
 | Build / Infrastructure | 8h | 2% |
 | Testing | 2.5h | <1% |
 | Security | 1.5h | <1% |
 | Version Control | 0.25h | <1% |
-| **Total** | **416.5h** | **100%** |
+| **Total** | **417.5h** | **100%** |
 
 > Category split for the reconstructed period is apportioned from each session's Focus label, not from per-task records. The pre-2026-03-13 figures are the original logged ones.
 
@@ -481,8 +481,8 @@ Initial project analysis and progress tracking system implementation.
 | 2026-05 | 47.25h | Animated backgrounds, pillar pages, goalie invitations, email delivery, pricing, admin redesign, language lock | 5 |
 | 2026-06 | 144h | Coach onboarding, coach panel, baseline questionnaire, L-Index, blue design system, parent + coach charting modules, Growth Points, video review | 10 |
 | 2026-07 | 41h | Mobile responsiveness, baseline scores, contact form, invitations + admin invite management, video library, invite validation, Seven Pillars public pages | 7 |
-| 2026-08 (to 15th) | 13.5h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit | 2 |
-| **Total** | **358.5h** | - | **40** |
+| 2026-08 (to 15th) | 14.5h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit | 2 |
+| **Total** | **359.5h** | - | **40** |
 
 ---
 

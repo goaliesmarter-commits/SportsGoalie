@@ -1,10 +1,10 @@
 # Session: Video Quiz Builder — Viewport Fit
 
 **Date:** 2026-08-15
-**Time Spent:** 3h
-**Focus:** Bug Fix - Responsive Layout (Coach → Create Video Quiz)
+**Time Spent:** 4h
+**Focus:** Bug Fix - Responsive Layout + Contrast (Coach → Create Video Quiz)
 **Block:** 2 Depth & Quality
-**Commits:** `a0ae4ac`
+**Commits:** `a0ae4ac`, `fe906fe`
 
 ---
 
@@ -92,6 +92,39 @@ not a height one — the video is already as small as the column allows and the 
 of pixels of the footer's own padding. Hiding the volume slider there was tried and measured no
 improvement, so it was reverted rather than kept as decoration.
 
+### Follow-up in the same session — the invisible upload target (`fe906fe`)
+
+The low-contrast uploader logged below as a "worth a follow-up" note turned out to be the next thing
+reported, and it was worse than cosmetic. `VideoUploader` hard-codes white-on-dark colours
+throughout. Five of its seven call sites are navy panels, where that is correct. The two coach
+content pages render it inside a **white** shadcn `Card`, where `border-white/15` and `text-white`
+resolve to invisible: the drop zone had no visible border *and* no visible instructions. The only
+thing a coach could see was the active red **tab**, which is not a button — so there was no
+discoverable way to start an upload at all. That is a dead end, not a contrast nit.
+
+Fixed with a `surface` prop (`'dark' | 'light'`) driving a token map, defaulting to `dark` so the
+five navy sites are untouched, and `surface="light"` passed at the two card sites. A repaint was
+rejected for exactly that reason — the component genuinely lives on both surfaces.
+
+Also strengthened the affordance, because "the whole box is clickable" was not readable even before
+the contrast bug: the empty state now reads **"Click here to upload a video"**, carries an explicit
+**Choose File** button, and is keyboard reachable (`role="button"`, `tabIndex`, Enter/Space, focus
+ring).
+
+That made the empty drop zone *taller* than the preview state it replaces, which broke the fit
+shipped hours earlier in `a0ae4ac` — 1366×600 measured **−74px**. Caught only because the same
+measurement was re-run rather than assumed. Compacted the empty state under `short:` (padding, icon,
+and the two secondary lines merged into one) plus `max-sm:p-3`. Re-measured:
+
+| Viewport | Slack below drop zone |
+|---|---|
+| 1280×690 | +100px |
+| 1366×600 | +10px |
+| 1440×720 | +130px |
+| 1920×950 | +144px |
+| 390×780 | +154px |
+| 360×640 | −10px (marginally better than the −12 that state already had) |
+
 ---
 
 ## Files Created
@@ -107,7 +140,9 @@ improvement, so it was reverted rather than kept as decoration.
 | `app/globals.css` | `.video-fit-frame` height-derived width cap; `short` custom variant |
 | `src/components/admin/VideoQuestionBuilder.tsx` | Player capped (36/28rem); card, controls and play button compacted on short viewports; control row made wrap-safe |
 | `src/components/coach/video-uploader.tsx` | Both preview frames capped (38/32rem); padding and tab strip compacted |
-| `app/coach/content/quiz/create/page.tsx` | Header/footer/tab chrome trimmed under `short:`; Video-tab blurb and library picker merged onto one row |
+| `app/coach/content/quiz/create/page.tsx` | Header/footer/tab chrome trimmed under `short:`; Video-tab blurb and library picker merged onto one row; `surface="light"` |
+| `app/coach/content/quiz/[id]/edit/page.tsx` | `surface="light"` — same white card, same invisible drop zone |
+| `src/components/coach/video-uploader.tsx` (2nd pass) | `surface` prop + token map; explicit "Click here to upload a video" / Choose File affordance; keyboard reachable; empty state compacted under `short:` / `max-sm:` |
 
 ---
 
@@ -131,11 +166,10 @@ None. The fix is complete and uncommitted work is now committed.
 
 1. Deploy — production tracks `combined`, so pushing this branch ships it. Confirm with Michael
    which URL he is testing on before telling him it is fixed (see the standing PROJECT_TRACKER item).
-2. `VideoUploader` is styled for a dark surface (`text-white/50`, `bg-white/5`) but renders on a
-   white card on this page, so its "Upload Video" / "Video URL" tab labels are near-invisible when
-   inactive. Pre-existing, unrelated to sizing, noticed in the verification screenshots. Worth a
-   small follow-up.
-3. Michael said more items are coming behind this one — expect them.
+2. ~~`VideoUploader` low contrast on the white card~~ — fixed in `fe906fe`, see above.
+3. Audit the other five `VideoUploader` call sites the same way when convenient. They are on navy
+   panels and were left on the `dark` default without being re-screenshotted this session.
+4. Michael said more items are coming behind this one — expect them.
 
 ---
 
@@ -148,3 +182,14 @@ the only thing that needs measuring per context.
 The recurring lesson from this one: an unlayered plain CSS rule silently outranks a Tailwind v4
 utility, and the failure is invisible — the layout just quietly ignores the override. Reading
 computed styles in the browser found it in a minute; reading the CSS did not.
+
+Second lesson, from the follow-up: **a component with hard-coded surface colours is a latent bug at
+every call site on the opposite surface.** `VideoUploader` shipped white-on-dark and was later
+dropped onto white cards; nobody noticed because the failure mode is invisible content, not a
+crash or a layout break. Worth grepping for other components carrying `text-white` / `bg-white/5`
+that are used in more than one place — `VideoLibraryPicker` sits right next to this one on the
+same card and is a candidate.
+
+Third, procedural: adding to a layout that was just measured invalidates the measurement. Enlarging
+the empty drop zone silently re-broke the 1366×600 fit from earlier the same day. Re-running the
+measurement caught it; trusting the earlier green result would not have.
