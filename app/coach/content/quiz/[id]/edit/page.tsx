@@ -277,7 +277,7 @@ export default function EditVideoQuizPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="no-button-zoom min-h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="container mx-auto px-4 py-4">

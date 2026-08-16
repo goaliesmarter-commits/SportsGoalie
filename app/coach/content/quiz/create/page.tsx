@@ -240,7 +240,7 @@ export default function CreateVideoQuizPage() {
   }
 
   return (
-    <div className={`${embedded ? 'h-full' : 'min-h-screen'} flex flex-col bg-gradient-to-b from-zinc-50 via-white to-blue-50/30`}>
+    <div className={`no-button-zoom ${embedded ? 'h-full' : 'min-h-screen'} flex flex-col bg-gradient-to-b from-zinc-50 via-white to-blue-50/30`}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200">
         <div className="container mx-auto px-4 py-3 short:py-2">

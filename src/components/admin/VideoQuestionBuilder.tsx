@@ -94,9 +94,9 @@ export function VideoQuestionBuilder({
       if (duration && !isNaN(duration) && isFinite(duration)) {
         const roundedDuration = Math.floor(duration);
         setDetectedDuration(roundedDuration);
-        toast.success('Video loaded successfully', {
-          description: `Duration detected: ${Math.floor(roundedDuration / 60)}m ${roundedDuration % 60}s`,
-        });
+        // Duration is shown next to the progress bar; repeating it in a corner
+        // popup was the other timestamp readout Michael asked us to drop.
+        toast.success('Video loaded successfully');
       }
     }
   };
@@ -148,7 +148,8 @@ export function VideoQuestionBuilder({
       timestamp: Math.floor(currentTime),
     });
     setIsPlaying(false);
-    toast.success(`Question timestamp set to ${formatTimestamp(Math.floor(currentTime))}`);
+    // No toast here: the timestamp it announced is already visible in the form
+    // field it just filled in, so the popup was noise on every click.
 
     // Scroll to the add question form
     const addQuestionForm = document.getElementById('add-question-form');
@@ -511,7 +512,9 @@ export function VideoQuestionBuilder({
   };
 
   return (
-    <div className="space-y-6">
+    // `no-button-zoom` here rather than only on the page, so the builder behaves
+    // the same wherever it is embedded (coach and admin quiz screens).
+    <div className="no-button-zoom space-y-6">
       {/* Video Player Section */}
       <Card className="gap-4 py-4 short:gap-2 short:py-3">
         <CardHeader>

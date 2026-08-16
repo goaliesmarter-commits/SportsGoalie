@@ -28,6 +28,23 @@
   max-width: calc(max(7rem, 100svh - var(--video-chrome, 24rem)) * 16 / 9);
 }
 
+/* The shared Button applies `hover:scale-105 active:scale-95` on every variant.
+   In a dense builder that reads as a glitch — the button jumps under the cursor
+   and nudges what sits beside it. Scope this class to a page to switch it off
+   for the buttons inside it.
+
+   Reset the `--tw-scale-*` variables rather than the `scale` property: Tailwind
+   emits `scale: var(--tw-scale-x) var(--tw-scale-y)`, and a block that declares
+   both `scale` and `transform` gets folded into `transform` alone by the CSS
+   minifier — which silently drops the half that does the work. */
+.no-button-zoom :is(button, [role='button']):hover,
+.no-button-zoom :is(button, [role='button']):active {
+  --tw-scale-x: 100%;
+  --tw-scale-y: 100%;
+  --tw-scale-z: 100%;
+  transform: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* Short viewports — laptop screens, where vertical space is the constraint. */
