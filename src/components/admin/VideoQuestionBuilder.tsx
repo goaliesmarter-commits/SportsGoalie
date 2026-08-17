@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { VideoQuizQuestion, QuestionType } from '@/types';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,26 @@ export function VideoQuestionBuilder({
   onChange,
 }: VideoQuestionBuilderProps) {
   const playerRef = useRef<ReactPlayer>(null);
+  const videoFrameRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+  // Real leftover viewport space below wherever this component sits on the page,
+  // measured live instead of guessed — so the video grows as large as it can
+  // while the timeline/controls below it are always guaranteed to still fit
+  // on screen, on any host page and at any zoom level. Falls back to the
+  // fixed-guess `.video-fit-frame` CSS class until the first measurement lands.
+  const [availableVideoHeight, setAvailableVideoHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const recompute = () => {
+      if (!videoFrameRef.current || !controlsRef.current) return;
+      const frameTop = videoFrameRef.current.getBoundingClientRect().top;
+      const controlsHeight = controlsRef.current.offsetHeight;
+      const available = window.innerHeight - frameTop - controlsHeight - 24;
+      setAvailableVideoHeight(Math.max(160, available));
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    return () => window.removeEventListener('resize', recompute);
+  }, []);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -527,7 +548,17 @@ export function VideoQuestionBuilder({
           <div className="space-y-4 short:space-y-2">
             {/* Video Player */}
             <div
-              className="video-fit-frame [--video-chrome:36rem] short:[--video-chrome:28rem] relative bg-black rounded-lg overflow-hidden aspect-video cursor-pointer group"
+              ref={videoFrameRef}
+              className={cn(
+                'relative bg-black rounded-lg overflow-hidden aspect-video cursor-pointer group mx-auto w-full',
+                availableVideoHeight == null &&
+                  'video-fit-frame [--video-chrome:36rem] short:[--video-chrome:28rem]'
+              )}
+              style={
+                availableVideoHeight != null
+                  ? { maxWidth: `${Math.round((availableVideoHeight * 16) / 9)}px` }
+                  : undefined
+              }
               onClick={handlePlayPause}
             >
               <ReactPlayer
@@ -567,7 +598,7 @@ export function VideoQuestionBuilder({
             </div>
 
             {/* Custom Controls */}
-            <div className="space-y-4 short:space-y-2">
+            <div ref={controlsRef} className="space-y-4 short:space-y-2">
               {/* Progress Bar */}
               <div className="space-y-2 short:space-y-1">
                 <div className="flex items-center justify-between text-sm">
