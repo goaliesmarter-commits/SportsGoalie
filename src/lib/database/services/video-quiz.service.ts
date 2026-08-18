@@ -71,7 +71,7 @@ export class VideoQuizService extends BaseDatabaseService {
     });
 
     // For coach-created quizzes, sport/skill validation is optional
-    const isCoachContent = (quiz as any).source === 'coach';
+    const isCoachContent = quiz.source === 'coach';
 
     // Validate required fields (skip for coach content)
     if (!isCoachContent) {
@@ -335,7 +335,7 @@ export class VideoQuizService extends BaseDatabaseService {
         }
         // Make sure question has points
         if (q.points === undefined || q.points === null) {
-          q.points = 10; // Default points
+          q.points = q.reflective ? 0 : 10; // Default points — reflective ones score nothing
         }
         // Make sure question has required field
         if (q.required === undefined) {
@@ -667,7 +667,9 @@ export class VideoQuizService extends BaseDatabaseService {
           questionsAnswered: [],
           questionsRemaining: quiz.questions.length,
           score: 0,
-          maxScore: quiz.questions.reduce((sum, q) => sum + q.points, 0),
+          // Reflective questions are unscored, so they must not count toward the
+          // total available — see VideoQuizQuestion.reflective.
+          maxScore: quiz.questions.reduce((sum, q) => sum + (q.reflective ? 0 : q.points), 0),
           percentage: 0,
           isCompleted: false,
           status: 'in-progress',

@@ -170,7 +170,7 @@ export default function CreateVideoQuizPage() {
         sportId: 'coach-custom',
         skillId: 'coach-custom',
         createdBy: user.id,
-        source: 'coach',
+        source: 'coach' as const,
         metadata: {
           totalAttempts: 0,
           totalCompletions: 0,
@@ -486,6 +486,10 @@ export default function CreateVideoQuizPage() {
                 videoDuration={videoDuration}
                 videoUrl={videoUrl}
                 onChange={setQuestions}
+                // YouTube/Vimeo/Drive links can't be measured by the uploader's
+                // <video> element, so the player here is the only thing that knows
+                // how long the video is. Without this the quiz saves a 0 duration.
+                onDurationDetected={setVideoDuration}
               />
             )}
           </TabsContent>

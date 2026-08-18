@@ -207,7 +207,10 @@ export default function CoachDashboardPage() {
                     ? (student.progress >= 80 ? '#4ade80' : student.progress >= 50 ? STEEL : GOLD)
                     : 'rgba(255,255,255,.12)';
                   return (
-                    <Link key={student.id} href={`/coach/students/${student.id}`} className="row-link"
+                    // No page exists at /coach/students/[studentId] — only its sub-routes
+                    // (curriculum, charting, videos, evaluation). Link straight to curriculum,
+                    // which is the landing view the students list already treats as primary.
+                    <Link key={student.id} href={`/coach/students/${student.id}/curriculum`} className="row-link"
                       style={{
                         display: 'grid', gridTemplateColumns: '1fr 110px 56px',
                         alignItems: 'center',

@@ -242,11 +242,20 @@ export const QuestionOverlay: React.FC<QuestionOverlayProps> = ({
                 <Badge variant="secondary" className="text-xs">
                   Question {questionNumber} of {totalQuestions}
                 </Badge>
-                {question.points && (
+                {/*
+                  Reflective questions say so up front. A goalie who thinks they are
+                  being marked will answer with what they think the coach wants to
+                  hear, which makes the response worthless as data.
+                */}
+                {question.reflective ? (
+                  <Badge variant="outline" className="text-xs border-amber-400 text-amber-700">
+                    No right answer
+                  </Badge>
+                ) : question.points ? (
                   <Badge variant="outline" className="text-xs">
                     {question.points} {question.points === 1 ? 'point' : 'points'}
                   </Badge>
-                )}
+                ) : null}
               </div>
               <CardTitle className="text-xl leading-tight">
                 {question.question}

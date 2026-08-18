@@ -490,6 +490,9 @@ export default function EditVideoQuizPage() {
                 videoDuration={videoDuration}
                 videoUrl={videoUrl}
                 onChange={setQuestions}
+                // Also repairs quizzes already saved with a 0 duration: opening the
+                // Questions tab detects the real length and the next save stores it.
+                onDurationDetected={setVideoDuration}
               />
             )}
           </TabsContent>

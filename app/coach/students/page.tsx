@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Loader2, Users, BookOpen, UserPlus, UserMinus, ClipboardCheck, Clock, Zap, UserCog, LineChart, X, Video } from 'lucide-react';
+import { Loader2, Users, BookOpen, UserPlus, UserMinus, ClipboardCheck, Clock, Zap, UserCog, LineChart, X, Video, ClipboardList } from 'lucide-react';
 import { SkeletonDarkPage } from '@/components/ui/skeletons';
 import { useAuth } from '@/lib/auth/context';
 import { userService, onboardingService } from '@/lib/database';
@@ -182,7 +182,15 @@ export default function CoachStudentsPage() {
                     {/* Student header */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#fff', marginBottom: '2px' }}>{student.displayName}</h3>
+                        {/* The name is the first thing anyone clicks to open a goalie, but it
+                            was plain text — only the Manage Curriculum button at the bottom of
+                            the card navigated. Points at the same route that button does. */}
+                        <Link href={`/coach/students/${student.id}/curriculum`} style={{ textDecoration: 'none', display: 'inline-block' }}>
+                          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#fff', marginBottom: '2px', transition: 'color 0.2s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLHeadingElement).style.color = GOLD; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLHeadingElement).style.color = '#fff'; }}
+                          >{student.displayName}</h3>
+                        </Link>
                         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{student.email}</p>
                         {student.studentNumber && (
                           <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>ID: {student.studentNumber}</p>
@@ -267,6 +275,11 @@ export default function CoachStudentsPage() {
                       <Link href={`/coach/students/${student.id}/videos`} style={{ textDecoration: 'none' }}>
                         <button style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 12px', background: 'rgba(55,181,255,0.06)', border: '1px solid rgba(55,181,255,0.18)', borderRadius: '8px', color: 'rgba(55,181,255,0.8)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                           <Video size={12} />Videos
+                        </button>
+                      </Link>
+                      <Link href={`/coach/students/${student.id}/responses`} style={{ textDecoration: 'none' }}>
+                        <button style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 12px', background: 'rgba(55,181,255,0.06)', border: '1px solid rgba(55,181,255,0.18)', borderRadius: '8px', color: 'rgba(55,181,255,0.8)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <ClipboardList size={12} />Quiz Answers
                         </button>
                       </Link>
                       {isCustomWorkflow && (

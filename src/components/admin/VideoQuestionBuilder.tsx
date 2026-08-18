@@ -39,6 +39,15 @@ interface VideoQuestionBuilderProps {
   videoDuration: number;
   videoUrl: string;
   onChange: (questions: VideoQuizQuestion[]) => void;
+  /**
+   * Fires once the player reports the real length of the video.
+   *
+   * YouTube/Vimeo/Drive links can't be measured by the `<video>` element the
+   * uploader uses, so those quizzes were saving `videoDuration: 0` and the
+   * student timeline came out broken. The player here knows the true duration —
+   * this hands it back to the form so it gets saved.
+   */
+  onDurationDetected?: (seconds: number) => void;
 }
 
 export function VideoQuestionBuilder({
@@ -46,27 +55,58 @@ export function VideoQuestionBuilder({
   videoDuration,
   videoUrl,
   onChange,
+  onDurationDetected,
 }: VideoQuestionBuilderProps) {
   const playerRef = useRef<ReactPlayer>(null);
   const videoFrameRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
-  // Real leftover viewport space below wherever this component sits on the page,
-  // measured live instead of guessed — so the video grows as large as it can
-  // while the timeline/controls below it are always guaranteed to still fit
-  // on screen, on any host page and at any zoom level. Falls back to the
-  // fixed-guess `.video-fit-frame` CSS class until the first measurement lands.
+  // Real leftover space below wherever this component sits, measured live instead
+  // of guessed — so the video grows as large as it can while the timeline/controls
+  // below it are always guaranteed to still fit, on any host page and at any zoom
+  // level. Falls back to the fixed-guess `.video-fit-frame` CSS class until the
+  // first measurement lands.
   const [availableVideoHeight, setAvailableVideoHeight] = useState<number | null>(null);
   useEffect(() => {
+    // The floor is the bottom of whatever actually scrolls this component. On the
+    // full-page builders that is the window, but inside the coach modals the
+    // builder sits in an `overflow-y: auto` box that ends well above the window
+    // bottom. Measuring against the window there overshoots by the height of the
+    // modal footer plus its margin, which pushed the timeline and the Add Question
+    // button below the modal's visible area.
+    // Capped at the window too: the video has to fit inside the scroll box *and*
+    // on screen, and a scroll container taller than the viewport would otherwise
+    // hand back a floor below the fold.
+    const findScrollFloor = (el: HTMLElement): number => {
+      for (let node = el.parentElement; node; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if (overflowY === 'auto' || overflowY === 'scroll') {
+          return Math.min(node.getBoundingClientRect().bottom, window.innerHeight);
+        }
+      }
+      return window.innerHeight;
+    };
+
     const recompute = () => {
       if (!videoFrameRef.current || !controlsRef.current) return;
       const frameTop = videoFrameRef.current.getBoundingClientRect().top;
       const controlsHeight = controlsRef.current.offsetHeight;
-      const available = window.innerHeight - frameTop - controlsHeight - 24;
+      const available = findScrollFloor(videoFrameRef.current) - frameTop - controlsHeight - 24;
       setAvailableVideoHeight(Math.max(160, available));
     };
+
     recompute();
     window.addEventListener('resize', recompute);
-    return () => window.removeEventListener('resize', recompute);
+
+    // The transport controls render taller once the player reports duration and
+    // the timeline appears, so the first measurement is always short-lived.
+    // Re-measure when they actually change size rather than trusting mount.
+    const observer = new ResizeObserver(recompute);
+    if (controlsRef.current) observer.observe(controlsRef.current);
+
+    return () => {
+      window.removeEventListener('resize', recompute);
+      observer.disconnect();
+    };
   }, []);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   const [isPlaying, setIsPlaying] = useState(false);
@@ -82,6 +122,10 @@ export function VideoQuestionBuilder({
     points: 10,
     required: true,
   });
+  // Minimum gap enforced between two questions. Was a hard-coded 5s, which is
+  // right for most videos and wrong for a fast drill where three cues land in
+  // the same second. 0 turns the check off completely.
+  const [minQuestionSpacing, setMinQuestionSpacing] = useState(5);
 
   // Fill in the blank split inputs
   const [blankBefore, setBlankBefore] = useState('');
@@ -107,19 +151,35 @@ export function VideoQuestionBuilder({
     setCurrentTime(Math.floor(state.playedSeconds));
   };
 
+  // Reported lengths arrive more than once (onReady, then onDuration, and again on
+  // some sources after the first seek). Only push a genuinely new value upward, so
+  // the parent form isn't re-rendered for a number it already holds.
+  const reportedDurationRef = useRef<number | null>(null);
+  const applyDetectedDuration = (raw: number | null | undefined) => {
+    if (raw == null || isNaN(raw) || !isFinite(raw) || raw <= 0) return;
+    const rounded = Math.floor(raw);
+    if (reportedDurationRef.current === rounded) return;
+    reportedDurationRef.current = rounded;
+    setDetectedDuration(rounded);
+    onDurationDetected?.(rounded);
+  };
+
   const handleReady = () => {
     setVideoReady(true);
     // Get duration from the player when it's ready
     if (playerRef.current) {
-      const duration = playerRef.current.getDuration();
-      if (duration && !isNaN(duration) && isFinite(duration)) {
-        const roundedDuration = Math.floor(duration);
-        setDetectedDuration(roundedDuration);
-        // Duration is shown next to the progress bar; repeating it in a corner
-        // popup was the other timestamp readout Michael asked us to drop.
-        toast.success('Video loaded successfully');
-      }
+      applyDetectedDuration(playerRef.current.getDuration());
+      // Duration is shown next to the progress bar; repeating it in a corner
+      // popup was the other timestamp readout Michael asked us to drop.
+      toast.success('Video loaded successfully');
     }
+  };
+
+  // YouTube and Vimeo frequently aren't ready to answer `getDuration()` at onReady
+  // and report it a beat later through this callback instead. Without it a pasted
+  // YouTube link saves a duration of 0.
+  const handleDuration = (duration: number) => {
+    applyDetectedDuration(duration);
   };
 
   const handlePlay = () => {
@@ -202,27 +262,37 @@ export function VideoQuestionBuilder({
       return;
     }
 
-    // Check if timestamp conflicts with existing question
-    const conflictingQuestion = questions.find(
-      (q) => Math.abs(q.timestamp - newQuestion.timestamp!) < 5
-    );
-    if (conflictingQuestion) {
-      toast.error('Questions must be at least 5 seconds apart');
-      return;
+    // Check if timestamp conflicts with existing question. The gap is the coach's
+    // to set; 0 means overlapping timestamps are allowed on purpose.
+    if (minQuestionSpacing > 0) {
+      const conflictingQuestion = questions.find(
+        (q) => Math.abs(q.timestamp - newQuestion.timestamp!) < minQuestionSpacing
+      );
+      if (conflictingQuestion) {
+        toast.error(
+          `Questions must be at least ${minQuestionSpacing} second${minQuestionSpacing === 1 ? '' : 's'} apart`,
+          { description: 'Change the minimum gap below if you want them closer together.' }
+        );
+        return;
+      }
     }
 
-    // Validate question based on type
+    // Validate question based on type. Reflective questions are exempt from every
+    // correct-answer rule — that is the entire point of them.
+    const isReflective = newQuestion.reflective === true;
     if (newQuestion.type === 'multiple_choice') {
       if (!newQuestion.options || newQuestion.options.length < 2) {
         toast.error('Multiple choice questions need at least 2 options');
         return;
       }
-      if (!newQuestion.options.some((opt: any) => opt.isCorrect)) {
-        toast.error('At least one option must be marked as correct');
+      if (!isReflective && !newQuestion.options.some((opt: any) => opt.isCorrect)) {
+        toast.error('At least one option must be marked as correct', {
+          description: 'Or switch on "No right answer" if this is a reflective question.',
+        });
         return;
       }
     } else if (newQuestion.type === 'true_false') {
-      if (newQuestion.correctAnswer === undefined) {
+      if (!isReflective && newQuestion.correctAnswer === undefined) {
         toast.error('Correct answer is required for true/false questions');
         return;
       }
@@ -238,11 +308,18 @@ export function VideoQuestionBuilder({
       type: newQuestion.type as QuestionType,
       question: newQuestion.question,
       timestamp: newQuestion.timestamp!,
-      points: newQuestion.points || 10,
+      // Reflective questions score nothing, so they can't drag a percentage down
+      // and can't inflate it either.
+      points: isReflective ? 0 : newQuestion.points || 10,
       required: newQuestion.required !== false,
+      reflective: isReflective,
       explanation: newQuestion.explanation,
-      options: newQuestion.options,
-      correctAnswer: newQuestion.correctAnswer,
+      // Clear any correctness the coach set before switching the toggle on, so a
+      // stale tick can't come back as grading later.
+      options: isReflective
+        ? newQuestion.options?.map((opt: any) => ({ ...opt, isCorrect: false }))
+        : newQuestion.options,
+      correctAnswer: isReflective ? undefined : newQuestion.correctAnswer,
       correctAnswers: newQuestion.correctAnswers,
       caseSensitive: newQuestion.caseSensitive,
     };
@@ -258,6 +335,7 @@ export function VideoQuestionBuilder({
       timestamp: 0,
       points: 10,
       required: true,
+      reflective: false,
     });
     setBlankBefore('');
     setBlankAfter('');
@@ -278,6 +356,11 @@ export function VideoQuestionBuilder({
           <div className="space-y-4">
             <div>
               <Label>Options</Label>
+              {newQuestion.reflective && (
+                <p className="text-xs text-gray-500 mt-1">
+                  No right answer — whichever option the goalie picks is recorded as their response.
+                </p>
+              )}
               <div className="space-y-2 mt-2">
                 {(newQuestion.options || []).map((option: any, index: number) => (
                   <div key={index} className="flex items-center gap-2">
@@ -291,15 +374,19 @@ export function VideoQuestionBuilder({
                       placeholder={`Option ${index + 1}`}
                       className="flex-1"
                     />
-                    <Switch
-                      checked={option.isCorrect}
-                      onCheckedChange={(checked) => {
-                        const newOptions = [...(newQuestion.options || [])];
-                        newOptions[index] = { ...option, isCorrect: checked };
-                        setNewQuestion({ ...newQuestion, options: newOptions });
-                      }}
-                    />
-                    <Label className="text-sm">Correct</Label>
+                    {!newQuestion.reflective && (
+                      <>
+                        <Switch
+                          checked={option.isCorrect}
+                          onCheckedChange={(checked) => {
+                            const newOptions = [...(newQuestion.options || [])];
+                            newOptions[index] = { ...option, isCorrect: checked };
+                            setNewQuestion({ ...newQuestion, options: newOptions });
+                          }}
+                        />
+                        <Label className="text-sm">Correct</Label>
+                      </>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -335,6 +422,15 @@ export function VideoQuestionBuilder({
         );
 
       case 'true_false':
+        if (newQuestion.reflective) {
+          return (
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-700">
+                No right answer — the goalie answers True or False and their choice is recorded as is.
+              </p>
+            </div>
+          );
+        }
         return (
           <div className="space-y-3">
             <Label>What is the correct answer? *</Label>
@@ -412,7 +508,7 @@ export function VideoQuestionBuilder({
                       question: `${e.target.value} ___ ${blankAfter}`.trim(),
                     });
                   }}
-                  placeholder="The goalkeeper position is also called the"
+                  placeholder="A goalie who drops both pads to seal the ice is in the"
                   className="flex-1 min-w-[200px]"
                 />
                 <div className="flex items-center gap-1 px-4 py-2 bg-primary/10 border-2 border-dashed border-primary rounded-lg">
@@ -428,7 +524,7 @@ export function VideoQuestionBuilder({
                       question: `${blankBefore} ___ ${e.target.value}`.trim(),
                     });
                   }}
-                  placeholder="in soccer. (optional)"
+                  placeholder="position. (optional)"
                   className="flex-1 min-w-[200px]"
                 />
               </div>
@@ -537,14 +633,19 @@ export function VideoQuestionBuilder({
     // the same wherever it is embedded (coach and admin quiz screens).
     <div className="no-button-zoom space-y-6">
       {/* Video Player Section */}
-      <Card className="gap-4 py-4 short:gap-2 short:py-3">
-        <CardHeader>
-          <CardTitle>Video Preview & Controls</CardTitle>
+      {/*
+        Tight header on purpose. The player is capped by the space left below it, so every
+        pixel this card spends on chrome comes off the video. `short:` drops the hint line
+        and squeezes further once the viewport can't afford it.
+      */}
+      <Card className="gap-3 py-3 short:gap-2 short:py-2">
+        <CardHeader className="short:px-4">
+          <CardTitle className="text-base short:text-sm">Video Preview & Controls</CardTitle>
           <p className="text-sm text-gray-600 short:hidden">
             Watch the video and pause at any moment to add a question at that timestamp
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="short:px-4">
           <div className="space-y-4 short:space-y-2">
             {/* Video Player */}
             <div
@@ -573,6 +674,7 @@ export function VideoQuestionBuilder({
                 muted={muted}
                 onProgress={handleProgress}
                 onReady={handleReady}
+                onDuration={handleDuration}
                 onPlay={handlePlay}
                 onPause={handlePause}
                 progressInterval={100}
@@ -599,25 +701,27 @@ export function VideoQuestionBuilder({
 
             {/* Custom Controls */}
             <div ref={controlsRef} className="space-y-4 short:space-y-2">
-              {/* Progress Bar */}
-              <div className="space-y-2 short:space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{formatTimestamp(currentTime)}</span>
-                  <span className="text-gray-500">
-                    {formatTimestamp(detectedDuration || videoDuration)}
-                    {detectedDuration && detectedDuration !== videoDuration && (
-                      <span className="ml-2 text-xs text-green-600">(auto-detected)</span>
-                    )}
-                  </span>
-                </div>
+              {/*
+                Elapsed / scrubber / duration on one line rather than a caption row above
+                the bar. Same information, ~40px shorter — and the player is capped by the
+                space left below it, so those pixels go straight into the video.
+              */}
+              <div className="flex items-center gap-3 short:gap-2 text-sm">
+                <span className="font-medium tabular-nums shrink-0">{formatTimestamp(currentTime)}</span>
                 <input
                   type="range"
                   min="0"
                   max={detectedDuration || videoDuration}
                   value={currentTime}
                   onChange={(e) => handleSeek(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                  className="flex-1 min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
                 />
+                <span className="text-gray-500 tabular-nums shrink-0">
+                  {formatTimestamp(detectedDuration || videoDuration)}
+                  {detectedDuration && detectedDuration !== videoDuration && (
+                    <span className="ml-2 text-xs text-green-600">(auto-detected)</span>
+                  )}
+                </span>
               </div>
 
               {/* Control Buttons */}
@@ -772,9 +876,15 @@ export function VideoQuestionBuilder({
                             <span className="text-xs px-2 py-1 bg-gray-100 rounded">
                               {question.type.replace('_', ' ')}
                             </span>
-                            <span className="text-xs text-gray-600">
-                              {question.points} points
-                            </span>
+                            {question.reflective ? (
+                              <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 font-medium">
+                                Reflective — not scored
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-600">
+                                {question.points} points
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -863,6 +973,9 @@ export function VideoQuestionBuilder({
                     options: undefined,
                     correctAnswer: undefined,
                     correctAnswers: undefined,
+                    // Fill-in-the-blank is graded by matching text, so there is no
+                    // coherent reflective version of it.
+                    reflective: value === 'fill_in_blank' ? false : newQuestion.reflective,
                   });
                 }}
               >
@@ -907,15 +1020,42 @@ export function VideoQuestionBuilder({
                 id="points"
                 type="number"
                 min="1"
-                value={newQuestion.points}
+                disabled={newQuestion.reflective}
+                value={newQuestion.reflective ? 0 : newQuestion.points}
                 onChange={(e) =>
                   setNewQuestion({
                     ...newQuestion,
                     points: parseInt(e.target.value),
                   })
                 }
+                className="w-full border-slate-300 focus-visible:ring-red-200 disabled:bg-gray-100 disabled:text-gray-400"
+              />
+              {newQuestion.reflective && (
+                <p className="text-xs text-gray-500">
+                  Reflective questions aren&apos;t scored, so they don&apos;t affect the goalie&apos;s percentage.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minSpacing">Minimum gap between questions</Label>
+              <Input
+                id="minSpacing"
+                type="number"
+                min="0"
+                max="120"
+                value={minQuestionSpacing}
+                onChange={(e) => {
+                  const next = parseInt(e.target.value);
+                  setMinQuestionSpacing(Number.isNaN(next) ? 0 : Math.max(0, Math.min(120, next)));
+                }}
                 className="w-full border-slate-300 focus-visible:ring-red-200"
               />
+              <p className="text-xs text-gray-500">
+                {minQuestionSpacing === 0
+                  ? 'Off — questions can sit at the same moment in the video.'
+                  : `Questions must be at least ${minQuestionSpacing}s apart. Set to 0 to turn this off.`}
+              </p>
             </div>
           </div>
 
@@ -936,6 +1076,28 @@ export function VideoQuestionBuilder({
                 }
                 rows={2}
                 className="border-slate-300 focus-visible:ring-red-200"
+              />
+            </div>
+          )}
+
+          {/*
+            Reflective mode. Sits above the answer fields on purpose — it changes what
+            those fields ask for, so it has to be decided first.
+          */}
+          {newQuestion.type !== 'fill_in_blank' && (
+            <div className="flex items-start justify-between gap-4 p-4 rounded-lg border border-amber-200 bg-amber-50/60">
+              <div>
+                <Label className="text-sm font-medium">No right answer (reflective question)</Label>
+                <p className="text-xs text-gray-600 mt-1">
+                  For questions like &ldquo;Did that save feel balanced?&rdquo; — the goalie&apos;s answer is
+                  recorded and shown to you, but it is never marked wrong and never scored.
+                </p>
+              </div>
+              <Switch
+                checked={newQuestion.reflective === true}
+                onCheckedChange={(checked) =>
+                  setNewQuestion({ ...newQuestion, reflective: checked })
+                }
               />
             </div>
           )}
