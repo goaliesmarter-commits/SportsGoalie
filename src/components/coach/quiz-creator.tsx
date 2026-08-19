@@ -97,7 +97,7 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
     try {
       const totalPoints = questions.reduce((s, q) => s + (q.points || 10), 0);
       const estimatedDuration = Math.ceil(videoDuration / 60) + Math.ceil(questions.length * 0.5);
-      const quizResult = await videoQuizService.createVideoQuiz({ title: title.trim(), description: description.trim(), videoUrl, videoDuration, questions, settings, difficulty, estimatedDuration, tags, isActive: true, isPublished: true, category: 'coach-content', sportId: 'coach-custom', skillId: 'coach-custom', createdBy: coachId });
+      const quizResult = await videoQuizService.createVideoQuiz({ title: title.trim(), description: description.trim(), videoUrl, videoDuration, questions, settings, difficulty, estimatedDuration, tags, isActive: true, isPublished: true, category: 'coach-content', sportId: 'coach-custom', skillId: 'coach-custom', createdBy: coachId, source: 'coach' });
       if (!quizResult.success) throw new Error(quizResult.error?.message || 'Failed to create quiz');
       if (!saveToLibrary) { toast.success('Quiz created'); onOpenChange(false); resetForm(); return; }
       const contentResult = await customContentService.createContent(coachId, { title: title.trim(), description: description.trim(), type: 'quiz', content: JSON.stringify({ videoQuizId: quizResult.data?.id, totalPoints, questionCount: questions.length }), videoUrl, tags, isPublic, estimatedTimeMinutes: estimatedDuration });
@@ -113,7 +113,7 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
   const selectS: React.CSSProperties = { width: '100%', padding: '10px 13px', background: 'rgba(2,8,28,0.95)', border: '1px solid rgba(55,181,255,0.18)', borderRadius: '10px', color: '#fff', fontSize: '13px', outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', fontFamily: 'inherit' };
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '12px' }}
       onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
       <style>{`
         .qc-input:focus{border-color:${BLUE}!important;box-shadow:0 0 0 3px rgba(55,181,255,0.1)!important}
@@ -124,36 +124,64 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
         .qc-cancel:hover{background:rgba(255,255,255,0.06)!important}
         .qc-select option{background:#020e24;color:#fff}
         @keyframes qc-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+        /* The questions tab renders VideoQuestionBuilder, a shadcn-built component shared
+           with the light admin pages. \`.surface-dark\` on its wrapper already flips the
+           design tokens; these last few rules close the gap to the panel styling the other
+           three tabs use inline — same gradient, same gold top rule, same purple eyebrow
+           for section titles, same field treatment. Scoped to .qc-builder so nothing
+           outside this modal is affected, and doubled with .surface-dark so it outranks
+           the generic surface rules regardless of stylesheet order. */
+        .surface-dark.qc-builder [data-slot="card"]{background:linear-gradient(135deg,#04213f 0%,#0a2d52 100%);border:1px solid rgba(55,181,255,0.16);border-top:2px solid ${GOLD};border-radius:14px;box-shadow:none}
+        .surface-dark.qc-builder [data-slot="card-title"]{color:${PURPLE};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+        .surface-dark.qc-builder :is([data-slot="input"],[data-slot="textarea"],[data-slot="select-trigger"]){background:rgba(4,33,63,0.7);border-color:rgba(212,169,59,0.22);color:#fff}
+        .surface-dark.qc-builder :is([data-slot="input"],[data-slot="textarea"])::placeholder{color:rgba(255,255,255,0.28)}
+        .surface-dark.qc-builder [data-slot="label"]{color:${GOLD};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px}
       `}</style>
 
-      <div style={{ background: 'linear-gradient(145deg, #030e22 0%, #04213f 100%)', border: `1px solid rgba(212,169,59,0.25)`, borderRadius: '22px', width: '100%', maxWidth: '900px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(212,169,59,0.06)` }}>
+      {/*
+        Deliberately one fixed size for every tab. The questions tab hosts the same
+        VideoQuestionBuilder as the full-page content library form and needs real room
+        for the player, the timeline and the Add Question button — but sizing the modal
+        per-tab made it jump wider and taller on the way in and snap back on the way out,
+        which reads as a glitch. So the box is sized once, to something the builder can
+        live in, and the lighter tabs simply have space to spare.
+        940px tall rather than the full viewport so it still reads as a dialog on a big
+        monitor; the max-height takes over on short laptop screens.
+      */}
+      <div style={{ background: 'linear-gradient(145deg, #030e22 0%, #04213f 100%)', border: `1px solid rgba(212,169,59,0.25)`, borderRadius: '22px', width: '100%', maxWidth: '1280px', height: '940px', maxHeight: 'calc(100vh - 24px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: `0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(212,169,59,0.06)` }}>
 
-        {/* Header */}
-        <div style={{ position: 'relative', background: 'linear-gradient(135deg, #04213f 0%, #0b3460 60%, #0d1f40 100%)', padding: '24px 28px', overflow: 'hidden', flexShrink: 0 }}>
+        {/*
+          Header is one compact row on every tab. It used to be a three-line block —
+          eyebrow, title, and a sentence restating what the tabs already say — which cost
+          ~90px of height. That height comes straight off the video on the questions tab,
+          where the player is capped by the room left below it, so the trim is what makes
+          the video noticeably larger. Same on all tabs so nothing shifts when switching.
+        */}
+        <div style={{ position: 'relative', background: 'linear-gradient(135deg, #04213f 0%, #0b3460 60%, #0d1f40 100%)', padding: '11px 24px', overflow: 'hidden', flexShrink: 0 }}>
           <div style={{ position: 'absolute', top: '-50px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(212,169,59,0.1)', filter: 'blur(60px)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, transparent, ${GOLD}, ${PURPLE}55, transparent)` }} />
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ color: GOLD, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Content Library</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(212,169,59,0.15)', border: `1px solid rgba(212,169,59,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <PlayCircle size={18} color={GOLD} />
-                </div>
-                <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 900, letterSpacing: '-0.02em' }}>Create Knowledge Check</h2>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'rgba(212,169,59,0.15)', border: `1px solid rgba(212,169,59,0.3)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <PlayCircle size={15} color={GOLD} />
               </div>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Create an interactive quiz with questions at specific video timestamps.</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ color: GOLD, fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', lineHeight: 1.2 }}>Content Library</p>
+                <h2 style={{ color: '#fff', fontSize: '16px', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.25 }}>Create Knowledge Check</h2>
+              </div>
             </div>
-            <button onClick={handleClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px', borderRadius: '8px', display: 'flex' }}>
+            <button onClick={handleClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px', borderRadius: '8px', display: 'flex', flexShrink: 0 }}>
               <X size={18} />
             </button>
           </div>
         </div>
 
         {/* Tab nav */}
-        <div style={{ display: 'flex', gap: '4px', padding: '12px 28px 0', background: 'rgba(3,14,34,0.7)', flexShrink: 0, borderBottom: `1px solid rgba(212,169,59,0.14)` }}>
+        <div style={{ display: 'flex', gap: '4px', padding: '8px 24px 0', background: 'rgba(3,14,34,0.7)', flexShrink: 0, borderBottom: `1px solid rgba(212,169,59,0.14)` }}>
           {TABS.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '10px 10px 0 0', border: '1px solid transparent', borderBottom: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '10px 10px 0 0', border: '1px solid transparent', borderBottom: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
                 background: activeTab === tab.key ? 'rgba(212,169,59,0.1)' : 'transparent',
                 color: activeTab === tab.key ? GOLD : 'rgba(255,255,255,0.45)',
                 borderColor: activeTab === tab.key ? 'rgba(55,181,255,0.25)' : 'transparent',
@@ -168,7 +196,7 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
         </div>
 
         {/* Tab body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '16px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(55,181,255,0.2) transparent' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '16px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(55,181,255,0.2) transparent' }}>
 
           {/* Info tab */}
           {activeTab === 'info' && (
@@ -271,7 +299,15 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
                 </button>
               </div>
             ) : (
-              <VideoQuestionBuilder questions={questions} videoDuration={videoDuration} videoUrl={videoUrl} onChange={setQuestions} />
+              /* `surface-dark` repoints the shadcn tokens the builder is made of to the
+                 navy palette; `qc-builder` carries the modal-specific panel styling above.
+                 The builder itself stays light-themed for the admin pages that use it. */
+              <div className="surface-dark qc-builder">
+                {/* onDurationDetected: a pasted YouTube/Vimeo/Drive link can't be measured
+                    by the uploader, so the player on this tab is the only place the real
+                    length is known. Without it the quiz saves videoDuration: 0. */}
+                <VideoQuestionBuilder questions={questions} videoDuration={videoDuration} videoUrl={videoUrl} onChange={setQuestions} onDurationDetected={setVideoDuration} />
+              </div>
             )
           )}
 
@@ -308,7 +344,7 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 28px', borderTop: `1px solid rgba(212,169,59,0.14)`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexShrink: 0, background: 'rgba(3,14,34,0.7)' }}>
+        <div style={{ padding: '11px 24px', borderTop: `1px solid rgba(212,169,59,0.14)`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', flexShrink: 0, background: 'rgba(3,14,34,0.7)' }}>
           <button onClick={handleClose} disabled={isSubmitting} className="qc-cancel"
             style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '10px', color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
             Cancel

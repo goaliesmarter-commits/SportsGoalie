@@ -86,7 +86,9 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       questionsAnswered: [],
       questionsRemaining: quiz.questions.length,
       score: 0,
-      maxScore: quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0),
+      // Reflective questions carry no points and are left out of the denominator —
+      // otherwise answering one honestly would lower the goalie's percentage.
+      maxScore: quiz.questions.reduce((sum, q) => sum + (q.reflective ? 0 : q.points || 0), 0),
       percentage: 0,
       isCompleted: false,
       status: 'in-progress',
@@ -182,41 +184,64 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     let pointsEarned = 0;
 
     const question = overlayQuestion;
-    switch (question.type) {
-      case 'multiple_choice':
-        if (question.options) {
-          const correctOptions = question.options.filter(opt => opt.isCorrect);
-          if (Array.isArray(answer)) {
-            const correctIds = correctOptions.map(opt => opt.id);
-            isCorrect = answer.length === correctIds.length &&
-                       answer.every(id => correctIds.includes(id));
-          } else {
-            isCorrect = correctOptions.some(opt => opt.id === answer);
+    const isReflective = question.reflective === true;
+
+    // Reflective questions are skipped entirely by the grader. Nothing below runs
+    // for them, so `isCorrect` stays false and is never read — the `reflective`
+    // flag on the stored answer is what every display site checks.
+    if (!isReflective) {
+      switch (question.type) {
+        case 'multiple_choice':
+          if (question.options) {
+            const correctOptions = question.options.filter(opt => opt.isCorrect);
+            if (Array.isArray(answer)) {
+              const correctIds = correctOptions.map(opt => opt.id);
+              isCorrect = answer.length === correctIds.length &&
+                         answer.every(id => correctIds.includes(id));
+            } else {
+              isCorrect = correctOptions.some(opt => opt.id === answer);
+            }
           }
-        }
-        break;
+          break;
 
-      case 'true_false':
-        isCorrect = String(question.correctAnswer) === String(answer);
-        break;
+        case 'true_false':
+          isCorrect = String(question.correctAnswer) === String(answer);
+          break;
 
-      case 'fill_in_blank':
-        if (question.correctAnswers) {
-          const answers = Array.isArray(answer) ? answer : [answer];
-          isCorrect = question.correctAnswers.every((correct, index) => {
-            const userAnswer = answers[index];
-            if (!userAnswer) return false;
-            return question.caseSensitive
-              ? userAnswer.trim() === correct.trim()
-              : userAnswer.trim().toLowerCase() === correct.trim().toLowerCase();
-          });
-        }
-        break;
+        case 'fill_in_blank':
+          if (question.correctAnswers) {
+            const answers = Array.isArray(answer) ? answer : [answer];
+            isCorrect = question.correctAnswers.every((correct, index) => {
+              const userAnswer = answers[index];
+              if (!userAnswer) return false;
+              return question.caseSensitive
+                ? userAnswer.trim() === correct.trim()
+                : userAnswer.trim().toLowerCase() === correct.trim().toLowerCase();
+            });
+          }
+          break;
+      }
+
+      if (isCorrect) {
+        pointsEarned = question.points || 0;
+      }
     }
 
-    if (isCorrect) {
-      pointsEarned = question.points || 0;
-    }
+    // Resolve the answer into words while the question is still in hand. Multiple
+    // choice stores option ids, which tell a coach nothing in a report — "No" and
+    // "Not Sure" are the whole reason reflective questions exist.
+    const answerText = ((): string => {
+      const values = Array.isArray(answer) ? answer : [answer];
+      if (question.type === 'multiple_choice' && question.options) {
+        return values
+          .map(v => question.options!.find(opt => opt.id === v)?.text ?? String(v))
+          .join(', ');
+      }
+      if (question.type === 'true_false') {
+        return String(values[0]) === 'true' ? 'True' : 'False';
+      }
+      return values.join(', ');
+    })();
 
     // Update progress ref (not state!)
     const questionAnswer: VideoQuestionAnswer = {
@@ -224,8 +249,10 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       questionType: question.type,
       timestamp: question.timestamp,
       answer,
+      answerText,
       isCorrect,
       pointsEarned,
+      reflective: isReflective,
       timeToAnswer: 0,
       answeredAt: Timestamp.now(),
     };
@@ -233,7 +260,11 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     progressRef.current.questionsAnswered.push(questionAnswer);
     progressRef.current.questionsRemaining--;
     progressRef.current.score += pointsEarned;
-    progressRef.current.percentage = (progressRef.current.score / progressRef.current.maxScore) * 100;
+    // An all-reflective quiz has nothing to score against, so guard the divide —
+    // `0 / 0` would otherwise write NaN into the goalie's progress record.
+    progressRef.current.percentage = progressRef.current.maxScore > 0
+      ? (progressRef.current.score / progressRef.current.maxScore) * 100
+      : 0;
 
     // Update answered count for UI
     setAnsweredCount(prev => prev + 1);

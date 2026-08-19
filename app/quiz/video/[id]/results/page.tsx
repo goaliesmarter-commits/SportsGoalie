@@ -11,7 +11,7 @@ import { customContentService } from '@/lib/database/services/custom-content.ser
 import { VideoQuiz, VideoQuizProgress } from '@/types';
 import {
   ArrowLeft, Home, Trophy, Clock, CheckCircle2, XCircle,
-  RotateCcw, ChevronRight, Target,
+  RotateCcw, ChevronRight, Target, MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { GrowthPointsToast } from '@/components/ui/GrowthPointsToast';
@@ -20,6 +20,9 @@ import { growthPointsService } from '@/lib/firebase/growth-points.service';
 
 const BLUE = '#37b5ff';
 const RED = '#f87171';
+// Reflective answers are neither right nor wrong, so they get their own neutral
+// treatment rather than borrowing the pass/fail palette.
+const AMBER = '#d4a93b';
 
 function VideoQuizResultsContent() {
   const params = useParams();
@@ -230,27 +233,43 @@ function VideoQuizResultsContent() {
               {progress.questionsAnswered.map((answer, index) => {
                 const question = quiz.questions?.find(q => q.id === answer.questionId);
                 if (!question) return null;
+                // Reflective answers are checked first and never fall through to the
+                // correct/incorrect styling — an honest "No" is not a wrong answer.
+                const isReflective = answer.reflective === true || question.reflective === true;
+                const tint = isReflective
+                  ? { bg: 'rgba(212,169,59,0.05)', border: 'rgba(212,169,59,0.14)' }
+                  : answer.isCorrect
+                    ? { bg: 'rgba(55,181,255,0.05)', border: 'rgba(55,181,255,0.12)' }
+                    : { bg: 'rgba(248,113,113,0.05)', border: 'rgba(248,113,113,0.12)' };
                 return (
-                  <div key={answer.questionId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: answer.isCorrect ? 'rgba(55,181,255,0.05)' : 'rgba(248,113,113,0.05)', borderRadius: '10px', border: `1px solid ${answer.isCorrect ? 'rgba(55,181,255,0.12)' : 'rgba(248,113,113,0.12)'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div key={answer.questionId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', background: tint.bg, borderRadius: '10px', border: `1px solid ${tint.border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       <div style={{ flexShrink: 0 }}>
-                        {answer.isCorrect
-                          ? <CheckCircle2 size={18} color={BLUE} />
-                          : <XCircle size={18} color={RED} />}
+                        {isReflective
+                          ? <MessageSquare size={18} color={AMBER} />
+                          : answer.isCorrect
+                            ? <CheckCircle2 size={18} color={BLUE} />
+                            : <XCircle size={18} color={RED} />}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>Question {index + 1}</p>
                         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
                           At {Math.floor(answer.timestamp / 60)}:{String(Math.floor(answer.timestamp % 60)).padStart(2, '0')}
                         </p>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>
-                        {answer.pointsEarned} / {question.points} pts
-                      </p>
+                    <div style={{ textAlign: 'right', minWidth: 0 }}>
+                      {isReflective ? (
+                        <p style={{ color: AMBER, fontSize: '13px', fontWeight: 700, overflowWrap: 'anywhere' }}>
+                          {answer.answerText || 'Answered'}
+                        </p>
+                      ) : (
+                        <p style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>
+                          {answer.pointsEarned} / {question.points} pts
+                        </p>
+                      )}
                       <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
-                        {formatTime(answer.timeToAnswer)} to answer
+                        {isReflective ? 'Your answer — not scored' : `${formatTime(answer.timeToAnswer)} to answer`}
                       </p>
                     </div>
                   </div>

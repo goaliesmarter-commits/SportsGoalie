@@ -132,6 +132,20 @@ export function VideoUploader({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  /**
+   * Mirror of `videoDuration` that `handleUpload` can read *after* its await.
+   *
+   * Duration detection is asynchronous and the upload itself takes seconds, so the
+   * state value captured in the handler's closure is routinely stale by the time
+   * the upload finishes — clicking Upload quickly meant the length was reported as
+   * undefined and the quiz saved a zero-length timeline.
+   */
+  const videoDurationRef = useRef<number | undefined>(undefined);
+
+  const applyVideoDuration = useCallback((duration: number | undefined) => {
+    videoDurationRef.current = duration;
+    setVideoDuration(duration);
+  }, []);
 
   const MAX_SIZE_BYTES = STORAGE_CONFIGS.VIDEOS.maxSizeBytes;
   const ALLOWED_TYPES = STORAGE_CONFIGS.VIDEOS.allowedTypes;
@@ -192,7 +206,7 @@ export function VideoUploader({
         durationSet = true;
         const flooredDuration = Math.floor(duration);
         console.log('🎬 Setting duration:', flooredDuration);
-        setVideoDuration(flooredDuration);
+        applyVideoDuration(flooredDuration);
         URL.revokeObjectURL(tempUrl);
       }
     };
@@ -232,7 +246,7 @@ export function VideoUploader({
     }, 5000);
 
     tempVideo.src = tempUrl;
-  }, []);
+  }, [applyVideoDuration]);
 
   const handleUpload = async () => {
     if (!selectedFile) return;
@@ -259,10 +273,13 @@ export function VideoUploader({
       );
 
       if (result.success && result.url) {
-        console.log('🎬 VideoUploader upload success, calling onVideoUploaded:', { url: result.url, videoDuration });
+        // Read through the ref, not the captured state — detection may only have
+        // finished during the upload we just awaited.
+        const detectedDuration = videoDurationRef.current;
+        console.log('🎬 VideoUploader upload success, calling onVideoUploaded:', { url: result.url, detectedDuration });
         setVideoUrl(result.url);
         setUploadState('success');
-        onVideoUploaded(result.url, videoDuration);
+        onVideoUploaded(result.url, detectedDuration);
         toast.success('Video uploaded successfully');
       } else {
         throw new Error(result.error || 'Upload failed');
@@ -329,7 +346,7 @@ export function VideoUploader({
         onVideoUploaded(embedUrl, undefined);
         setUploadState('success');
         toast.success('Google Drive video URL added', {
-          description: 'Duration will be detected when video plays',
+          description: 'Open the Questions tab to load the video and pick up its length',
         });
         return;
       } else {
@@ -345,7 +362,7 @@ export function VideoUploader({
       const rawDuration = tempVideo.duration;
       if (Number.isFinite(rawDuration) && rawDuration > 0) {
         const duration = Math.floor(rawDuration);
-        setVideoDuration(duration);
+        applyVideoDuration(duration);
         onVideoUploaded(videoUrl, duration);
       } else {
         // Duration not available (e.g., streaming video)
@@ -369,7 +386,7 @@ export function VideoUploader({
     setUploadState('idle');
     setUploadProgress(0);
     setErrorMessage(null);
-    setVideoDuration(undefined);
+    applyVideoDuration(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -622,7 +639,7 @@ export function VideoUploader({
                   <div className={cn('flex items-start gap-2 p-3 rounded-md border', s.infoBox)}>
                     <Info className={cn('h-4 w-4 mt-0.5 flex-shrink-0', s.subtle)} />
                     <p className={cn('text-xs', s.muted)}>
-                      {videoSourceType === 'youtube' ? 'YouTube' : videoSourceType === 'vimeo' ? 'Vimeo' : 'Google Drive'} videos will play correctly in quizzes. Duration may not be detected automatically.
+                      {videoSourceType === 'youtube' ? 'YouTube' : videoSourceType === 'vimeo' ? 'Vimeo' : 'Google Drive'} videos play normally in Knowledge Checks. The length is read from the player on the Questions tab, so open that tab once before saving.
                     </p>
                   </div>
                 )}

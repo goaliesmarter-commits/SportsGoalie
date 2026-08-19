@@ -238,7 +238,7 @@ function CreateVideoQuizContent() {
             {/* Questions */}
             {activeTab === 'questions' && (
               videoDuration > 0 && quizData.videoUrl ? (
-                <VideoQuestionBuilder questions={quizData.questions || []} videoDuration={videoDuration} videoUrl={quizData.videoUrl} onChange={handleQuestionsChange} />
+                <VideoQuestionBuilder questions={quizData.questions || []} videoDuration={videoDuration} videoUrl={quizData.videoUrl} onChange={handleQuestionsChange} onDurationDetected={(seconds) => { setVideoDuration(seconds); handleInputChange('videoDuration', seconds); }} />
               ) : (
                 <div style={{ textAlign: 'center', padding: '64px' }}>
                   <AlertCircle size={44} color="rgba(255,255,255,0.15)" style={{ margin: '0 auto 12px' }} />

@@ -386,6 +386,13 @@ function EditVideoQuizContent() {
               videoDuration={videoDuration}
               videoUrl={quizData.videoUrl}
               onChange={handleQuestionsChange}
+              // Replaces a hand-typed duration with the real one once the player
+              // reports it — including for YouTube/Vimeo, which can't be measured
+              // ahead of time.
+              onDurationDetected={(seconds) => {
+                setVideoDuration(seconds);
+                setQuizData(prev => ({ ...prev, videoDuration: seconds }));
+              }}
             />
           ) : (
             <div style={{ position: 'relative', ...card, padding: '64px', textAlign: 'center', overflow: 'hidden' }}>

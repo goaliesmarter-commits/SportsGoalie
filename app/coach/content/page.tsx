@@ -40,6 +40,7 @@ export default function CoachContentPage() {
   const [showLessonCreator, setShowLessonCreator] = useState(false);
   const [editingContent, setEditingContent] = useState<CustomContentLibrary | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<CustomContentLibrary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => { if (user?.id) loadContent(); }, [user?.id]);
@@ -86,13 +87,14 @@ export default function CoachContentPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteConfirm || !user?.id) return;
+    if (!deleteConfirm || !user?.id || isDeleting) return;
+    setIsDeleting(true);
     try {
       const result = await customContentService.deleteContent(deleteConfirm.id, user.id);
       if (result.success) { setContent(prev => prev.filter(c => c.id !== deleteConfirm.id)); toast.success('Content deleted successfully'); }
       else toast.error('Failed to delete content');
     } catch { toast.error('Failed to delete content'); }
-    finally { setDeleteConfirm(null); }
+    finally { setIsDeleting(false); setDeleteConfirm(null); }
   };
 
   const formatDate = (timestamp: unknown) => {
@@ -329,8 +331,8 @@ export default function CoachContentPage() {
               )}
             </div>
             <div style={{ display: 'flex', gap: '10px', padding: '16px 28px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleDelete} style={{ padding: '10px 20px', background: '#dc2626', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+              <button onClick={() => setDeleteConfirm(null)} disabled={isDeleting} style={{ padding: '10px 20px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: 700, cursor: isDeleting ? 'not-allowed' : 'pointer', opacity: isDeleting ? 0.6 : 1 }}>Cancel</button>
+              <button onClick={handleDelete} disabled={isDeleting} style={{ padding: '10px 20px', background: '#dc2626', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: isDeleting ? 'not-allowed' : 'pointer', opacity: isDeleting ? 0.6 : 1 }}>{isDeleting ? 'Deleting…' : 'Delete'}</button>
             </div>
           </div>
         </div>

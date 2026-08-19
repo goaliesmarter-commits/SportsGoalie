@@ -402,6 +402,76 @@
   border-color: rgba(255, 255, 255, 0.09);
 }
 
+/* ── Hardcoded light utilities ─────────────────────────────────────────────
+   Repointing the tokens above only reaches components that actually use them.
+   Some shared components don't: VideoQuestionBuilder — rendered verbatim by
+   the admin builder, the coach quiz page and the coach quiz modal — writes
+   `text-gray-600`, `bg-gray-50`, `border-blue-200 text-blue-700` and friends
+   directly. On navy those come out as white slabs and near-black text.
+
+   Translating the utilities here rather than rewriting the component keeps the
+   light-page consumers exactly as they are — the component still ships light
+   classes, and only a dark surface reinterprets them. Anything that lands in
+   `.surface-dark` in future gets the same treatment for free.
+   ────────────────────────────────────────────────────────────────────────── */
+.surface-dark :is(.text-gray-400, .text-gray-500, .text-gray-600) {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.surface-dark :is(.text-gray-700, .text-gray-800, .text-gray-900) {
+  color: #ffffff;
+}
+
+/* `:not(.rounded-full)` spares the small solid dots — the selected marker inside
+   a filled correct/incorrect radio is `bg-white` and has to stay opaque white. */
+.surface-dark :is(.bg-gray-50, .bg-gray-100, .bg-white):not(.rounded-full),
+.surface-dark .hover\:bg-gray-50:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.surface-dark :is(.border-gray-200, .border-gray-300, .border-slate-300) {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Outline buttons and the info callout: light blue fills with dark blue text. */
+.surface-dark .border-blue-200 {
+  border-color: rgba(55, 181, 255, 0.35);
+}
+.surface-dark .text-blue-700 {
+  color: #7fd0ff;
+}
+.surface-dark .text-blue-900 {
+  color: rgba(255, 255, 255, 0.85);
+}
+.surface-dark .bg-blue-50 {
+  background-color: rgba(55, 181, 255, 0.1);
+}
+.surface-dark .hover\:bg-blue-50:hover {
+  background-color: rgba(55, 181, 255, 0.14);
+}
+.surface-dark .hover\:text-blue-800:hover {
+  color: #ffffff;
+}
+
+/* Correct / incorrect / warning states keep their hue, inverted for a dark
+   ground: a tint of the colour behind a light version of it, rather than the
+   light-page pairing of a pale wash behind a saturated one. */
+.surface-dark :is(.bg-green-50, .hover\:bg-green-50\/50:hover) {
+  background-color: rgba(34, 197, 94, 0.16);
+}
+.surface-dark :is(.text-green-600, .text-green-700) {
+  color: #86efac;
+}
+.surface-dark :is(.bg-red-50, .hover\:bg-red-50\/50:hover) {
+  background-color: rgba(239, 68, 68, 0.16);
+}
+.surface-dark .text-red-700 {
+  color: #fca5a5;
+}
+.surface-dark .text-amber-600 {
+  color: #fcd34d;
+}
+
 /* ── Recharts ──────────────────────────────────────────────────────────────
    Recharts writes its greys as SVG presentation attributes (`fill="#666"` on
    tick labels, `stroke="#ccc"` on grid lines) rather than reading our tokens.

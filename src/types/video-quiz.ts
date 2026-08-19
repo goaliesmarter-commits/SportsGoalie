@@ -11,6 +11,14 @@ export interface VideoQuizQuestion extends Question {
   timestamp: number; // seconds into video where question appears
   pauseDuration?: number; // optional auto-advance after X seconds
   allowVideoControl?: boolean; // can student rewind to see content again?
+  /**
+   * Reflective questions have no right answer. "Did that save feel balanced?" with
+   * Yes / No / Not Sure is data about the goalie, not a test — so the builder stops
+   * demanding a correct option, the player stops grading it, and it is left out of
+   * the score denominator entirely. The answer is still recorded; see
+   * `VideoQuestionAnswer.reflective`.
+   */
+  reflective?: boolean;
 }
 
 /**
@@ -57,6 +65,16 @@ export interface VideoQuiz {
   status?: 'draft' | 'published' | 'archived'; // Quiz publication status
   allowRetakes?: boolean; // Whether users can retake the quiz
   category: string;
+  /**
+   * Who authored the quiz. `'coach'` marks coach-authored content, which is filed under the
+   * `'coach-custom'` sport/skill sentinels rather than real `sports`/`skills` documents — so
+   * VideoQuizService skips its sport/skill existence checks for it.
+   *
+   * Typed rather than read off an `any` cast on purpose: omitting it from a coach payload is
+   * silent at compile time and only fails at save with "Sport with ID 'coach-custom' does not
+   * exist", which is exactly how it was missed on the QuizCreator path.
+   */
+  source?: 'coach' | 'admin';
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
@@ -91,8 +109,23 @@ export interface VideoQuestionAnswer {
   questionType: QuestionType;
   timestamp: number; // when question appeared in video
   answer: string | number | string[]; // supports multiple answer types
+  /**
+   * What the goalie actually picked, in words — "No", "Not Sure", "Left pad".
+   *
+   * `answer` holds option *ids* for multiple choice, which are meaningless in a
+   * report. Reflective questions are only worth recording if the coach can read
+   * the response back, so the text is resolved and stored at answer time rather
+   * than re-derived later against a quiz that may since have been edited.
+   */
+  answerText?: string;
   isCorrect: boolean;
   pointsEarned: number;
+  /**
+   * Marks an answer to a reflective question. `isCorrect` is meaningless here and
+   * is always false — every display site must check this flag first, or an honest
+   * "No" renders as a wrong answer, which is the whole complaint.
+   */
+  reflective?: boolean;
   timeToAnswer: number; // seconds taken to answer
   answeredAt: Timestamp;
 }

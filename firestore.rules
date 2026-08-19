@@ -535,8 +535,12 @@ service cloud.firestore {
 
     // Video Quiz Progress collection - Student progress through video quizzes
     match /video_quiz_progress/{progressId} {
-      // Users can read their own progress, admins can read all
-      allow read: if isOwnerOrAdmin(resource.data.userId);
+      // Users can read their own progress, coaches can read the progress of
+      // goalies assigned to them (so they can see individual answers), admins read all
+      allow read: if isOwnerOrAdmin(resource.data.userId) ||
+                     (isCoach() &&
+                      exists(/databases/$(database)/documents/users/$(resource.data.userId)) &&
+                      get(/databases/$(database)/documents/users/$(resource.data.userId)).data.assignedCoachId == getUserId());
 
       // Users can create their own progress
       allow create: if isAuthenticated() &&
