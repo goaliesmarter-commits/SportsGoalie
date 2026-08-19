@@ -250,8 +250,11 @@ export function VideoQuestionBuilder({
       return;
     }
 
-    if (newQuestion.timestamp === undefined || newQuestion.timestamp < 0) {
-      toast.error('Valid timestamp is required');
+    // Number.isFinite rejects both undefined (empty box) and NaN. The old
+    // `=== undefined || < 0` check let NaN straight through, and a NaN timestamp
+    // poisons the sort and the spacing check for every question after it.
+    if (!Number.isFinite(newQuestion.timestamp) || newQuestion.timestamp! < 0) {
+      toast.error('Enter a timestamp for this question');
       return;
     }
 
@@ -1000,13 +1003,20 @@ export function VideoQuestionBuilder({
                 type="number"
                 min="0"
                 max={detectedDuration || videoDuration}
-                value={newQuestion.timestamp}
-                onChange={(e) =>
+                // `?? ''` and the NaN guard below are load-bearing. A number input
+                // hands back '' when you clear it or type something it rejects, and
+                // parseInt('') is NaN. Storing NaN made React render value={NaN},
+                // which blanks the box and appears to the coach as a frozen field —
+                // reported as "the time and point froze, question answer responded
+                // fine". Empty now means undefined, which the Add validation catches.
+                value={newQuestion.timestamp ?? ''}
+                onChange={(e) => {
+                  const next = parseInt(e.target.value, 10);
                   setNewQuestion({
                     ...newQuestion,
-                    timestamp: parseInt(e.target.value),
-                  })
-                }
+                    timestamp: Number.isFinite(next) ? Math.max(0, next) : undefined,
+                  });
+                }}
                 className="w-full border-slate-300 focus-visible:ring-red-200"
               />
               <p className="text-xs text-gray-500">
@@ -1021,13 +1031,16 @@ export function VideoQuestionBuilder({
                 type="number"
                 min="1"
                 disabled={newQuestion.reflective}
-                value={newQuestion.reflective ? 0 : newQuestion.points}
-                onChange={(e) =>
+                // Same NaN trap as the timestamp field above. Undefined is safe here:
+                // the add handler already falls back to 10 points.
+                value={newQuestion.reflective ? 0 : (newQuestion.points ?? '')}
+                onChange={(e) => {
+                  const next = parseInt(e.target.value, 10);
                   setNewQuestion({
                     ...newQuestion,
-                    points: parseInt(e.target.value),
-                  })
-                }
+                    points: Number.isFinite(next) ? Math.max(0, next) : undefined,
+                  });
+                }}
                 className="w-full border-slate-300 focus-visible:ring-red-200 disabled:bg-gray-100 disabled:text-gray-400"
               />
               {newQuestion.reflective && (
