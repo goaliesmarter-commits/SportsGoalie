@@ -149,7 +149,11 @@ export const GOALIE_INTAKE_QUESTIONS: IntakeQuestion[] = [
     id: 'goalie-intake-5',
     screenNumber: 3,
     questionCode: 'Q-IN-5',
-    question: 'What brought you to Smarter Goalie today? (Select all that apply)',
+    // No "(Select all that apply)" in the question text — the screen already prints
+    // that line above the options for every multi-select. Baseline questions never
+    // carried it inline, so having it here made the same control look like two
+    // different controls depending on which question you were on.
+    question: 'What brought you to Smarter Goalie today?',
     type: 'multi_select',
     isRequired: true,
     order: 5,

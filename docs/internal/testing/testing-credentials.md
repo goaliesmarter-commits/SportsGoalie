@@ -20,6 +20,25 @@ This document contains all test accounts and credentials used for testing the Sm
 - **Usage**: Testing student dashboard access, regular user features
 - **Expected Behavior**: Should redirect to `/dashboard` after login
 
+### Verified Coach Account
+- **Email**: `coach.test@smartergoalie.com`
+- **Password**: `coachtest123456`
+- **Role**: Coach
+- **Coach Code**: `TESTCOACH-2T3S`
+- **Status**: Email verified, baseline profile marked complete
+- **Usage**: Testing coach dashboard, content library, quiz builder, and the
+  goalie-links-to-a-coach flow (use the coach code above)
+- **Expected Behavior**: Should redirect to `/coach` after login
+- **Created by**: `node scripts/create-coach-test-account.js` — safe to re-run,
+  it reuses the account and resets the password to the one above. Add `--fresh`
+  to clear the onboarding flag so the next login replays the coach baseline
+  questionnaire.
+
+> Added 2026-08-20. Before this, there was no coach login at all, so coach-facing
+> work shipped without ever being opened in a browser — the 2026-08-16 content
+> library fix had to be verified against a rebuilt Playwright copy of the page,
+> which produced a false positive on its first pass. Use this account instead.
+
 ### Unverified Test Accounts
 
 #### Account 1 (Created during testing)

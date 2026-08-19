@@ -9,6 +9,7 @@ import { TiltCard } from '@/components/ui/tilt-card';
 import { FloatingPaths } from '@/components/ui/background-paths';
 import { Boxes } from '@/components/ui/background-boxes';
 import { SevenPillarsCTA } from '@/components/SevenPillarsCTA';
+import { ApplicationSteps } from '@/components/ApplicationSteps';
 
 const BLUE = '#37b5ff';
 const BLUE2 = '#60cdff';
@@ -712,18 +713,15 @@ export default function GoaliePage() {
             Not open to the general public. Founding members help build what Smarter Goalie becomes. Their feedback shapes the final product. In return, Coach Mike&rsquo;s personal attention, direct access, and a founding member rate are locked in forever.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-14">
-            {[
-              { num: '01', text: 'Complete the questionnaire in 5 minutes' },
+          <ApplicationSteps
+            steps={[
+              { num: '01', text: 'Complete the questionnaire in 5 minutes', href: '/auth/register', action: 'Start' },
               { num: '02', text: 'Coach Mike personally reviews your application, with no automation and no filter' },
+              // Inert on purpose — see the parent page. There is no goalie-facing
+              // booking form for this to point at.
               { num: '03', text: 'Coach Mike calls you personally' },
-            ].map((step) => (
-              <div key={step.num} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(96,205,255,0.22)', borderRadius: '16px', padding: '28px 24px', flex: '1', maxWidth: '240px', width: '100%', margin: '0 auto', textAlign: 'left', boxShadow: '0 2px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
-                <p style={{ fontSize: '38px', fontWeight: 900, color: BLUE2, lineHeight: 1, marginBottom: '14px' }}>{step.num}</p>
-                <p style={{ fontSize: '15px', color: 'rgba(155,200,228,0.9)', lineHeight: 1.65, margin: 0 }}>{step.text}</p>
-              </div>
-            ))}
-          </div>
+            ]}
+          />
 
           <button
             onClick={() => router.push('/auth/register')}

@@ -127,8 +127,21 @@ export function LessonCreator({ open, onOpenChange, coachId, onSave, editContent
   const removeTag = (i: number) => setTags(tags.filter((_, idx) => idx !== i));
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) { setAttachments(prev => [...prev, ...Array.from(e.target.files!)].slice(0, 5)); }
+    /**
+     * Read the files into a real array *before* clearing the input.
+     *
+     * The state updater below runs during the next render, not at the moment
+     * it is queued — so reading `e.target.files` inside it happened after the
+     * `value = ''` on the following line had already emptied the FileList, and
+     * every attachment was silently dropped. The clear itself has to stay: a
+     * file input fires no `change` event when re-picking the same file, so
+     * without it the picker looks dead until the page is remounted.
+     */
+    const picked = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = '';
+    if (picked.length > 0) {
+      setAttachments(prev => [...prev, ...picked].slice(0, 5));
+    }
   };
   const removeAttachment = (i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i));
 

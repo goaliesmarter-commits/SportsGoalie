@@ -383,9 +383,15 @@ export function useParentOnboarding({
     }
   }, [evaluation, currentQuestion, currentCategory, currentCategoryIndex, currentQuestionIndex, categoryQuestions.length, totalCategories]);
 
+  // Sets the phase as well as the index in every branch — this is also the Back
+  // handler for the category intro, where moving the index alone would leave the
+  // intro on screen. The last branch is the one that used to dead-end: at the very
+  // first question there was no way back into the intake, so those answers were
+  // final from the moment the assessment opened.
   const previousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
+      setPhase('question');
       return;
     }
 
@@ -396,9 +402,15 @@ export function useParentOnboarding({
 
       setCurrentCategoryIndex(previousCategoryIndex);
       setCurrentQuestionIndex(Math.max(previousCategoryQuestions.length - 1, 0));
+      setPhase('question');
       return;
     }
-  }, [currentQuestionIndex, currentCategoryIndex, categoryOrder]);
+
+    if (totalIntakeScreens > 0) {
+      setCurrentIntakeScreen(totalIntakeScreens - 1);
+      setPhase('intake');
+    }
+  }, [currentQuestionIndex, currentCategoryIndex, categoryOrder, totalIntakeScreens]);
 
   const completeAssessmentInternal = async () => {
     if (!userId || !evaluation) return;

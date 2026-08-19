@@ -400,9 +400,17 @@ export function useOnboarding({
     }
   }, [evaluation, currentQuestion, currentCategory, currentCategoryIndex, currentQuestionIndex, categoryQuestions.length, totalCategories]);
 
+  /**
+   * Step back one question.
+   *
+   * Each branch sets the phase as well as the index, because this is also the
+   * Back handler for the category intro screen — from there the indices alone
+   * would move the position while leaving the intro on screen.
+   */
   const previousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
+      setPhase('question');
       return;
     }
 
@@ -413,9 +421,21 @@ export function useOnboarding({
 
       setCurrentCategoryIndex(previousCategoryIndex);
       setCurrentQuestionIndex(Math.max(previousCategoryQuestions.length - 1, 0));
+      setPhase('question');
       return;
     }
-  }, [currentQuestionIndex, currentCategoryIndex, categoryOrder]);
+
+    // First question of the first category. Everything before this point is the
+    // intake, and there was no route back into it from here — Back was disabled,
+    // and neither the bridge nor the category intro carries one. So every intake
+    // answer became final the moment the assessment opened. Step back onto the
+    // last intake screen instead; `intakeResponses` is still held in state, so
+    // the answer is there to change.
+    if (totalIntakeScreens > 0) {
+      setCurrentIntakeScreen(totalIntakeScreens - 1);
+      setPhase('intake');
+    }
+  }, [currentQuestionIndex, currentCategoryIndex, categoryOrder, totalIntakeScreens]);
 
   const completeAssessmentInternal = async () => {
     if (!userId || !evaluation) return;

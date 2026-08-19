@@ -28,7 +28,7 @@ interface CoachInvitationEmailData {
  * Generic email data
  */
 interface EmailData {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -73,7 +73,8 @@ interface ContactInquiry {
 interface ContactInquiryNotificationData {
   inquiry: ContactInquiry;
   inquiryId: string;
-  notifyEmail: string;
+  /** One address, or several to copy in the whole team */
+  notifyEmail: string | string[];
 }
 
 /**
@@ -393,15 +394,17 @@ Questions? Contact ${supportEmail}
    * Send generic email
    */
   public async sendEmail(data: EmailData): Promise<void> {
+    const recipients = Array.isArray(data.to) ? data.to.join(', ') : data.to;
+
     try {
-      logDebug('Sending email', { to: data.to, subject: data.subject });
+      logDebug('Sending email', { to: recipients, subject: data.subject });
 
       if (!resend) {
         // No API key — log to console so dev can see the email content
         console.log('\n' + '='.repeat(80));
         console.log('📧 EMAIL (Development Mode)');
         console.log('='.repeat(80));
-        console.log(`To: ${data.to}`);
+        console.log(`To: ${recipients}`);
         console.log(`Subject: ${data.subject}`);
         console.log('-'.repeat(80));
         console.log('Text Content:');
@@ -412,7 +415,7 @@ Questions? Contact ${supportEmail}
         console.log('='.repeat(80) + '\n');
 
         logInfo('Email logged to console (development mode)', {
-          to: data.to,
+          to: recipients,
           subject: data.subject,
         });
       } else {
@@ -430,7 +433,7 @@ Questions? Contact ${supportEmail}
         }
 
         logInfo('Email sent successfully via Resend', {
-          to: data.to,
+          to: recipients,
           subject: data.subject,
           messageId: result.data?.id,
         });

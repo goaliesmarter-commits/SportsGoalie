@@ -90,6 +90,16 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ className }) => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    /**
+     * Clear the input as soon as it has been read.
+     *
+     * `handleFileUpload` bails out with a toast when the sport or description
+     * is missing — and because the input still held that file, picking the very
+     * same file again fired no `change` event and nothing happened. The only
+     * way out was to leave the page and come back, which remounts the input
+     * with an empty value.
+     */
+    e.target.value = '';
     handleFileUpload(files);
   };
 
