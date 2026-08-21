@@ -165,7 +165,7 @@ function AdminPillarsContent() {
               <div>
                 <label style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '5px' }}>DISPLAY ORDER</label>
                 <input className="pl-inp" type="number" value={formData.order} disabled style={{ opacity: 0.5 }} />
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '4px' }}>Order is fixed for the 7 pillars</p>
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '4px' }}>Order is fixed for the 8 pillars</p>
               </div>
             </div>
             <div style={{ marginBottom: '16px' }}>
@@ -215,7 +215,7 @@ function AdminPillarsContent() {
           <div style={{ ...card, padding: '48px', textAlign: 'center' }}>
             <BookOpen size={44} color="rgba(255,255,255,0.1)" style={{ margin: '0 auto 16px' }} />
             <p style={{ color: '#fff', fontWeight: 600, fontSize: '16px', marginBottom: '8px' }}>No pillars found</p>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Run the migration script to create the 7 pillars.</p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Run the migration script to create the 8 pillars.</p>
           </div>
         ) : (
           <div className="pl-grid" style={cardGridStyle}>
@@ -269,9 +269,9 @@ function AdminPillarsContent() {
               <Sparkles size={20} color={BLUE} />
             </div>
             <div>
-              <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>About the 7 Pillars</h3>
+              <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>About the 8 Pillars</h3>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', lineHeight: 1.6 }}>
-                These 7 pillars form the foundation of comprehensive goaltender development. Each pillar contains skills at 3 difficulty levels (Introduction, Development, Refinement). Skills are shown to goalies based on their assessed pacing level from onboarding.
+                These 8 pillars form the foundation of comprehensive goaltender development. Each pillar contains skills at 3 difficulty levels (Introduction, Development, Refinement). Skills are shown to goalies based on their assessed pacing level from onboarding.
               </p>
             </div>
           </div>

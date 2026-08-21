@@ -71,18 +71,21 @@ export type CoachCategorySlug =
 export type CategorySlug = GoalieCategorySlug | ParentCategorySlug | CoachCategorySlug;
 
 /**
- * The 7 Ice Hockey Goalie Pillars (used for content organization)
+ * The 8 Ice Hockey Goalie Pillars (used for content organization)
  * Assessment uses 7 categories; pillars are for content organization
+ *
+ * The slug is a pillar's identity and never changes — names and numbers below
+ * are display only, and follow Michael's list of 20 August 2026.
  */
 export type PillarSlug =
   | 'mindset'      // Pillar 1 — MindSet
-  | 'skating'      // Pillar 2 — Skating
-  | 'positioning'  // Pillar 3 · 7AMS (Above the Icing Line)
-  | 'seven_point'  // Pillar 3 · 6 Zone – 7 Point System™ (Below the Icing Line)
-  | 'form'         // Pillar 4 — Form
-  | 'game'         // Pillar 5 — Game
-  | 'practice'     // Pillar 6 — Practice
-  | 'lifestyle';   // Pillar 7 — Lifestyle (includes off-ice training, nutrition, recovery, sleep)
+  | 'skating'      // Pillar 2 — Skating Tech
+  | 'positioning'  // Pillar 3 — 7 Angle-Marker System (7AMS)
+  | 'seven_point'  // Pillar 4 — 6 Zone – 7 Point System™ (6Z-7PS)
+  | 'form'         // Pillar 5 — Form Tech
+  | 'game'         // Pillar 6 — Game Analysis
+  | 'practice'     // Pillar 7 — Practice Analysis
+  | 'lifestyle';   // Pillar 8 — Lifestyle (includes off-ice training, nutrition, recovery, sleep)
 
 /**
  * Pillar slugs that no longer exist but are still written on stored documents.
@@ -949,14 +952,20 @@ export interface PillarInfo {
 }
 
 /**
- * The 7 Ice Hockey Goalie content pillars, in the order Michael approved on
- * 6 August 2026. This array is the single source the app reads its pillar
- * wording and ordering from — changing it here changes every screen that
+ * The 8 Ice Hockey Goalie content pillars, named and numbered exactly as Michael
+ * specified on 20 August 2026. This array is the single source the app reads its
+ * pillar wording and ordering from — changing it here changes every screen that
  * renders the list.
  *
- * Pillar 3 is deliberately two entries: 7AMS governs play above the icing line
- * and the 6 Zone – 7 Point System™ governs play below it. They are taught as one
- * pillar but charted separately, so both need to exist as selectable options.
+ * 7AMS and the 6 Zone – 7 Point System™ used to share the number 3, as two halves
+ * of one pillar taught above and below the icing line. Michael's 20 August list
+ * numbers them separately as 3 and 4, so they are now eight numbered pillars.
+ *
+ * NOTE: the public marketing site still runs on seven — the "/7-pillars" route,
+ * the pricing FAQ and the footer all say 7, and PUBLIC_PILLARS in
+ * src/lib/pillar-public-routes.ts keeps its own numbering because those URLs are
+ * already shared. Bringing the two into line needs Michael's sign-off and new
+ * sales copy in his voice, so it is deliberately not done here.
  */
 export const PILLARS: PillarInfo[] = [
   {
@@ -971,8 +980,8 @@ export const PILLARS: PillarInfo[] = [
   {
     slug: 'skating',
     pillarNumber: 2,
-    name: 'Skating',
-    shortName: 'Skating',
+    name: 'Skating Tech',
+    shortName: 'Skating Tech',
     description: 'Movement confidence and skating knowledge',
     icon: 'Footprints',
     color: 'blue',
@@ -980,7 +989,7 @@ export const PILLARS: PillarInfo[] = [
   {
     slug: 'positioning',
     pillarNumber: 3,
-    name: '7AMS (Above the Icing Line)',
+    name: '7 Angle-Marker System (7AMS)',
     shortName: '7AMS',
     description: 'The 7 Angle-Marker System — positioning above the icing line',
     icon: 'Target',
@@ -988,43 +997,43 @@ export const PILLARS: PillarInfo[] = [
   },
   {
     slug: 'seven_point',
-    pillarNumber: 3,
-    name: '6 Zone – 7 Point System™ (Below the Icing Line)',
-    shortName: '6 Zone – 7 Point System™',
+    pillarNumber: 4,
+    name: '6 Zone – 7 Point System™ (6Z-7PS)',
+    shortName: '6Z-7PS',
     description: 'Zone awareness and coverage patterns below the icing line',
     icon: 'Grid3X3',
     color: 'red',
   },
   {
     slug: 'form',
-    pillarNumber: 4,
-    name: 'Form',
-    shortName: 'Form',
+    pillarNumber: 5,
+    name: 'Form Tech',
+    shortName: 'Form Tech',
     description: 'Stance awareness and execution fundamentals',
     icon: 'Shapes',
     color: 'green',
   },
   {
     slug: 'game',
-    pillarNumber: 5,
-    name: 'Game',
-    shortName: 'Game',
+    pillarNumber: 6,
+    name: 'Game Analysis',
+    shortName: 'Game Analysis',
     description: 'Game-day routine, charting, and post-game review',
     icon: 'Trophy',
     color: 'cyan',
   },
   {
     slug: 'practice',
-    pillarNumber: 6,
-    name: 'Practice',
-    shortName: 'Practice',
+    pillarNumber: 7,
+    name: 'Practice Analysis',
+    shortName: 'Practice Analysis',
     description: 'Purposeful practice, planning, and repetition that earns the technique',
     icon: 'Dumbbell',
     color: 'teal',
   },
   {
     slug: 'lifestyle',
-    pillarNumber: 7,
+    pillarNumber: 8,
     name: 'Lifestyle',
     shortName: 'Lifestyle',
     description: 'Off-ice training, nutrition, recovery, sleep, life balance, and overall wellness essential for peak goaltending performance',
@@ -1034,10 +1043,13 @@ export const PILLARS: PillarInfo[] = [
 ];
 
 /**
- * The label a pillar carries in a picker: "Pillar 4 — Form".
+ * The label a pillar carries in a picker: "Pillar 5 — Form Tech".
  *
- * The two halves of Pillar 3 are joined with "·" rather than "—" so the list
- * reads as one pillar split in two rather than two pillars sharing a number.
+ * Two pillars sharing a number is still handled — they join with "·" rather than
+ * "—" so the list reads as one pillar split in two. Michael's 20 August numbering
+ * gives all eight their own number, so nothing hits that branch today; it stays
+ * because the 7AMS / 6Z-7PS pairing is a teaching decision that has changed once
+ * already.
  */
 export function pillarOptionLabel(pillar: PillarInfo): string {
   const isSplit = PILLARS.filter(p => p.pillarNumber === pillar.pillarNumber).length > 1;

@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
 
     // Send notification email to the team.
     // CONTACT_NOTIFY_EMAIL takes a comma-separated list so several people can be copied in.
-    const notifyEmail = (process.env.CONTACT_NOTIFY_EMAIL || 'goaliesmarter@gmail.com')
+    // The default leads with the address the site advertises in the footer, so a visitor who
+    // reads "write to info@" and one who uses this form reach the same inbox. Gmail stays on
+    // the list as a fallback while info@ delivery is being confirmed.
+    const notifyEmail = (process.env.CONTACT_NOTIFY_EMAIL || 'info@smartergoalie.com, goaliesmarter@gmail.com')
       .split(',')
       .map(address => address.trim())
       .filter(Boolean);
