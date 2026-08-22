@@ -3,17 +3,20 @@
 import { useState, useEffect } from 'react';
 import { Sport, PILLARS } from '@/types';
 import { sportsService } from '@/lib/database/services/sports.service';
-import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
+import { getExactPillarSlug, getPillarSlugFromDocId, pillarDisplayName } from '@/lib/utils/pillars';
 import { SkeletonPillarsPage } from '@/components/ui/skeletons';
 import Link from 'next/link';
 import {
-  ArrowRight, Brain, Footprints, Shapes, Target, Grid3X3, Dumbbell, Heart, RefreshCw, BookOpen,
+  ArrowRight, Brain, Footprints, Shapes, Target, Grid3X3, Dumbbell, Heart, Trophy, RefreshCw, BookOpen,
 } from 'lucide-react';
 
 const BLUE = '#37b5ff';
 
+// Every icon named in PILLARS (src/types/onboarding.ts) has to appear here or the
+// card silently falls back to Target — which is Pillar 3's icon, so the miss reads
+// as a duplicate rather than as a missing entry.
 const PILLAR_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string; className?: string }>> = {
-  Brain, Footprints, Shapes, Target, Grid3X3, Dumbbell, Heart,
+  Brain, Footprints, Shapes, Target, Grid3X3, Trophy, Dumbbell, Heart,
 };
 
 const PILLAR_DESCRIPTIONS: Record<string, string> = {
@@ -22,7 +25,11 @@ const PILLAR_DESCRIPTIONS: Record<string, string> = {
   form:        'Perfect your physical foundation. Stance, paddle control, and body mechanics — the blueprint of every great save.',
   positioning: 'See the ice geometrically. The 7 Angle-Mark System gives you a mathematical grid to always be in the right spot.',
   seven_point: 'Own the danger zone. The 6 Zone – 7 Point System™ addresses below-the-icing-line positioning — the most dangerous area on ice.',
-  training:    'Make every rep count. Chart your games, spot your patterns, and translate practice directly into game performance.',
+  // Keyed by the slugs getPillarSlugFromDocId can actually return. The retired
+  // `training` slug resolves to `practice` before it ever reaches this map, so its
+  // old combined copy is split across the two pillars that replaced it.
+  game:        'Chart what actually happened. Game-day routine, in-game management, and the post-game review that turns one night into a pattern you can train against.',
+  practice:    'Make every rep count. Plan with intent, aim at the weakness your charts found, and build practices that ask what a game asks.',
   lifestyle:   'Train the whole athlete. Off-ice habits, nutrition, recovery, and sleep are the foundation your on-ice game builds on.',
 };
 
@@ -34,7 +41,11 @@ export default function PillarsPage() {
   const loadPillars = async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const result = await sportsService.getAllSports({ limit: 10 });
+      // 100, not 10. Eight pillars plus the retired combined document is nine
+      // today, and a page that silently drops a pillar when a tenth row appears
+      // is the same failure that hid Pillar 6 — better to over-fetch a list this
+      // small than to cap it one row above its current size.
+      const result = await sportsService.getAllSports({ limit: 100 });
       if (result.success && result.data) {
         setState({ pillars: result.data.items.sort((a, b) => a.order - b.order), loading: false, error: null });
       } else {
@@ -62,7 +73,7 @@ export default function PillarsPage() {
           <span style={{ color: BLUE }}>Complete Goalie</span>
         </h1>
         <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, maxWidth: '520px', margin: '0 auto' }}>
-          Every pillar connects to every other. Master all seven and you master the game — physically, mentally, and technically.
+          Every pillar connects to every other. Master all eight and you master the game — physically, mentally, and technically.
         </p>
       </section>
 
@@ -96,6 +107,12 @@ export default function PillarsPage() {
             {state.pillars.map((pillar) => {
               const slug = getPillarSlugFromDocId(pillar.id);
               const info = slug ? PILLARS.find(p => p.slug === slug) : null;
+              // The resolving `slug` above is right for the icon and the blurb —
+              // a stray document is better off borrowing Practice's artwork than
+              // showing none. Identity is stricter: the retired combined pillar
+              // keeps its own name and shows no number, so a goalie doesn't meet
+              // two cards both calling themselves Pillar 07.
+              const exact = getExactPillarSlug(pillar.id);
               const IconComponent = PILLAR_ICONS[info?.icon || pillar.icon || 'Target'] || Target;
               const description = (slug && PILLAR_DESCRIPTIONS[slug]) ?? pillar.description;
 
@@ -111,12 +128,15 @@ export default function PillarsPage() {
                         <IconComponent size={22} color={BLUE} />
                       </div>
                       <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: BLUE, background: 'rgba(55,181,255,0.1)', border: '1px solid rgba(55,181,255,0.2)', borderRadius: '20px', padding: '3px 10px' }}>
-                        Pillar {String(pillar.order).padStart(2, '0')}
+                        {/* The taxonomy's number, not the row's `order`. Admin can
+                            reorder these cards from /admin/pillars, and a goalie's
+                            "Pillar 03" has to keep matching the site and the audio. */}
+                        {exact && info ? `Pillar ${String(info.pillarNumber).padStart(2, '0')}` : 'Bonus'}
                       </span>
                     </div>
 
                     <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '12px', lineHeight: 1.2 }}>
-                      {pillar.name}
+                      {pillarDisplayName(pillar.id, pillar.name)}
                     </h3>
 
                     <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, flex: 1, marginBottom: '24px', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

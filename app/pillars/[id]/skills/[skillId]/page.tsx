@@ -9,6 +9,7 @@ import { videoQuizService } from '@/lib/database/services/video-quiz.service';
 import { ProgressService } from '@/lib/database/services/progress.service';
 import { customCurriculumService } from '@/lib/database';
 import { customContentService } from '@/lib/database/services/custom-content.service';
+import { pillarDisplayName } from '@/lib/utils/pillars';
 import { useAuth } from '@/lib/auth/context';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -217,12 +218,12 @@ export default function SkillDetailPage() {
           <nav style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
             <Link href="/pillars" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Pillars</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
-            <Link href={`/pillars/${sportId}`} style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>{sport.name}</Link>
+            <Link href={`/pillars/${sportId}`} style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>{pillarDisplayName(sport.id, sport.name)}</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span>
             <span style={{ color: 'rgba(255,255,255,0.6)' }}>{skill.name}</span>
           </nav>
           <button onClick={() => router.back()} className="sd-back" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.5)', background: 'transparent', border: 'none', fontSize: '13px', fontWeight: 600, borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', width: 'fit-content', transition: 'all 0.2s' }}>
-            <ArrowLeft size={15} /> Back to {sport.name}
+            <ArrowLeft size={15} /> Back to {pillarDisplayName(sport.id, sport.name)}
           </button>
         </div>
 

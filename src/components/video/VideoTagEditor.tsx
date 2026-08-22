@@ -26,7 +26,7 @@ import {
   ANGLE_MARKER_TAG_METADATA,
   createEmptyStructuredTags,
 } from '@/types';
-import { PILLARS } from '@/types/onboarding';
+import { PILLARS, pillarOptionLabel, pillarShortLabel } from '@/types/onboarding';
 import { X, Tags, Target, Users, Compass, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -123,7 +123,7 @@ export function VideoTagEditor({
               <SelectItem value="none">No Pillar</SelectItem>
               {PILLARS.map((pillar) => (
                 <SelectItem key={pillar.slug} value={pillar.slug}>
-                  {pillar.shortName}
+                  {pillarShortLabel(pillar)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -201,7 +201,7 @@ export function VideoTagEditor({
               <SelectItem value="none">No Pillar</SelectItem>
               {PILLARS.map((pillar) => (
                 <SelectItem key={pillar.slug} value={pillar.slug}>
-                  {pillar.name}
+                  {pillarOptionLabel(pillar)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -361,7 +361,10 @@ export function VideoTagEditor({
             <div className="flex flex-wrap gap-1">
               {tags.pillar && (
                 <Badge variant="outline" className="bg-primary/10">
-                  {PILLARS.find(p => p.slug === tags.pillar)?.shortName || tags.pillar}
+                  {(() => {
+                    const pillar = PILLARS.find(p => p.slug === tags.pillar);
+                    return pillar ? pillarShortLabel(pillar) : tags.pillar;
+                  })()}
                 </Badge>
               )}
               {tags.systems.map((system) => (

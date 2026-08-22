@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/context';
 import { formTemplateService, describeValidationFailure } from '@/lib/database/services/form-template.service';
-import { FormTemplate, FormSection, FormField, FieldType, AnalyticsType, PillarSlug, PILLARS } from '@/types';
+import { FormTemplate, FormSection, FormField, FieldType, AnalyticsType, PillarSlug, PILLARS, pillarOptionLabel } from '@/types';
 import { Loader2, Plus, Trash2, ArrowLeft, Save, AlertCircle, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -366,7 +366,7 @@ export default function TemplateBuilder({ mode, template }: TemplateBuilderProps
                 <select className="tb-sel" value={pillar} onChange={e => setPillar(e.target.value as PillarSlug | 'combined')}>
                   <option value="combined">Combined (All Pillars)</option>
                   {PILLARS.map(p => (
-                    <option key={p.slug} value={p.slug}>{p.name}</option>
+                    <option key={p.slug} value={p.slug}>{pillarOptionLabel(p)}</option>
                   ))}
                 </select>
               </div>

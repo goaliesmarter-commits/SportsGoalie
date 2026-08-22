@@ -928,6 +928,9 @@ export type {
 export {
   PILLARS,
   getPillarInfo,
+  pillarOptionLabel,
+  pillarShortLabel,
+  pillarFromSportId,
   DEFAULT_PACING_THRESHOLDS,
   GOALIE_CATEGORY_WEIGHTS,
   PARENT_CATEGORY_WEIGHTS,
@@ -946,7 +949,7 @@ export {
 
 /**
  * Pillar type alias - Pillars use the same structure as Sports
- * but represent the fixed 6 Ice Hockey Goalie learning pillars
+ * but represent the fixed 8 Ice Hockey Goalie learning pillars
  */
 export type Pillar = Sport;
 

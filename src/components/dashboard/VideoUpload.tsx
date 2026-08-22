@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth/context';
 import { firebaseStorageService, UploadProgress } from '@/lib/firebase/storage';
 import { videoReviewService, StudentVideo } from '@/lib/database/services/video-review.service';
 import { firebaseService } from '@/lib/firebase/service';
+import { pillarDisplayName } from '@/lib/utils/pillars';
 
 interface VideoUploadProps {
   className?: string;
@@ -238,7 +239,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ className }) => {
                 <SelectContent>
                   {sports.map((sport) => (
                     <SelectItem key={sport.id} value={sport.id}>
-                      {sport.icon} {sport.name}
+                      {sport.icon} {pillarDisplayName(sport.id, sport.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>

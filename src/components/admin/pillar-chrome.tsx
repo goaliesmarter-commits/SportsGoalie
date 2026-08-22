@@ -123,6 +123,12 @@ export const adminPillarCss = `
   .pl-card:hover { transform: translateY(-2px) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.3) !important; border-color: rgba(55,181,255,0.25) !important; }
   .pl-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
   .pl-btn-sm { padding: 5px 8px !important; font-size: 12px !important; gap: 4px !important; }
+  .pl-btn:disabled { opacity: 0.3 !important; cursor: not-allowed !important; }
+  /* Reorder arrows. Every other hover rule here is unconditional, which is fine
+     for buttons that are always live — these two spend most of their life
+     disabled at the ends of the list, so the hover has to check first. */
+  .pl-move { padding: 7px 9px !important; }
+  .pl-move:hover:not(:disabled) { background: rgba(55,181,255,0.12) !important; color: ${BLUE} !important; border-color: rgba(55,181,255,0.3) !important; }
   .pl-edit:hover { background: rgba(55,181,255,0.12) !important; color: ${BLUE} !important; border-color: rgba(55,181,255,0.3) !important; }
   .pl-skills:hover { background: rgba(34,197,94,0.1) !important; color: ${GREEN} !important; border-color: rgba(34,197,94,0.3) !important; }
   .pl-del:hover { background: rgba(248,113,113,0.12) !important; color: ${RED} !important; border-color: rgba(248,113,113,0.3) !important; }

@@ -12,7 +12,7 @@ import { useDeleteConfirmation } from '@/components/ui/confirmation-dialog';
 import { HTMLEditorWithAI } from '@/components/ui/html-editor-with-ai';
 import { ArrowLeft, Plus, Edit, Trash2, Save, X, Clock, BookOpen, Play, Target } from 'lucide-react';
 import { PILLARS } from '@/types';
-import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
+import { getExactPillarSlug } from '@/lib/utils/pillars';
 import {
   BLUE, RED, card, accentLineStyle, pageStackStyle, cardGridStyle, badgeStyle,
   iconChipStyle, tierBadgeStyle, TIER_COLORS, PILLAR_ICONS, adminPillarCss,
@@ -198,12 +198,15 @@ function AdminSkillsContent() {
 
   const getPillarDisplayInfo = () => {
     if (!state.sport) return null;
-    const slug = getPillarSlugFromDocId(state.sport.id);
+    // Exact match, matching the card this page was opened from: the retired
+    // `pillar_training` document must not appear here titled "Practice System"
+    // while holding the game, practice and off-ice skills all at once.
+    const slug = getExactPillarSlug(state.sport.id);
     if (slug) {
       const info = PILLARS.find(p => p.slug === slug);
-      if (info) return { icon: info.icon, color: info.color, shortName: info.shortName };
+      if (info) return { icon: info.icon, color: info.color, shortName: info.shortName, name: info.name, pillarNumber: info.pillarNumber, isRetired: false };
     }
-    return { icon: state.sport.icon, color: 'blue', shortName: state.sport.name.split(' ')[0] };
+    return { icon: state.sport.icon, color: 'blue', shortName: state.sport.name.split(' ')[0], name: state.sport.name, pillarNumber: state.sport.order, isRetired: true };
   };
 
   const displayInfo = getPillarDisplayInfo();
@@ -231,8 +234,12 @@ function AdminSkillsContent() {
                   <IconComponent size={18} color={BLUE} />
                 </div>
                 <div>
-                  <span style={badgeStyle}>Pillar {String(state.sport.order).padStart(2, '0')}</span>
-                  <h1 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, margin: '8px 0 4px' }}>{state.sport.name}</h1>
+                  {/* Number and name both from the code taxonomy, matching the card
+                      this page was opened from — `order` is now a running order the
+                      admin can change with the arrows, and the stored name lags.
+                      A document outside the eight has no number to print. */}
+                  <span style={badgeStyle}>{displayInfo?.isRetired ? 'Retired' : `Pillar ${String(displayInfo?.pillarNumber ?? state.sport.order).padStart(2, '0')}`}</span>
+                  <h1 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, margin: '8px 0 4px' }}>{displayInfo?.name ?? state.sport.name}</h1>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: 0 }}>Manage skills for this pillar</p>
                 </div>
               </div>

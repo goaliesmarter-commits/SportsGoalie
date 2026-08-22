@@ -75,7 +75,8 @@ export type CategorySlug = GoalieCategorySlug | ParentCategorySlug | CoachCatego
  * Assessment uses 7 categories; pillars are for content organization
  *
  * The slug is a pillar's identity and never changes — names and numbers below
- * are display only, and follow Michael's list of 20 August 2026.
+ * are display only. Numbers follow Michael's list of 20 August 2026; names 6, 7
+ * and 8 follow his correction of 22 August.
  */
 export type PillarSlug =
   | 'mindset'      // Pillar 1 — MindSet
@@ -83,9 +84,9 @@ export type PillarSlug =
   | 'positioning'  // Pillar 3 — 7 Angle-Marker System (7AMS)
   | 'seven_point'  // Pillar 4 — 6 Zone – 7 Point System™ (6Z-7PS)
   | 'form'         // Pillar 5 — Form Tech
-  | 'game'         // Pillar 6 — Game Analysis
-  | 'practice'     // Pillar 7 — Practice Analysis
-  | 'lifestyle';   // Pillar 8 — Lifestyle (includes off-ice training, nutrition, recovery, sleep)
+  | 'game'         // Pillar 6 — Game Performance Charting System
+  | 'practice'     // Pillar 7 — Practice System
+  | 'lifestyle';   // Pillar 8 — Lifestyle & Hockey (includes off-ice training, nutrition, recovery, sleep)
 
 /**
  * Pillar slugs that no longer exist but are still written on stored documents.
@@ -942,7 +943,12 @@ export function getCategoryInfo(slug: string, role: QuestionnaireRole = 'goalie'
  */
 export interface PillarInfo {
   slug: PillarSlug;
-  /** Which of the seven Pillars this belongs to. Pillar 3 has two halves, so 3 appears twice. */
+  /**
+   * Which of the eight Pillars this is, 1–8. Fixed: the number is printed across
+   * the marketing site and spoken in Coach Mike's audio, so it is an identity,
+   * not a running order. Admin reordering moves the `order` field on the
+   * matching `sports` document instead, and leaves this alone.
+   */
   pillarNumber: number;
   name: string;
   shortName: string;
@@ -1016,8 +1022,12 @@ export const PILLARS: PillarInfo[] = [
   {
     slug: 'game',
     pillarNumber: 6,
-    name: 'Game Analysis',
-    shortName: 'Game Analysis',
+    name: 'Game Performance Charting System',
+    // Michael's full name for this one runs to 32 characters, which overflows the
+    // narrow select triggers and badges `pillarShortLabel` feeds. "Game Charting"
+    // keeps the distinctive word — this is a derived abbreviation like 7AMS and
+    // 6Z-7PS, not a second name for the pillar.
+    shortName: 'Game Charting',
     description: 'Game-day routine, charting, and post-game review',
     icon: 'Trophy',
     color: 'cyan',
@@ -1025,8 +1035,8 @@ export const PILLARS: PillarInfo[] = [
   {
     slug: 'practice',
     pillarNumber: 7,
-    name: 'Practice Analysis',
-    shortName: 'Practice Analysis',
+    name: 'Practice System',
+    shortName: 'Practice System',
     description: 'Purposeful practice, planning, and repetition that earns the technique',
     icon: 'Dumbbell',
     color: 'teal',
@@ -1034,7 +1044,9 @@ export const PILLARS: PillarInfo[] = [
   {
     slug: 'lifestyle',
     pillarNumber: 8,
-    name: 'Lifestyle',
+    name: 'Lifestyle & Hockey',
+    // Still just "Lifestyle" where room is tight — the "& Hockey" half is the part
+    // a reader standing in a goaltending app can already infer.
     shortName: 'Lifestyle',
     description: 'Off-ice training, nutrition, recovery, sleep, life balance, and overall wellness essential for peak goaltending performance',
     icon: 'Heart',
@@ -1054,6 +1066,34 @@ export const PILLARS: PillarInfo[] = [
 export function pillarOptionLabel(pillar: PillarInfo): string {
   const isSplit = PILLARS.filter(p => p.pillarNumber === pillar.pillarNumber).length > 1;
   return `Pillar ${pillar.pillarNumber} ${isSplit ? '·' : '—'} ${pillar.name}`;
+}
+
+/**
+ * The label for somewhere the number matters but the room doesn't: "3 · 7AMS".
+ * Narrow select triggers and badges truncate, and `pillarOptionLabel` spends its
+ * first nine characters on the word "Pillar" — which is the half a reader can
+ * already infer from the field they are standing in.
+ */
+export function pillarShortLabel(pillar: PillarInfo): string {
+  return `${pillar.pillarNumber} · ${pillar.shortName}`;
+}
+
+/**
+ * The pillar behind a Firestore `sports` document ID.
+ *
+ * Pillars are stored one per document as `pillar_<slug>`, so the ID — never the
+ * stored `name` — is the identity. Resolving through here lets a picker show
+ * Michael's current naming while the database still holds the pre-migration name,
+ * which is the exact gap `scripts/split-training-pillar.ts` exists to close; until
+ * that script runs, code is the only source telling the truth.
+ *
+ * Returns null for any document that isn't a pillar, so callers can fall back to
+ * whatever the database gave them rather than rendering a blank option.
+ */
+export function pillarFromSportId(sportId: string | null | undefined): PillarInfo | null {
+  if (!sportId?.startsWith('pillar_')) return null;
+  const slug = resolvePillarSlug(sportId.slice('pillar_'.length));
+  return slug ? PILLARS.find(p => p.slug === slug) ?? null : null;
 }
 
 /**
