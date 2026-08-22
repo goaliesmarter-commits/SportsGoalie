@@ -118,3 +118,7 @@ PROJECT_TRACKER.md
 
 # Ignore local docs (context files for Claude, not for repo)
 docs/
+
+# Firestore snapshots taken before a migration (scripts/backup-firestore.ts).
+# These contain live student data — never commit them.
+backups/

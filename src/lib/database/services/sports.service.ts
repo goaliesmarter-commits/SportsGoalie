@@ -248,10 +248,12 @@ export class SportsService extends BaseDatabaseService {
       // Apply client-side sorting to avoid index requirements
       if (result.success && result.data) {
         result.data.items.sort((a, b) => {
-          // Sort by isFeatured (featured first), then order, then name
-          if (a.isFeatured !== b.isFeatured) {
-            return b.isFeatured ? 1 : -1;
-          }
+          // `order`, then name. Deliberately NOT featured-first: the rows are the
+          // eight pillars, whose sequence is fixed taxonomy, and isFeatured is an
+          // admin-editable flag that currently disagrees across them — sorting by
+          // it put Pillar 8 above Pillars 6 and 7 in every dropdown that shows
+          // this list unsorted. Callers wanting featured content have
+          // getFeaturedSports.
           if (a.order !== b.order) {
             return a.order - b.order;
           }
