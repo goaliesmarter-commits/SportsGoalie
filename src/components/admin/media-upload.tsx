@@ -117,6 +117,10 @@ export function MediaUpload({
     if (e.target.files) {
       processFiles(e.target.files);
     }
+    // A file input fires no `change` event when the same file is picked again,
+    // so without this the picker looks dead on the second attempt until the
+    // page is remounted. Safe here — `processFiles` has already read the list.
+    e.target.value = '';
   };
 
   const removeFile = (fileId: string) => {

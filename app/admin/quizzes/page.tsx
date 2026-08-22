@@ -179,7 +179,7 @@ function AdminQuizzesPageContent() {
         </div>
 
         {/* Tag Filters */}
-        <VideoFilterPanel filter={tagFilter} onFilterChange={setTagFilter} facets={tagFacets} loading={loading} defaultCollapsed={true} />
+        <VideoFilterPanel filter={tagFilter} onFilterChange={setTagFilter} facets={tagFacets} loading={loading} defaultCollapsed={true} theme="dark" />
 
         {/* Quiz Grid */}
         {loading ? (

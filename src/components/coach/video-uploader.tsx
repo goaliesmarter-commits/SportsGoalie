@@ -320,6 +320,16 @@ export function VideoUploader({
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
     }
+    /**
+     * Clear the input after reading it.
+     *
+     * A file input only fires `change` when its value actually changes, so
+     * re-picking the *same* file fires nothing at all and the button looks
+     * dead. That is what made uploading appear to work only after switching
+     * pages — navigating away remounts the input with an empty value, which
+     * silently un-sticks it. The captured `File` stays valid once cleared.
+     */
+    e.target.value = '';
   };
 
   const handleUrlSubmit = () => {

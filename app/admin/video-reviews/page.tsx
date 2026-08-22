@@ -10,6 +10,8 @@ import { videoReviewService, StudentVideo, VideoReviewSession } from '@/lib/data
 import { sportsService } from '@/lib/database/services/sports.service';
 import { VideoFeedbackComposer } from '@/components/messages/VideoFeedbackComposer';
 import { Sport } from '@/types';
+import { pillarDisplayName } from '@/lib/utils/pillars';
+import { pillarFromSportId, pillarOptionLabel } from '@/types/onboarding';
 
 const BLUE = '#37b5ff';
 const RED = '#f87171';
@@ -69,7 +71,11 @@ function VideoReviewsContent() {
       }
 
       if (sportsResult.success && sportsResult.data) {
-        setSports(sportsResult.data.items.sort((a, b) => a.name.localeCompare(b.name)));
+        // Pillar order, not alphabetical. Sorting by name lists the eight as
+        // 4, 3, 5, 6, 8, 1, 7, 2 — "6 Zone" and "7 Angle-Marker" both start with
+        // a digit, so they sort above every other pillar. getAllSports already
+        // returns them ordered; re-sorting here was throwing that away.
+        setSports(sportsResult.data.items.sort((a, b) => a.order - b.order));
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -157,7 +163,8 @@ function VideoReviewsContent() {
     if (selectedSportToAdd && !recommendedSports.includes(selectedSportToAdd)) {
       const sport = sports.find(c => c.id === selectedSportToAdd);
       if (sport) {
-        setRecommendedSports([...recommendedSports, sport.name]);
+        // Stored as the name itself — see the matching handler on the coach page.
+        setRecommendedSports([...recommendedSports, pillarDisplayName(sport.id, sport.name)]);
         setSelectedSportToAdd('');
       }
     }
@@ -580,9 +587,19 @@ function VideoReviewsContent() {
                       style={{ flex: 1 }}
                     >
                       <option value="">Select a course to recommend...</option>
-                      {sports.map(sport => (
-                        <option key={sport.id} value={sport.id}>{sport.name}</option>
-                      ))}
+                      {/* Numbered in the picker so the coach can find a pillar by
+                          the number Michael uses. What gets STORED on the review is
+                          still the plain name (see addRecommendedSport) — a saved
+                          recommendation reading "Pillar 6 — …" would freeze the
+                          numbering into student-facing data. */}
+                      {sports.map(sport => {
+                        const info = pillarFromSportId(sport.id);
+                        return (
+                          <option key={sport.id} value={sport.id}>
+                            {info ? pillarOptionLabel(info) : pillarDisplayName(sport.id, sport.name)}
+                          </option>
+                        );
+                      })}
                     </select>
                     <button
                       className="vr-sport-add"

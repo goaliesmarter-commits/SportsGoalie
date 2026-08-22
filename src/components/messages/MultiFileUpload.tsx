@@ -103,7 +103,10 @@ export const MultiFileUpload: React.FC<MultiFileUploadProps> = ({
   };
 
   // Handle file selection
-  const handleFiles = async (selectedFiles: FileList | null) => {
+  // Takes a plain array rather than a live `FileList`: this is async, and the
+  // file input is cleared the moment it is read (see the picker below), which
+  // empties the FileList out from under anything still holding a reference.
+  const handleFiles = async (selectedFiles: File[] | null) => {
     if (!selectedFiles) return;
 
     const remainingSlots = maxFiles - files.length;
@@ -112,7 +115,7 @@ export const MultiFileUpload: React.FC<MultiFileUploadProps> = ({
       return;
     }
 
-    const filesToAdd = Array.from(selectedFiles).slice(0, remainingSlots);
+    const filesToAdd = selectedFiles.slice(0, remainingSlots);
 
     for (const file of filesToAdd) {
       // Validate file
@@ -167,8 +170,7 @@ export const MultiFileUpload: React.FC<MultiFileUploadProps> = ({
     e.stopPropagation();
     setIsDragging(false);
 
-    const droppedFiles = e.dataTransfer.files;
-    handleFiles(droppedFiles);
+    handleFiles(Array.from(e.dataTransfer.files));
   };
 
   // Remove file
@@ -233,7 +235,15 @@ export const MultiFileUpload: React.FC<MultiFileUploadProps> = ({
             multiple
             accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm,application/pdf"
             className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
+            onChange={(e) => {
+              const picked = e.target.files ? Array.from(e.target.files) : [];
+              // Clear the input as soon as it has been read. A file input fires
+              // no `change` event when its value is unchanged, so re-picking the
+              // same file did nothing at all and the picker looked dead until
+              // the page was remounted.
+              e.target.value = '';
+              handleFiles(picked);
+            }}
           />
         </div>
       )}

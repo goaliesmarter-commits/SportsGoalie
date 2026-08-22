@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase/config';
 import { useProgress } from '@/hooks/useProgress';
 import { User, Sport, SportProgress, CustomCurriculum, CustomCurriculumItem, IntelligenceProfile, getPacingLevelDisplayText, PILLARS } from '@/types';
 import { enrollmentService } from '@/lib/database/services/enrollment.service';
-import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
+import { getPillarSlugFromDocId, pillarDisplayName } from '@/lib/utils/pillars';
 import { scaleToPercentage } from '@/lib/scoring/scale-score';
 import { toast } from 'sonner';
 
@@ -75,13 +75,16 @@ export function CustomCurriculumDashboard({ user }: CustomCurriculumDashboardPro
               const r = await sportsService.getSkill(item.contentId);
               if (r.success && r.data) {
                 const sport = await getSportCached(r.data.sportId);
-                return [item.contentId, { title: r.data.name, description: r.data.description, sportName: sport.name, sportIcon: sport.icon, sportColor: sport.color }];
+                // getSportCached returns a trimmed record with no `id`, so the doc ID
+                // comes off the skill. `|| undefined` keeps a nameless non-pillar
+                // document absent rather than showing an empty label.
+                return [item.contentId, { title: r.data.name, description: r.data.description, sportName: pillarDisplayName(r.data.sportId, sport.name ?? '') || undefined, sportIcon: sport.icon, sportColor: sport.color }];
               }
             } else if (item.type === 'quiz') {
               const r = await videoQuizService.getVideoQuiz(item.contentId);
               if (r.success && r.data) {
                 const sport = await getSportCached(r.data.sportId);
-                return [item.contentId, { title: r.data.title, description: r.data.description, sportName: sport.name, sportIcon: sport.icon, sportColor: sport.color }];
+                return [item.contentId, { title: r.data.title, description: r.data.description, sportName: pillarDisplayName(r.data.sportId, sport.name ?? '') || undefined, sportIcon: sport.icon, sportColor: sport.color }];
               }
             } else if (item.type === 'custom_lesson' || item.type === 'custom_quiz') {
               const r = await customContentService.getContent(item.contentId);

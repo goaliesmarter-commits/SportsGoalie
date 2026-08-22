@@ -142,6 +142,31 @@ export function getMindVaultCategoryInfo(slug: MindVaultCategory): MindVaultCate
   return MIND_VAULT_CATEGORIES.find((c) => c.slug === slug);
 }
 
+// ─── Category Prompts ────────────────────────────────────────────────
+//
+// Tap-to-add suggestions, the same mechanic the Acceptance and Cannot Accept
+// lists use — those two keep their own subcategorised sets below. Michael
+// reported the suggestion button "missing" from the other categories; the
+// button was never the problem, these lists have simply never had any
+// suggestions written for them.
+//
+// Each entry needs to be Michael's wording, not ours, so they stay empty until
+// he supplies them. A category with no prompts hides the section entirely
+// rather than showing an empty one.
+export const CATEGORY_PROMPTS: Partial<Record<MindVaultCategory, string[]>> = {
+  past_challenges: [],
+  what_has_worked: [],
+  personal_mantras: [],
+  self_coaching: [],
+  curriculum_anchors: [],
+  hockey_challenges: [],
+  lifestyle_challenges: [],
+};
+
+export function getCategoryPrompts(slug: MindVaultCategory): string[] {
+  return CATEGORY_PROMPTS[slug] ?? [];
+}
+
 // ─── Acceptance List Prompts ─────────────────────────────────────────
 
 export interface AcceptancePrompt {

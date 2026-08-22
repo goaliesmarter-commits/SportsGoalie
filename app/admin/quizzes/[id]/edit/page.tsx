@@ -6,6 +6,7 @@ import { AdminRoute } from '@/components/auth/protected-route';
 import { videoQuizService } from '@/lib/database/services/video-quiz.service';
 import { sportsService } from '@/lib/database/services/sports.service';
 import { Sport, Skill, DifficultyLevel, VideoQuiz, VideoQuizQuestion, VideoQuizSettings, VideoStructuredTags, createEmptyStructuredTags } from '@/types';
+import { pillarFromSportId, pillarOptionLabel } from '@/types/onboarding';
 import { VideoTagEditor, VideoLibraryPicker } from '@/components/video';
 import { ArrowLeft, Save, Loader2, Video, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -300,7 +301,12 @@ function EditVideoQuizContent() {
                   <label style={labelStyle}>Sport *</label>
                   <select className="qe-sel" value={quizData.sportId || ''} onChange={e => handleInputChange('sportId', e.target.value)} style={selectStyle}>
                     <option value="">Select a sport</option>
-                    {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {/* Numbered label from the code list — see the matching comment
+                        on the create page. The stored value stays the document ID. */}
+                    {sports.map(s => {
+                      const info = pillarFromSportId(s.id);
+                      return <option key={s.id} value={s.id}>{info ? pillarOptionLabel(info) : s.name}</option>;
+                    })}
                   </select>
                   <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginTop: '4px' }}>Required</p>
                 </div>

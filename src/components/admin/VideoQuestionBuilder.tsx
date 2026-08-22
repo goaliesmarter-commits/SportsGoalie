@@ -122,6 +122,11 @@ export function VideoQuestionBuilder({
     points: 10,
     required: true,
   });
+  // What the coach has actually typed in the timestamp box, kept separate from the
+  // parsed number. null means "not being edited", so the box shows the canonical
+  // m:ss instead. Holding the raw text is what stops a half-typed "1:" from
+  // wiping the field mid-keystroke.
+  const [timestampDraft, setTimestampDraft] = useState<string | null>(null);
   // Minimum gap enforced between two questions. Was a hard-coded 5s, which is
   // right for most videos and wrong for a fast drill where three cues land in
   // the same second. 0 turns the check off completely.
@@ -145,6 +150,16 @@ export function VideoQuestionBuilder({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Accepts plain seconds ("90") or clock time ("1:30", "01:30", "1:02:03").
+  // On a long video a coach naturally thinks in minutes and types the colon, which
+  // the old number-only box silently rejected. Returns null for anything that isn't
+  // a time, which leaves the timestamp undefined for the Add validation to catch.
+  const parseTimestampInput = (raw: string): number | null => {
+    const parts = raw.trim().split(':');
+    if (parts.length > 3 || !parts.every((part) => /^\d+$/.test(part))) return null;
+    return parts.reduce((total, part) => total * 60 + parseInt(part, 10), 0);
   };
 
   const handleProgress = (state: OnProgressProps) => {
@@ -228,6 +243,7 @@ export function VideoQuestionBuilder({
       ...newQuestion,
       timestamp: Math.floor(currentTime),
     });
+    setTimestampDraft(null); // show the moment we just captured, not stale typing
     setIsPlaying(false);
     // No toast here: the timestamp it announced is already visible in the form
     // field it just filled in, so the popup was noise on every click.
@@ -340,6 +356,7 @@ export function VideoQuestionBuilder({
       required: true,
       reflective: false,
     });
+    setTimestampDraft(null);
     setBlankBefore('');
     setBlankAfter('');
 
@@ -996,31 +1013,36 @@ export function VideoQuestionBuilder({
 
             <div className="space-y-2">
               <Label htmlFor="timestamp">
-                Timestamp (seconds) - Max: {detectedDuration || videoDuration}s
+                Timestamp - Max: {formatTimestamp(detectedDuration || videoDuration)}
               </Label>
               <Input
                 id="timestamp"
-                type="number"
-                min="0"
-                max={detectedDuration || videoDuration}
-                // `?? ''` and the NaN guard below are load-bearing. A number input
-                // hands back '' when you clear it or type something it rejects, and
-                // parseInt('') is NaN. Storing NaN made React render value={NaN},
-                // which blanks the box and appears to the coach as a frozen field —
-                // reported as "the time and point froze, question answer responded
-                // fine". Empty now means undefined, which the Add validation catches.
-                value={newQuestion.timestamp ?? ''}
+                type="text"
+                placeholder="1:30 or 90"
+                // Deliberately a text box, not type="number". A number input hands
+                // back '' for anything it rejects — including the colon in "1:30" —
+                // and parseInt('') is NaN. Storing NaN made React render value={NaN},
+                // which blanks the box and appears to the coach as a frozen field:
+                // "the time and point froze, question answer responded fine". Holding
+                // the raw text means no keystroke can ever wedge the field.
+                value={timestampDraft ?? (newQuestion.timestamp !== undefined ? formatTimestamp(newQuestion.timestamp) : '')}
                 onChange={(e) => {
-                  const next = parseInt(e.target.value, 10);
+                  const raw = e.target.value;
+                  setTimestampDraft(raw);
+                  const parsed = parseTimestampInput(raw);
                   setNewQuestion({
                     ...newQuestion,
-                    timestamp: Number.isFinite(next) ? Math.max(0, next) : undefined,
+                    timestamp: parsed === null ? undefined : parsed,
                   });
                 }}
+                // Snapping back to m:ss on blur confirms we understood what they typed.
+                onBlur={() => setTimestampDraft(null)}
                 className="w-full border-slate-300 focus-visible:ring-red-200"
               />
               <p className="text-xs text-gray-500">
-                {formatTimestamp(newQuestion.timestamp || 0)}
+                {newQuestion.timestamp !== undefined
+                  ? `${formatTimestamp(newQuestion.timestamp)} — ${newQuestion.timestamp}s into the video`
+                  : 'Type minutes and seconds (1:30) or plain seconds (90)'}
               </p>
             </div>
 

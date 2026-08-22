@@ -9,6 +9,8 @@ import {
 import { sportsService, videoQuizService, customContentService } from '@/lib/database';
 import { useAuth } from '@/lib/auth/context';
 import { Sport, Skill, VideoQuiz, CustomContentLibrary } from '@/types';
+import { pillarFromSportId, pillarOptionLabel } from '@/types/onboarding';
+import { pillarDisplayName } from '@/lib/utils/pillars';
 import { toast } from 'sonner';
 
 const GOLD   = '#D4A93B';
@@ -144,8 +146,8 @@ export function ContentBrowser({ open, onOpenChange, onSelect, selectedSportId, 
     if (!sport) return [];
 
     let items: ContentItem[] = contentType === 'lesson'
-      ? skills.map(skill => ({ id: skill.id, type: 'lesson' as const, title: skill.name, description: skill.description, sportId: sport.id, sportName: sport.name, difficulty: skill.difficulty, estimatedTime: skill.estimatedTimeToComplete, hasVideo: skill.hasVideo, icon: sport.icon, color: sport.color }))
-      : quizzes.map(quiz => ({ id: quiz.id, type: 'quiz' as const, title: quiz.title, description: quiz.description || '', sportId: sport.id, sportName: sport.name, difficulty: quiz.difficulty, estimatedTime: quiz.estimatedDuration || 30, icon: sport.icon, color: sport.color }));
+      ? skills.map(skill => ({ id: skill.id, type: 'lesson' as const, title: skill.name, description: skill.description, sportId: sport.id, sportName: pillarDisplayName(sport.id, sport.name), difficulty: skill.difficulty, estimatedTime: skill.estimatedTimeToComplete, hasVideo: skill.hasVideo, icon: sport.icon, color: sport.color }))
+      : quizzes.map(quiz => ({ id: quiz.id, type: 'quiz' as const, title: quiz.title, description: quiz.description || '', sportId: sport.id, sportName: pillarDisplayName(sport.id, sport.name), difficulty: quiz.difficulty, estimatedTime: quiz.estimatedDuration || 30, icon: sport.icon, color: sport.color }));
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -257,7 +259,20 @@ export function ContentBrowser({ open, onOpenChange, onSelect, selectedSportId, 
             <div>
               <label style={{ display: 'block', color: GOLD, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Sport / Pillar</label>
               <select value={selectedSport} onChange={e => setSelectedSport(e.target.value)} className="cb-select" style={{ ...selectStyle, width: '100%' }}>
-                {sports.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name} ({s.skillsCount} skills)</option>)}
+                {/* Name the pillar from code, not from the row — the doc ID is the
+                    identity, and the stored `name` is whatever the database holds
+                    that day. No `s.icon` prefix: an <option> renders text only, and
+                    the icon field stores a Lucide component name ("Brain",
+                    "Footprints"), so including it printed the icon's NAME in front
+                    of every row. */}
+                {sports.map(s => {
+                  const pillar = pillarFromSportId(s.id);
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {pillar ? pillarOptionLabel(pillar) : s.name} ({s.skillsCount} skills)
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}

@@ -40,6 +40,106 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * The admin pages are painted on navy (`rgba(2,18,44,…)`) with a `#37b5ff` accent,
+ * while the learner-facing pages are white. The panel carries both palettes rather
+ * than letting a host page fight its utility classes from a stylesheet — the class
+ * names below are an implementation detail and shouldn't be reachable from outside.
+ */
+type PanelTheme = 'light' | 'dark';
+
+/** The accent families the chips are colour-coded with. */
+type ChipTone = 'primary' | 'blue' | 'green' | 'purple' | 'orange' | 'gray' | 'indigo' | 'cyan';
+
+/** Selected chip. On navy a `*-100` fill glares instead of reading as "on", so dark
+ *  inverts the recipe: a translucent wash of the same hue under a lit border. */
+const SELECTED_CHIP: Record<PanelTheme, Record<ChipTone, string>> = {
+  light: {
+    primary: 'bg-primary/10 border-primary text-primary',
+    blue: 'bg-blue-100 border-blue-400 text-blue-700',
+    green: 'bg-green-100 border-green-400 text-green-700',
+    purple: 'bg-purple-100 border-purple-400 text-purple-700',
+    orange: 'bg-orange-100 border-orange-400 text-orange-700',
+    gray: 'bg-gray-200 border-gray-400 text-gray-700',
+    indigo: 'bg-indigo-100 border-indigo-400 text-indigo-700',
+    cyan: 'bg-cyan-100 border-cyan-400 text-cyan-700',
+  },
+  dark: {
+    primary: 'bg-sky-400/20 border-sky-400/70 text-sky-200',
+    blue: 'bg-sky-400/20 border-sky-400/70 text-sky-200',
+    green: 'bg-emerald-400/20 border-emerald-400/70 text-emerald-200',
+    purple: 'bg-purple-400/20 border-purple-400/70 text-purple-200',
+    orange: 'bg-orange-400/20 border-orange-400/70 text-orange-200',
+    gray: 'bg-slate-300/20 border-slate-300/60 text-slate-100',
+    indigo: 'bg-indigo-400/20 border-indigo-400/70 text-indigo-200',
+    cyan: 'bg-cyan-400/20 border-cyan-400/70 text-cyan-200',
+  },
+};
+
+/** Unselected chip: neutral until hovered, when it previews its section's hue. */
+const IDLE_CHIP: Record<PanelTheme, string> = {
+  light: 'bg-gray-50 text-gray-600 border-gray-200',
+  dark: 'bg-white/[0.04] text-white/60 border-white/10',
+};
+
+const IDLE_CHIP_HOVER: Record<PanelTheme, Record<ChipTone, string>> = {
+  light: {
+    primary: 'hover:border-primary/50',
+    blue: 'hover:border-blue-300',
+    green: 'hover:border-green-300',
+    purple: 'hover:border-purple-300',
+    orange: 'hover:border-orange-300',
+    gray: 'hover:border-gray-400',
+    indigo: 'hover:border-indigo-300',
+    cyan: 'hover:border-cyan-300',
+  },
+  dark: {
+    primary: 'hover:border-sky-400/50',
+    blue: 'hover:border-sky-400/50',
+    green: 'hover:border-emerald-400/50',
+    purple: 'hover:border-purple-400/50',
+    orange: 'hover:border-orange-400/50',
+    gray: 'hover:border-slate-300/50',
+    indigo: 'hover:border-indigo-400/50',
+    cyan: 'hover:border-cyan-400/50',
+  },
+};
+
+/** Card shell, headings and dividers. The dark card is the exact `card` object the
+ *  admin pages build inline, so the panel sits flush with the boxes around it. */
+const CHROME: Record<PanelTheme, {
+  card: string;
+  title: string;
+  mutedIcon: string;
+  mutedText: string;
+  divider: string;
+  countBadge: string;
+  activeBadge: string;
+  clearAll: string;
+}> = {
+  light: {
+    card: '',
+    title: '',
+    mutedIcon: 'text-gray-500',
+    mutedText: 'text-gray-600',
+    divider: 'border-b',
+    countBadge: '',
+    activeBadge: 'hover:bg-red-100',
+    clearAll: 'text-gray-500 hover:text-red-600',
+  },
+  dark: {
+    card: 'rounded-2xl border-[#37b5ff24] bg-[#02122cd9] text-white shadow-none',
+    title: 'text-white',
+    mutedIcon: 'text-white/40',
+    mutedText: 'text-white/50',
+    divider: 'border-b border-white/10',
+    countBadge: 'border-transparent bg-sky-400/20 text-sky-200',
+    activeBadge:
+      'border-transparent bg-white/10 text-white/75 hover:bg-red-400/25 hover:text-red-200',
+    clearAll: 'text-white/45 hover:text-red-300',
+  },
+};
+
 interface VideoFilterPanelProps {
   /** Current filter state */
   filter: VideoTagFilter;
@@ -53,6 +153,8 @@ interface VideoFilterPanelProps {
   className?: string;
   /** Start collapsed */
   defaultCollapsed?: boolean;
+  /** Palette to paint the panel in. Admin pages are navy; everything else is white. */
+  theme?: PanelTheme;
 }
 
 /**
@@ -66,10 +168,23 @@ export function VideoFilterPanel({
   loading = false,
   className,
   defaultCollapsed = false,
+  theme = 'light',
 }: VideoFilterPanelProps) {
   const [isOpen, setIsOpen] = useState(!defaultCollapsed);
 
   const activeFilterCount = countActiveFilters(filter);
+  const chrome = CHROME[theme];
+
+  /** Every filter chip in the panel is built from this, so the five sections can
+   *  only ever differ by hue — never by size, radius or hover behaviour. */
+  const chipClass = (tone: ChipTone, selected: boolean) =>
+    cn(
+      'px-2.5 py-1 text-xs rounded-full border transition-colors',
+      selected
+        ? SELECTED_CHIP[theme][tone]
+        : cn(IDLE_CHIP[theme], IDLE_CHIP_HOVER[theme][tone]),
+      loading && 'opacity-50 cursor-not-allowed'
+    );
 
   const handlePillarToggle = (pillar: PillarTag) => {
     const newPillars = filter.pillars?.includes(pillar)
@@ -145,20 +260,18 @@ export function VideoFilterPanel({
     }
   };
 
-  // Color mapping for system tags
-  const getSystemButtonClass = (system: SystemTag, selected: boolean) => {
-    const colorMap: Record<string, string> = {
-      blue: selected ? 'bg-blue-100 border-blue-400 text-blue-700' : 'hover:border-blue-300',
-      green: selected ? 'bg-green-100 border-green-400 text-green-700' : 'hover:border-green-300',
-      purple: selected ? 'bg-purple-100 border-purple-400 text-purple-700' : 'hover:border-purple-300',
-      orange: selected ? 'bg-orange-100 border-orange-400 text-orange-700' : 'hover:border-orange-300',
-      gray: selected ? 'bg-gray-200 border-gray-400 text-gray-700' : 'hover:border-gray-400',
-    };
-    return colorMap[SYSTEM_TAG_METADATA[system].color] || colorMap.gray;
+  /** Each system tag names its own hue in metadata; anything the chip palette
+   *  doesn't cover falls back to grey rather than rendering unstyled. */
+  const systemTone = (system: SystemTag): ChipTone => {
+    const color = SYSTEM_TAG_METADATA[system].color;
+    return color in SELECTED_CHIP.light ? (color as ChipTone) : 'gray';
   };
 
   return (
-    <Card className={className}>
+    // no-button-zoom: the trigger spans the full width with the icon and the chevron
+    // pinned to opposite edges, so the shared Button's hover:scale-105 drags them
+    // outward past the card border. Scoped to the card so "Clear All" is steady too.
+    <Card className={cn('no-button-zoom', chrome.card, className)}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CardHeader className="pb-3">
           <CollapsibleTrigger asChild>
@@ -166,19 +279,19 @@ export function VideoFilterPanel({
               variant="ghost"
               className="w-full flex items-center justify-between p-0 h-auto hover:bg-transparent"
             >
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className={cn('text-lg flex items-center gap-2', chrome.title)}>
                 <Filter className="h-5 w-5" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="secondary" className={cn('ml-2', chrome.countBadge)}>
                     {activeFilterCount}
                   </Badge>
                 )}
               </CardTitle>
               {isOpen ? (
-                <ChevronUp className="h-5 w-5 text-gray-500" />
+                <ChevronUp className={cn('h-5 w-5', chrome.mutedIcon)} />
               ) : (
-                <ChevronDown className="h-5 w-5 text-gray-500" />
+                <ChevronDown className={cn('h-5 w-5', chrome.mutedIcon)} />
               )}
             </Button>
           </CollapsibleTrigger>
@@ -188,14 +301,14 @@ export function VideoFilterPanel({
           <CardContent className="space-y-5 pt-0">
             {/* Active Filters */}
             {activeFilterCount > 0 && (
-              <div className="pb-3 border-b">
+              <div className={cn('pb-3', chrome.divider)}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">Active Filters</span>
+                  <span className={cn('text-sm font-medium', chrome.mutedText)}>Active Filters</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleClearAll}
-                    className="h-auto py-1 px-2 text-xs text-gray-500 hover:text-red-600"
+                    className={cn('h-auto py-1 px-2 text-xs', chrome.clearAll)}
                   >
                     Clear All
                   </Button>
@@ -205,7 +318,7 @@ export function VideoFilterPanel({
                     <Badge
                       key={pillar}
                       variant="secondary"
-                      className="pl-2 pr-1 cursor-pointer hover:bg-red-100"
+                      className={cn('pl-2 pr-1 cursor-pointer', chrome.activeBadge)}
                       onClick={() => handleRemoveFilter('pillar', pillar)}
                     >
                       {PILLARS.find((p) => p.slug === pillar)?.shortName || pillar}
@@ -216,7 +329,7 @@ export function VideoFilterPanel({
                     <Badge
                       key={system}
                       variant="secondary"
-                      className="pl-2 pr-1 cursor-pointer hover:bg-red-100"
+                      className={cn('pl-2 pr-1 cursor-pointer', chrome.activeBadge)}
                       onClick={() => handleRemoveFilter('system', system)}
                     >
                       {system}
@@ -227,7 +340,7 @@ export function VideoFilterPanel({
                     <Badge
                       key={userType}
                       variant="secondary"
-                      className="pl-2 pr-1 cursor-pointer hover:bg-red-100 capitalize"
+                      className={cn('pl-2 pr-1 cursor-pointer capitalize', chrome.activeBadge)}
                       onClick={() => handleRemoveFilter('userType', userType)}
                     >
                       {userType}
@@ -238,7 +351,7 @@ export function VideoFilterPanel({
                     <Badge
                       key={marker}
                       variant="secondary"
-                      className="pl-2 pr-1 cursor-pointer hover:bg-red-100"
+                      className={cn('pl-2 pr-1 cursor-pointer', chrome.activeBadge)}
                       onClick={() => handleRemoveFilter('angleMarker', marker)}
                     >
                       {marker}
@@ -249,7 +362,7 @@ export function VideoFilterPanel({
                     <Badge
                       key={level}
                       variant="secondary"
-                      className="pl-2 pr-1 cursor-pointer hover:bg-red-100"
+                      className={cn('pl-2 pr-1 cursor-pointer', chrome.activeBadge)}
                       onClick={() => handleRemoveFilter('archLevel', level)}
                     >
                       {level}
@@ -263,7 +376,7 @@ export function VideoFilterPanel({
             {/* Pillars */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Target className="h-4 w-4 text-gray-500" />
+                <Target className={cn('h-4 w-4', chrome.mutedIcon)} />
                 Pillars
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -276,13 +389,7 @@ export function VideoFilterPanel({
                       type="button"
                       onClick={() => handlePillarToggle(pillar.slug)}
                       disabled={loading}
-                      className={cn(
-                        'px-2.5 py-1 text-xs rounded-full border transition-colors',
-                        isSelected
-                          ? 'bg-primary/10 border-primary text-primary'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-primary/50',
-                        loading && 'opacity-50 cursor-not-allowed'
-                      )}
+                      className={chipClass('primary', !!isSelected)}
                     >
                       {pillar.shortName}
                       {facets && <span className="ml-1 opacity-60">({count})</span>}
@@ -295,7 +402,7 @@ export function VideoFilterPanel({
             {/* Systems */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Layers className="h-4 w-4 text-gray-500" />
+                <Layers className={cn('h-4 w-4', chrome.mutedIcon)} />
                 Systems
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -308,12 +415,7 @@ export function VideoFilterPanel({
                       type="button"
                       onClick={() => handleSystemToggle(system)}
                       disabled={loading}
-                      className={cn(
-                        'px-2.5 py-1 text-xs rounded-full border transition-colors',
-                        getSystemButtonClass(system, isSelected),
-                        !isSelected && 'bg-gray-50 text-gray-600 border-gray-200',
-                        loading && 'opacity-50 cursor-not-allowed'
-                      )}
+                      className={chipClass(systemTone(system), isSelected)}
                       title={SYSTEM_TAG_METADATA[system].description}
                     >
                       {system}
@@ -327,7 +429,7 @@ export function VideoFilterPanel({
             {/* User Types */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Users className="h-4 w-4 text-gray-500" />
+                <Users className={cn('h-4 w-4', chrome.mutedIcon)} />
                 Audience
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -341,13 +443,7 @@ export function VideoFilterPanel({
                       type="button"
                       onClick={() => handleUserTypeToggle(userType)}
                       disabled={loading}
-                      className={cn(
-                        'px-2.5 py-1 text-xs rounded-full border transition-colors capitalize',
-                        isSelected
-                          ? 'bg-indigo-100 border-indigo-400 text-indigo-700'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300',
-                        loading && 'opacity-50 cursor-not-allowed'
-                      )}
+                      className={cn('capitalize', chipClass('indigo', !!isSelected))}
                       title={metadata.description}
                     >
                       {metadata.name}
@@ -361,7 +457,7 @@ export function VideoFilterPanel({
             {/* Angle Markers */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Compass className="h-4 w-4 text-gray-500" />
+                <Compass className={cn('h-4 w-4', chrome.mutedIcon)} />
                 Angle Markers
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -375,13 +471,7 @@ export function VideoFilterPanel({
                       type="button"
                       onClick={() => handleAngleMarkerToggle(marker)}
                       disabled={loading}
-                      className={cn(
-                        'px-2.5 py-1 text-xs rounded-full border transition-colors',
-                        isSelected
-                          ? 'bg-cyan-100 border-cyan-400 text-cyan-700'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-cyan-300',
-                        loading && 'opacity-50 cursor-not-allowed'
-                      )}
+                      className={chipClass('cyan', !!isSelected)}
                       title={`${metadata.position}: ${metadata.description}`}
                     >
                       {marker}
@@ -395,7 +485,7 @@ export function VideoFilterPanel({
             {/* Architecture Levels */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Layers className="h-4 w-4 text-gray-500" />
+                <Layers className={cn('h-4 w-4', chrome.mutedIcon)} />
                 Content Level
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -409,13 +499,7 @@ export function VideoFilterPanel({
                       type="button"
                       onClick={() => handleArchLevelToggle(level)}
                       disabled={loading}
-                      className={cn(
-                        'px-2.5 py-1 text-xs rounded-full border transition-colors',
-                        isSelected
-                          ? 'bg-purple-100 border-purple-400 text-purple-700'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-purple-300',
-                        loading && 'opacity-50 cursor-not-allowed'
-                      )}
+                      className={chipClass('purple', !!isSelected)}
                       title={metadata.description}
                     >
                       {level}: {metadata.name}

@@ -7,6 +7,7 @@ import { VideoUploader } from './video-uploader';
 import { customContentService, sportsService } from '@/lib/database';
 import { toast } from 'sonner';
 import { CustomContentLibrary, Sport, Skill } from '@/types';
+import { pillarFromSportId, pillarOptionLabel } from '@/types/onboarding';
 
 const GOLD = '#D4A93B';
 const BLUE = '#37b5ff';
@@ -80,7 +81,9 @@ export function LessonCreator({ open, onOpenChange, coachId, onSave, editContent
     const load = async () => {
       setLoadingPillars(true);
       try {
-        const r = await sportsService.getAllSports({ limit: 10 });
+        // Matches /pillars and /admin/pillars — a cap of 10 sits one row above
+        // the current nine and would quietly drop a pillar from this dropdown.
+        const r = await sportsService.getAllSports({ limit: 100 });
         if (r.success && r.data) setPillars(r.data.items.sort((a, b) => a.order - b.order));
       } catch { /* non-blocking */ }
       finally { setLoadingPillars(false); }
@@ -127,8 +130,21 @@ export function LessonCreator({ open, onOpenChange, coachId, onSave, editContent
   const removeTag = (i: number) => setTags(tags.filter((_, idx) => idx !== i));
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) { setAttachments(prev => [...prev, ...Array.from(e.target.files!)].slice(0, 5)); }
+    /**
+     * Read the files into a real array *before* clearing the input.
+     *
+     * The state updater below runs during the next render, not at the moment
+     * it is queued — so reading `e.target.files` inside it happened after the
+     * `value = ''` on the following line had already emptied the FileList, and
+     * every attachment was silently dropped. The clear itself has to stay: a
+     * file input fires no `change` event when re-picking the same file, so
+     * without it the picker looks dead until the page is remounted.
+     */
+    const picked = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = '';
+    if (picked.length > 0) {
+      setAttachments(prev => [...prev, ...picked].slice(0, 5));
+    }
   };
   const removeAttachment = (i: number) => setAttachments(prev => prev.filter((_, idx) => idx !== i));
 
@@ -245,7 +261,12 @@ export function LessonCreator({ open, onOpenChange, coachId, onSave, editContent
                 <label style={labelS}>Pillar</label>
                 <select value={selectedPillarId} onChange={e => { setSelectedPillarId(e.target.value); setSelectedSkillId(''); }} className="lc-select" style={selectS} disabled={loadingPillars}>
                   <option value="">Select a pillar…</option>
-                  {pillars.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {/* Numbered name from the code list; anything that isn't one of the
+                      eight pillar documents keeps whatever the database gave it. */}
+                  {pillars.map(p => {
+                    const info = pillarFromSportId(p.id);
+                    return <option key={p.id} value={p.id}>{info ? pillarOptionLabel(info) : p.name}</option>;
+                  })}
                 </select>
               </div>
               <div>

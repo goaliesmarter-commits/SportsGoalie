@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { formTemplateService } from '@/lib/database/services/form-template.service';
 import { initializeDefaultTemplates, checkDefaultTemplatesExist } from '@/lib/templates/init-templates';
-import { FormTemplate, PILLARS } from '@/types';
+import { FormTemplate, PILLARS, pillarOptionLabel } from '@/types';
 import { Loader2, Plus, CheckCircle2, AlertCircle, RefreshCw, Pencil, Archive, ArchiveRestore, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ export default function FormTemplatesPage() {
   const pillarGroups = useMemo(() => {
     const order: { key: string; label: string }[] = [
       { key: 'combined', label: 'Combined (All Pillars)' },
-      ...PILLARS.map(p => ({ key: p.slug as string, label: p.name })),
+      ...PILLARS.map(p => ({ key: p.slug as string, label: pillarOptionLabel(p) })),
     ];
     const groups = order
       .map(({ key, label }) => ({ key, label, items: templates.filter(t => t.pillar === key) }))

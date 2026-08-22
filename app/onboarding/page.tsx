@@ -128,7 +128,11 @@ function OnboardingPageContent() {
         })()
       : null;
 
-  const canGoBackInAssessment = currentCategoryIndex > 0 || currentQuestionIndex > 0;
+  // Back is available for the whole assessment, including its very first question:
+  // `previousQuestion` steps out onto the last intake screen from there rather than
+  // dead-ending, so an intake answer can still be corrected once the questions start.
+  const canGoBackInAssessment =
+    currentCategoryIndex > 0 || currentQuestionIndex > 0 || totalIntakeScreens > 0;
 
   const escapeHatch = user ? (
     <div style={{ position: 'fixed', top: '14px', right: '16px', zIndex: 999 }}>
@@ -317,6 +321,7 @@ function OnboardingPageContent() {
             categoryIndex={currentCategoryIndex}
             totalCategories={onboarding.totalCategories}
             onStart={startCategory}
+            onBack={previousQuestion}
           />
         )}
 

@@ -9,6 +9,8 @@ import { videoReviewService, StudentVideo, VideoReviewSession } from '@/lib/data
 import { sportsService } from '@/lib/database/services/sports.service';
 import { VideoFeedbackComposer } from '@/components/messages/VideoFeedbackComposer';
 import { Sport } from '@/types';
+import { pillarDisplayName } from '@/lib/utils/pillars';
+import { pillarFromSportId, pillarOptionLabel } from '@/types/onboarding';
 
 const BLUE = '#37b5ff';
 const RED = '#f87171';
@@ -90,7 +92,8 @@ export default function CoachVideoReviewsPage() {
       if (videosResult.success && videosResult.data) setVideos(videosResult.data);
       else toast.error('Failed to load videos');
       if (sportsResult.success && sportsResult.data) {
-        setSports(sportsResult.data.items.sort((a, b) => a.name.localeCompare(b.name)));
+        // Pillar order, not alphabetical — same reason as the admin page.
+        setSports(sportsResult.data.items.sort((a, b) => a.order - b.order));
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -168,7 +171,10 @@ export default function CoachVideoReviewsPage() {
   const addRecommendedSport = () => {
     if (selectedSportToAdd && !recommendedSports.includes(selectedSportToAdd)) {
       const sport = sports.find(c => c.id === selectedSportToAdd);
-      if (sport) { setRecommendedSports([...recommendedSports, sport.name]); setSelectedSportToAdd(''); }
+      // The recommendation is stored as the name itself, so it has to be the code
+      // list's name — otherwise the goalie is sent to a pillar that no longer exists
+      // under that title.
+      if (sport) { setRecommendedSports([...recommendedSports, pillarDisplayName(sport.id, sport.name)]); setSelectedSportToAdd(''); }
     }
   };
 
@@ -528,7 +534,16 @@ export default function CoachVideoReviewsPage() {
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                     <select className="vr-sel" value={selectedSportToAdd} onChange={e => setSelectedSportToAdd(e.target.value)} style={{ flex: 1 }}>
                       <option value="">Select a course to recommend...</option>
-                      {sports.map(sport => <option key={sport.id} value={sport.id}>{sport.name}</option>)}
+                      {/* Numbered in the picker; the plain name is what gets stored
+                          on the review (see addRecommendedSport). */}
+                      {sports.map(sport => {
+                        const info = pillarFromSportId(sport.id);
+                        return (
+                          <option key={sport.id} value={sport.id}>
+                            {info ? pillarOptionLabel(info) : pillarDisplayName(sport.id, sport.name)}
+                          </option>
+                        );
+                      })}
                     </select>
                     <button className="vr-sport-add" onClick={addRecommendedSport} disabled={!selectedSportToAdd}
                       style={{ padding: '10px 16px', borderRadius: '10px', border: `1px solid rgba(55,181,255,0.25)`, background: `rgba(55,181,255,0.1)`, color: BLUE, fontWeight: 600, fontSize: '15px', cursor: selectedSportToAdd ? 'pointer' : 'not-allowed', opacity: selectedSportToAdd ? 1 : 0.5, transition: 'all 0.2s' }}>

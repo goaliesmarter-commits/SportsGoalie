@@ -7,9 +7,9 @@ import { AdminRoute } from '@/components/auth/protected-route';
 import { sportsService } from '@/lib/database/services/sports.service';
 import { storageService, STORAGE_CONFIGS } from '@/lib/firebase/storage.service';
 import { MediaUpload } from '@/components/admin/media-upload';
-import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
+import { getExactPillarSlug, pillarDisplayName } from '@/lib/utils/pillars';
 import Link from 'next/link';
-import { Edit, Save, X, Sparkles, BookOpen, RefreshCw, Target } from 'lucide-react';
+import { Edit, Save, X, Sparkles, BookOpen, RefreshCw, Target, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   BLUE, RED, card, accentLineStyle, pageStackStyle, cardGridStyle, badgeStyle,
   iconChipStyle, PILLAR_ICONS, adminPillarCss,
@@ -45,6 +45,7 @@ function AdminPillarsContent() {
   const [saving, setSaving] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   useEffect(() => { loadPillars(); }, []);
 
@@ -85,7 +86,20 @@ function AdminPillarsContent() {
         setUploading(false);
       }
       if (editingId) {
-        const result = await sportsService.updateSport(editingId, { ...formData, imageUrl, icon: formData.tags[0] || 'Target', estimatedTimeToComplete: 120, createdBy: 'admin' });
+        // Every field except `order`, listed out rather than spread. The arrows
+        // own the order now, and the cards stay clickable while this form is
+        // open — a spread would post the copy this form loaded and quietly undo
+        // any move made behind it.
+        const result = await sportsService.updateSport(editingId, {
+          // Writes the code list's name back for the eight pillars, so the stored
+          // copy repairs itself the next time anyone saves — the migration script
+          // is no longer the only way Firestore catches up.
+          name: pillarDisplayName(editingId, formData.name),
+          description: formData.description, color: formData.color,
+          category: formData.category, difficulty: formData.difficulty, tags: formData.tags,
+          isActive: formData.isActive, isFeatured: formData.isFeatured,
+          imageUrl, icon: formData.tags[0] || 'Target', estimatedTimeToComplete: 120, createdBy: 'admin',
+        });
         if (result.success) { await loadPillars(); handleCancel(); }
         else { setError(result.error?.message || 'Failed to save pillar'); }
       }
@@ -94,13 +108,59 @@ function AdminPillarsContent() {
     } finally { setSaving(false); setUploading(false); }
   };
 
+  /**
+   * Move a pillar one place earlier or later in the display order.
+   *
+   * The order lives on the `sports` documents, so `/pillars`, the coach's lesson
+   * builder and this page all follow it. It is a running order, not an identity:
+   * the "Pillar 03" badge keeps reading its number from the taxonomy in
+   * `src/types/onboarding.ts`, because that number is printed across the
+   * marketing site and spoken in Coach Mike's audio.
+   */
+  const movePillar = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (reordering || target < 0 || target >= pillars.length) return;
+
+    const moved = [...pillars];
+    [moved[index], moved[target]] = [moved[target], moved[index]];
+
+    // Renumber the whole column from 1 rather than trading the two `order`
+    // values. Firestore holds whatever the seeds and migrations left behind —
+    // gaps, or two pillars sharing a number — and trading values between a
+    // duplicate pair moves nothing on screen. Only the documents whose number
+    // actually changes get written.
+    const renumbered = moved.map((p, i) => ({ ...p, order: i + 1 }));
+    const writes = renumbered.filter((p, i) => p.order !== moved[i].order);
+
+    setPillars(renumbered);
+    setReordering(true);
+    setError(null);
+    try {
+      const results = await Promise.all(
+        writes.map(p => sportsService.updateSport(p.id, { order: p.order }))
+      );
+      if (results.some(r => !r.success)) throw new Error('write failed');
+    } catch {
+      setError('Could not save the new order — the list below has been reloaded from the database.');
+      await loadPillars();
+    } finally {
+      setReordering(false);
+    }
+  };
+
+  // Exact match, not the resolving lookup: `pillar_training` — the old combined
+  // Game/Practice/Off-Ice document — resolves to Practice there, which would show
+  // it here as a card titled "Pillar 07 Practice System". Michael would have no way
+  // to tell the retired pillar from the real one, and no way to see that Pillar 6
+  // is missing entirely. Anything that isn't one of the eight keeps its own name
+  // and is labelled as retired.
   const getPillarDisplayInfo = (pillar: Sport) => {
-    const slug = getPillarSlugFromDocId(pillar.id);
+    const slug = getExactPillarSlug(pillar.id);
     if (slug) {
       const info = PILLARS.find(p => p.slug === slug);
-      if (info) return { icon: info.icon, color: info.color, shortName: info.shortName, slug };
+      if (info) return { icon: info.icon, color: info.color, shortName: info.shortName, slug, pillarNumber: info.pillarNumber, name: info.name, isRetired: false };
     }
-    return { icon: pillar.icon, color: 'blue', shortName: pillar.name.split(' ')[0], slug: null };
+    return { icon: pillar.icon, color: 'blue', shortName: pillar.name.split(' ')[0], slug: null, pillarNumber: pillar.order, name: pillar.name, isRetired: true };
   };
 
   if (loading) return <div style={{ padding: '48px' }}><SkeletonDarkPage /></div>;
@@ -118,7 +178,7 @@ function AdminPillarsContent() {
               The Architecture of a Complete Goalie
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', maxWidth: '600px', margin: '0 auto 16px', lineHeight: 1.6 }}>
-              Every pillar connects to every other. Master all seven and you master the game — physically, mentally, and technically.
+              Every pillar connects to every other. Master all eight and you master the game — physically, mentally, and technically.
             </p>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(55,181,255,0.15)', border: '1px solid rgba(55,181,255,0.3)', color: BLUE, padding: '4px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
               {pillars.length} pillars
@@ -148,7 +208,22 @@ function AdminPillarsContent() {
             <div className="pl-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '5px' }}>NAME</label>
-                <input className="pl-inp" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} />
+                {/* Locked for the eight pillars, the same way Category and Display
+                    Order are. Every screen now prints the name from the code list,
+                    so leaving this typeable would give a box that saves happily and
+                    changes nothing on screen — worse than not offering it. */}
+                <input
+                  className="pl-inp"
+                  value={editingId && getExactPillarSlug(editingId) ? pillarDisplayName(editingId, formData.name) : formData.name}
+                  onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
+                  disabled={!!editingId && !!getExactPillarSlug(editingId)}
+                  style={editingId && getExactPillarSlug(editingId) ? { opacity: 0.5 } : undefined}
+                />
+                {editingId && getExactPillarSlug(editingId) && (
+                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '4px' }}>
+                    Pillar names are fixed — they appear on the public site and in the audio. Ask us to change one.
+                  </p>
+                )}
               </div>
               <div>
                 <label style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '5px' }}>CATEGORY</label>
@@ -165,7 +240,7 @@ function AdminPillarsContent() {
               <div>
                 <label style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: '5px' }}>DISPLAY ORDER</label>
                 <input className="pl-inp" type="number" value={formData.order} disabled style={{ opacity: 0.5 }} />
-                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '4px' }}>Order is fixed for the 7 pillars</p>
+                <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '4px' }}>Use the ↑ ↓ arrows on the pillar cards below</p>
               </div>
             </div>
             <div style={{ marginBottom: '16px' }}>
@@ -215,11 +290,11 @@ function AdminPillarsContent() {
           <div style={{ ...card, padding: '48px', textAlign: 'center' }}>
             <BookOpen size={44} color="rgba(255,255,255,0.1)" style={{ margin: '0 auto 16px' }} />
             <p style={{ color: '#fff', fontWeight: 600, fontSize: '16px', marginBottom: '8px' }}>No pillars found</p>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Run the migration script to create the 7 pillars.</p>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Run the migration script to create the 8 pillars.</p>
           </div>
         ) : (
           <div className="pl-grid" style={cardGridStyle}>
-            {pillars.map((pillar) => {
+            {pillars.map((pillar, index) => {
               const displayInfo = getPillarDisplayInfo(pillar);
               const IconComponent = PILLAR_ICONS[displayInfo.icon] || Target;
               const description = (displayInfo.slug && PILLAR_DESCRIPTIONS[displayInfo.slug]) || pillar.description;
@@ -231,21 +306,45 @@ function AdminPillarsContent() {
                       <div style={iconChipStyle}>
                         <IconComponent size={18} color={BLUE} />
                       </div>
-                      <span style={badgeStyle}>
-                        Pillar {String(pillar.order).padStart(2, '0')}
+                      {/* The taxonomy's number, not the row's `order`. The two
+                          agree today, and they have to keep agreeing with the
+                          dropdowns and the marketing site once someone starts
+                          moving cards around. A retired document has no number
+                          in the taxonomy, so it gets a label instead of a
+                          borrowed one. */}
+                      <span style={displayInfo.isRetired ? { ...badgeStyle, background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.2)', color: RED } : badgeStyle}>
+                        {displayInfo.isRetired ? 'Retired' : `Pillar ${String(displayInfo.pillarNumber).padStart(2, '0')}`}
                       </span>
                     </div>
                     {!pillar.isActive && (
                       <span style={{ background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.2)', color: RED, padding: '2px 8px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>Inactive</span>
                     )}
                   </div>
-                  <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '20px', marginBottom: '6px' }}>{pillar.name}</h3>
+                  <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '20px', marginBottom: '6px' }}>{displayInfo.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', lineHeight: 1.6, marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{description}</p>
                   {/* Both an "Explore Pillar" link and a preview eye used to sit here,
                       each opening the goalie-facing /pillars/{id}. Reviewing a pillar's
                       content is Skills' job, in admin chrome — sending an admin out to
                       the goalie site only ever showed them their own records. */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <button
+                      className="pl-btn pl-move"
+                      onClick={() => movePillar(index, -1)}
+                      disabled={reordering || index === 0}
+                      title={index === 0 ? 'Already first' : `Move ${displayInfo.shortName} up`}
+                      aria-label={`Move ${displayInfo.shortName} up`}
+                    >
+                      <ArrowUp size={13} />
+                    </button>
+                    <button
+                      className="pl-btn pl-move"
+                      onClick={() => movePillar(index, 1)}
+                      disabled={reordering || index === pillars.length - 1}
+                      title={index === pillars.length - 1 ? 'Already last' : `Move ${displayInfo.shortName} down`}
+                      aria-label={`Move ${displayInfo.shortName} down`}
+                    >
+                      <ArrowDown size={13} />
+                    </button>
                     <button className="pl-btn pl-edit" onClick={() => handleEdit(pillar)} style={{ flex: 1 }}>
                       <Edit size={12} /> Edit
                     </button>
@@ -269,9 +368,9 @@ function AdminPillarsContent() {
               <Sparkles size={20} color={BLUE} />
             </div>
             <div>
-              <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>About the 7 Pillars</h3>
+              <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>About the 8 Pillars</h3>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px', lineHeight: 1.6 }}>
-                These 7 pillars form the foundation of comprehensive goaltender development. Each pillar contains skills at 3 difficulty levels (Introduction, Development, Refinement). Skills are shown to goalies based on their assessed pacing level from onboarding.
+                These 8 pillars form the foundation of comprehensive goaltender development. Each pillar contains skills at 3 difficulty levels (Introduction, Development, Refinement). Skills are shown to goalies based on their assessed pacing level from onboarding. The ↑ ↓ arrows change the order goalies see the pillars in — the pillar numbers themselves stay fixed.
               </p>
             </div>
           </div>

@@ -100,7 +100,10 @@ export const COACH_INTAKE_QUESTIONS: IntakeQuestion[] = [
     id: 'coach-intake-5',
     screenNumber: 3,
     questionCode: 'Q-IN-5',
-    question: 'What brought you to Smarter Goalie today? (Select all that apply)',
+    // See goalie-intake-questions.ts — the screen prints "Select all that apply"
+    // itself, so repeating it inline made this question read differently from the
+    // identical control on the baseline questionnaires.
+    question: 'What brought you to Smarter Goalie today?',
     type: 'multi_select',
     isRequired: true,
     order: 5,

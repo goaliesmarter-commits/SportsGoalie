@@ -1,7 +1,7 @@
 /**
  * Pillar Utilities
  *
- * Utilities for working with the 7 Ice Hockey Goalie pillars.
+ * Utilities for working with the 8 Ice Hockey Goalie pillars.
  * These replace the generic "sports" concept with a fixed pillar structure.
  */
 
@@ -127,11 +127,47 @@ export function getPillarByDocId(docId: string): PillarInfo | null {
 /**
  * Get pillar slug from document ID.
  * Documents still filed under the retired combined training pillar resolve to Practice.
+ *
+ * This is the forgiving lookup: use it when a stray reference just needs somewhere
+ * sensible to land. When a document is being *identified* — a title, a number, an
+ * edit form — use `getExactPillarSlug` instead, or `pillar_training` will wear the
+ * name and number of the pillar that replaced it.
  */
 export function getPillarSlugFromDocId(docId: string): PillarSlug | null {
   if (docId === LEGACY_TRAINING_PILLAR_ID) return resolvePillarSlug('training');
+  return getExactPillarSlug(docId);
+}
+
+/**
+ * The pillar slug for a document ID, matched exactly.
+ *
+ * Returns null for anything that is not one of the eight — including the retired
+ * `pillar_training`, which is the whole point of having this alongside the
+ * resolving version above.
+ */
+export function getExactPillarSlug(docId: string): PillarSlug | null {
   const entry = Object.entries(PILLAR_IDS).find(([, id]) => id === docId);
   return entry ? entry[0] as PillarSlug : null;
+}
+
+/**
+ * The name to print for a `sports` document.
+ *
+ * Pillar names are identity, not data: they are printed across the marketing site
+ * and spoken in Coach Mike's audio, and Michael has revised them twice by telling
+ * us rather than by opening the admin form. So the code list wins and the stored
+ * `name` is only a fallback — otherwise every screen shows whatever string the
+ * seeds left in Firestore, and the eight pillars drift apart from the dropdowns.
+ *
+ * This is not hypothetical tidiness. As of 22 August the live database has the
+ * names of pillars 3, 4 and 5 rotated by one against the document IDs — the
+ * lessons under each are correct, the stored labels are not — so the code list is
+ * currently the only thing printing them right.
+ */
+export function pillarDisplayName(docId: string, storedName: string): string {
+  const slug = getExactPillarSlug(docId);
+  if (!slug) return storedName;
+  return PILLARS.find(p => p.slug === slug)?.name ?? storedName;
 }
 
 /**

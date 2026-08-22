@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth/context';
 import { firebaseStorageService, UploadProgress } from '@/lib/firebase/storage';
 import { videoReviewService, StudentVideo } from '@/lib/database/services/video-review.service';
 import { firebaseService } from '@/lib/firebase/service';
+import { pillarDisplayName } from '@/lib/utils/pillars';
 
 interface VideoUploadProps {
   className?: string;
@@ -90,6 +91,16 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ className }) => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    /**
+     * Clear the input as soon as it has been read.
+     *
+     * `handleFileUpload` bails out with a toast when the sport or description
+     * is missing — and because the input still held that file, picking the very
+     * same file again fired no `change` event and nothing happened. The only
+     * way out was to leave the page and come back, which remounts the input
+     * with an empty value.
+     */
+    e.target.value = '';
     handleFileUpload(files);
   };
 
@@ -228,7 +239,7 @@ export const VideoUpload: React.FC<VideoUploadProps> = ({ className }) => {
                 <SelectContent>
                   {sports.map((sport) => (
                     <SelectItem key={sport.id} value={sport.id}>
-                      {sport.icon} {sport.name}
+                      {sport.icon} {pillarDisplayName(sport.id, sport.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>

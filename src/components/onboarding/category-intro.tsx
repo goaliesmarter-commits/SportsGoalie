@@ -1,7 +1,7 @@
 'use client';
 
 import { GoalieCategorySlug, GOALIE_CATEGORIES } from '@/types';
-import { ChevronRight, Heart, Brain, Clock, Target, MessageCircle, Dumbbell, BookOpen } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Heart, Brain, Clock, Target, MessageCircle, Dumbbell, BookOpen } from 'lucide-react';
 
 interface CategoryIntroProps {
   categorySlug: GoalieCategorySlug;
@@ -11,6 +11,13 @@ interface CategoryIntroProps {
   categoryIndex: number;
   totalCategories: number;
   onStart: () => void;
+  /**
+   * Step back to the previous question. Optional so the screen still renders
+   * without it, but leaving it out strands the reader: this intro sits between
+   * two categories, so with no Back the last answer of the previous category
+   * cannot be reached again.
+   */
+  onBack?: () => void;
 }
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -51,6 +58,7 @@ export function CategoryIntro({
   categoryIndex,
   totalCategories,
   onStart,
+  onBack,
 }: CategoryIntroProps) {
   const Icon = CATEGORY_ICONS[categorySlug] || Target;
   const accent = CATEGORY_ACCENT[categorySlug] || '#37b5ff';
@@ -62,6 +70,7 @@ export function CategoryIntro({
     <>
       <style>{`
         .ci-btn:hover { opacity: 0.88 !important; transform: scale(1.01) !important; }
+        .ci-back:hover { color: rgba(255,255,255,0.7) !important; }
         @keyframes ci-fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .ci-fade { animation: ci-fade 0.35s ease both; }
       `}</style>
@@ -154,6 +163,30 @@ export function CategoryIntro({
               >
                 Start Category <ChevronRight size={16} />
               </button>
+
+              {onBack && (
+                <button
+                  className="ci-back"
+                  onClick={onBack}
+                  style={{
+                    margin: '0 auto',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.38)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 6px',
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  <ChevronLeft size={14} />
+                  Back to the previous question
+                </button>
+              )}
 
               <p style={{ textAlign: 'center', fontSize: '11px', color: 'rgba(255,255,255,0.22)' }}>
                 No right or wrong answers — answer honestly for the best results

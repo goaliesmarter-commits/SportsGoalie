@@ -8,7 +8,8 @@ import { useAuth } from '@/lib/auth/context';
 import { mindVaultService } from '@/lib/database/services/mind-vault.service';
 import { MindVaultEntryCard } from '@/components/mind-vault/MindVaultEntryCard';
 import { MindVaultEntryForm } from '@/components/mind-vault/MindVaultEntryForm';
-import { getMindVaultCategoryInfo, type MindVaultCategory, type MindVaultEntry } from '@/types/mind-vault';
+import { AcceptancePromptItem } from '@/components/mind-vault/AcceptancePromptItem';
+import { getMindVaultCategoryInfo, getCategoryPrompts, type MindVaultCategory, type MindVaultEntry } from '@/types/mind-vault';
 import { toast } from 'sonner';
 
 const BLUE = '#37b5ff';
@@ -52,6 +53,14 @@ export default function MindVaultCategoryPage() {
     setEntries(prev => prev.filter(e => e.id !== id));
   };
 
+  // Suggestions this category offers, and which of them the goalie has already
+  // taken. Both are empty for every category until Michael supplies the wording,
+  // which keeps these pages looking exactly as they do now.
+  const prompts = getCategoryPrompts(categorySlug);
+  const acceptedTexts = new Set(entries.map(e => e.content));
+  const promptTexts = new Set(prompts);
+  const customEntries = entries.filter(e => !promptTexts.has(e.content));
+
   if (!categoryInfo) {
     return (
       <div style={{ background: 'linear-gradient(145deg, #000f28 0%, #062344 100%)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
@@ -84,6 +93,26 @@ export default function MindVaultCategoryPage() {
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>{categoryInfo.description}</p>
         </div>
 
+        {/* Suggestions — tap one to add it, same as the Acceptance list */}
+        {!loading && prompts.length > 0 && (
+          <div style={{ background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.15)', borderRadius: '14px', padding: '18px 20px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '4px' }}>Suggestions</h2>
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '12px' }}>
+              Tap one to add it, or write your own below.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {prompts.map(prompt => (
+                <AcceptancePromptItem
+                  key={prompt}
+                  promptText={prompt}
+                  isAccepted={acceptedTexts.has(prompt)}
+                  onAccept={text => handleAddEntry(text, false)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Add Entry Form */}
         <MindVaultEntryForm onSubmit={handleAddEntry} placeholder={`What would you like to add to ${categoryInfo.shortName}?`} />
 
@@ -97,11 +126,11 @@ export default function MindVaultCategoryPage() {
               Tap &quot;Add Entry&quot; above to start building this part of your vault.
             </p>
           </div>
-        ) : (
+        ) : customEntries.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {entries.map(entry => <MindVaultEntryCard key={entry.id} entry={entry} onDelete={handleDeleteEntry} />)}
+            {customEntries.map(entry => <MindVaultEntryCard key={entry.id} entry={entry} onDelete={handleDeleteEntry} />)}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
