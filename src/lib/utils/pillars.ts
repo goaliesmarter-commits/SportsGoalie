@@ -171,6 +171,26 @@ export function pillarDisplayName(docId: string, storedName: string): string {
 }
 
 /**
+ * The name to print for a `sports` document that has already been fetched.
+ *
+ * Same rule as `pillarDisplayName` — this is the shape the analytics services hold,
+ * where a sport is a whole document or a lookup that came back empty, not an
+ * id/name pair. They were printing `sport.name` straight from Firestore, which is
+ * why pillars 3, 4 and 5 came out wearing each other's names on /admin/analytics
+ * and /progress long after every dropdown had been corrected.
+ *
+ * `fallback` is returned when the lookup found nothing, so the caller does not have
+ * to repeat `|| 'Unknown Sport'` and accidentally skip the resolution step.
+ */
+export function sportDisplayName(
+  sport: { id?: string; name?: string } | null | undefined,
+  fallback = 'Unknown Sport'
+): string {
+  if (!sport?.name) return fallback;
+  return sport.id ? pillarDisplayName(sport.id, sport.name) : sport.name;
+}
+
+/**
  * Check if a document ID is a valid pillar ID
  */
 export function isPillarDocId(id: string): id is PillarId {

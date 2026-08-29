@@ -3,6 +3,7 @@ import { sportsService } from './sports.service';
 import { videoQuizService } from './video-quiz.service';
 import { ApiResponse } from '@/types';
 import { VideoQuizProgress } from '@/types/video-quiz';
+import { sportDisplayName } from '@/lib/utils/pillars';
 import { logger } from '../../utils/logger';
 
 // Type alias for backwards compatibility
@@ -328,15 +329,19 @@ export class StudentAnalyticsService extends BaseDatabaseService {
           return currentDate > latestDate ? current : latest;
         });
 
+        // Resolved once: the generated title has to go through the code list too, or a
+        // quiz with no title of its own bakes a stale pillar name into the row.
+        const sportName = sportDisplayName(sport?.data);
+
         // Better fallback for quiz title - use quiz ID as last resort
         const quizTitle = quiz.data?.title ||
-                         (sport?.data?.name && skill?.data?.name ? `${sport.data.name} - ${skill.data.name} Quiz` :
+                         (sport?.data?.name && skill?.data?.name ? `${sportName} - ${skill.data.name} Quiz` :
                           `Quiz ${quizId.substring(0, 8)}...`);
 
         performanceData.push({
           quizId,
           quizTitle,
-          sportName: sport?.data?.name || 'Unknown Sport',
+          sportName,
           skillName: skill?.data?.name || 'Unknown Skill',
           attempts: quizAttempts.length,
           bestScore: Math.max(...scores),
@@ -529,7 +534,7 @@ export class StudentAnalyticsService extends BaseDatabaseService {
         performanceData.push({
           skillId,
           skillName: skill.data?.name || 'Unknown Skill',
-          sportName: sport?.data?.name || 'Unknown Sport',
+          sportName: sportDisplayName(sport?.data),
           progress: bestScore,
           timeSpent: Math.round(totalTimeSpent / 60), // Convert to minutes
           quizScore: latestAttempt.percentage || null,
@@ -704,7 +709,7 @@ export class StudentAnalyticsService extends BaseDatabaseService {
 
         courseDetails.push({
           sportId,
-          sportName: sport.data.name,
+          sportName: sportDisplayName(sport.data),
           description: sport.data.description,
           enrolledAt,
           status,
@@ -778,16 +783,18 @@ export class StudentAnalyticsService extends BaseDatabaseService {
             attempt.submittedAt.toDate() :
             new Date(attempt.completedAt || attempt.submittedAt || 0);
 
+        const sportName = sportDisplayName(sport?.data);
+
         // Better fallback for quiz title - use sport/skill names if available
         const quizTitle = quiz.data?.title ||
-                         (sport?.data?.name && skill?.data?.name ? `${sport.data.name} - ${skill.data.name} Quiz` :
+                         (sport?.data?.name && skill?.data?.name ? `${sportName} - ${skill.data.name} Quiz` :
                           `Quiz ${attempt.quizId.substring(0, 8)}...`);
 
         attemptDetails.push({
           attemptId: attempt.id,
           quizId: quizId,
           quizTitle,
-          sportName: sport?.data?.name || 'Unknown Sport',
+          sportName,
           skillName: skill?.data?.name || 'Unknown Skill',
           startedAt: startTime,
           submittedAt: endTime,
