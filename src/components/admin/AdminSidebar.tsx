@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, UserPlus, BarChart3, BookOpen, Trophy,
   Video, FileText, MessageSquare, Shield, Settings, LogOut,
-  ChevronLeft, Menu, X, User, BarChart2, Dumbbell,
+  ChevronLeft, Menu, X, User, BarChart2, Dumbbell, HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 
@@ -47,6 +47,7 @@ const navSections: NavSection[] = [
     label: 'Communication',
     items: [
       { label: 'Messages', href: '/admin/messages', icon: MessageSquare },
+      { label: 'Question Index', href: '/admin/question-index', icon: HelpCircle },
       { label: 'Voice Queue', href: '/admin/voice-queue', icon: MessageSquare },
       { label: 'Moderation', href: '/admin/moderation', icon: Shield },
     ],
