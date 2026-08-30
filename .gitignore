@@ -116,7 +116,15 @@ PROJECT_TRACKER.md
 # *.md
 .dockerignore
 
-# Ignore local docs (context files for Claude, not for repo)
+# Local docs — working context, quotes, client replies, internal notes and
+# session logs. None of it belongs in the repo: this directory holds pricing
+# (docs/QUOTE-*.md, docs/CLIENT_RESPONSE-*.md), internal-only assessments
+# (docs/michael-feedback-*-internal.md) and live credentials
+# (docs/internal/testing/testing-credentials.md).
+#
+# Blanket ignore, session logs included — Hafsa's decision, 26 August 2026.
+# Note this form cannot be undone for a single child path: re-allowing one
+# subfolder later means going back to `docs/*` plus a `!docs/<folder>/` line.
 docs/
 
 # Firestore snapshots taken before a migration (scripts/backup-firestore.ts).

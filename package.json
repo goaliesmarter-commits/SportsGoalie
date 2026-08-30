@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "clean": "rm -rf .next && rm -rf node_modules/.cache",
+    "clean": "node -e \"['.next','node_modules/.cache'].forEach(p=>fs.rmSync(p,{recursive:true,force:true}))\"",
     "setup-hooks": "husky install"
   },
   "dependencies": {
