@@ -8,7 +8,7 @@
 
 **Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Last Updated:** 2026-08-19
+**Last Updated:** 2026-08-23
 **Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
 
 > ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
@@ -116,6 +116,24 @@
 > **Full session details:** See `docs/sessions/YYYY-MM/` for detailed session logs
 >
 > ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
+
+> ⚠️ **Sessions dated 2026-08-20, 2026-08-21 and 2026-08-22 were reconstructed on 2026-08-23 from git history.** Logging lapsed for four sessions. **No hours are claimed for those three** — the elapsed time was not measured at the time, and it is not estimated after the fact. What each entry states is what the commit demonstrably changed; reasoning that was not written down then has not been invented now.
+
+### 2026-08-23 - [Coach Mike's Free-Work List + ESLint Repair](docs/sessions/2026-08/2026-08-23-free-work-list-and-eslint-repair.md)
+**Time:** to be filled from the measured figure | **Focus:** Bug Fix - Mind Vault / UI - Copy / Tooling - Lint | **Block:** 2
+Audited both task documents against the code before touching anything: twelve statuses had moved, and the 55-row 2026-08-21 sheet claiming 8 done is really **20 done, 1 half done, 34 left** across roughly 49 distinct jobs once duplicates collapse. Q9 (admin-controlled menus), the largest open item on the 2026-08-20 sheet, is no longer a blocker — quoted at 5–7h on 2026-08-22. **Mind Vault add forms** now sit inside every subcategory on both list pages instead of once after the last one; `MindVaultEntryForm` took an optional `label` prop because eight identical "Add Entry" buttons give no clue where an entry lands, `subcategory` stayed optional so the catch-all form still works, and the bottom list filters to `ungroupedCustomEntries` — without that, every entry saved before this change (all of which have no subcategory) would have silently disappeared from the page. **Save confirmation** added on all five Mind Vault save paths; there was none. **C6 → `multi_select`** after clearing it as safe first, not after: absent from `STUDENT_SCORING_MAP` (the `C6-*` rows in the scoring file are the parent map), engine already skips arrays, only A7 is named as a conditional parent, not `required`, and the renderer already shares one path via `isMulti` and prints "Select all that apply" itself — so the existing note was left alone rather than duplicating the hint. C6 is an **inference** from Mike's "he'd have picked 4–5" and needs his confirmation. **Contact closing copy** applied in the page's sentence case rather than his all-caps. **ESLint repaired** — `eslint-config-next` 16 ships native flat configs, and routing them through `FlatCompat.extends()` sent them back through the legacy eslintrc loader, whose error formatter `JSON.stringify`s a config whose plugin objects are self-referential; the *formatter* threw, so no lint result was ever reported. Imported the flat configs directly and fixed two more defects in passing: `ignores` sat in the same object as `rules` (so it only narrowed that block — `.next/` and `coverage/` were being linted), and the `no-console` override globbed `lib/**`, which matches nothing in a `src/lib/` repo. `next lint` was separately removed in Next 16 and was passing "lint" to Next as a directory; `lint`/`lint:fix` now call `eslint` directly. **Backlog now visible: 1156 problems, 453 errors** — 368 `no-explicit-any`, 55 `no-require-imports`, 26 `react-hooks` errors, 542 `no-console` warnings. Not mass-fixed and **no rule downgraded to hide it**. The husky pre-commit hook is inert (`core.hooksPath` unset) and was left that way deliberately: enabling it now blocks every commit on pre-existing errors. **Manager path** turned out to have no dead buttons to activate — the step pills are `<span>`s and no booking flow was ever built, though the page promises a calendar; it is a copy fix or a real build, and either way the 1–1.5h estimate is wrong. **Coach test account not run** — the script is correct and idempotent but writes to live Firebase while a real student is on the site. **No browser verification this session.**
+
+### 2026-08-22 - [Pillar Identity Resolution + Sport/Pillar Filtering](docs/sessions/2026-08/2026-08-22-pillar-identity-and-sport-filtering.md)
+**Time:** ⚠️ not recorded — reconstructed from git | **Focus:** Refactor - Pillar identity / Feature - Content filtering | **Block:** 2
+`a3ccd09`, `829f8f1`. The live Firestore pillar documents have names rotated by one against their document IDs — pillars 3, 4 and 5 store the wrong neighbour's name. Rather than migrate live data under an active student, name resolution goes through `pillarDisplayName(docId, storedName)`, preferring the code `PILLARS` list and falling back to the stored name only for retired pillars — which is why it is a function and not a lookup. Slug lookup was split deliberately: `getExactPillarSlug` strict for writes, `getPillarSlugFromDocId` forgiving for display; collapsing them would let a bad write through quietly. Admin pillar reordering added. `VideoFilterPanel` and `sports.service` now group and sort by pillar alongside sport. **`PUBLIC_PILLARS` is deliberately still seven** — Michael has already shared those marketing URLs, so the public and in-app lists are intentionally out of step until he signs off.
+
+### 2026-08-21 - [The Eighth Pillar](docs/sessions/2026-08/2026-08-21-eighth-pillar.md)
+**Time:** ⚠️ not recorded — reconstructed from git | **Focus:** Refactor - Pillar taxonomy | **Block:** 2
+`9fdae00`. The 2026-08-15 split of the merged Training pillar made the list eight long, but "seven" was written into copy, types and the contact route. `src/types/onboarding.ts` took the bulk. This is the code half of Coach Mike's item 5 — the database half (`scripts/split-training-pillar.ts`) still has never been run live. The code now assumes 7AMS and 6 Zone are Pillars 3+4; Michael has not confirmed that, and if he answers otherwise this is redone.
+
+### 2026-08-20 - [Onboarding Back-Navigation, Application Steps, Multi-Recipient Contact](docs/sessions/2026-08/2026-08-20-onboarding-back-navigation-and-application-steps.md)
+**Time:** ⚠️ not recorded — reconstructed from git | **Focus:** UI - Onboarding / Bug Fix - Intake | **Block:** 2
+`e932d59`. Back stopped at the first questionnaire question, leaving the intake answers taken before it unreachable — a goalie who mistyped their name had no route back short of abandoning the run. Fixed across `useOnboarding`, `useCoachOnboarding` and `category-intro`. Five public role pages each hand-rolled the same step strip with drifting wording; extracted to `ApplicationSteps.tsx` and all five now render it. Contact route takes multiple recipients. `VideoQuestionBuilder` accepts both `1:30` and `90` as timestamps. Five upload components got visible file-selection feedback — the same defect class as the 2026-08-15 `VideoUploader` invisibility bug.
 
 ### 2026-08-19 - [Reflective Questions, Coach Answers View, and the Estimate for Items 10–18](docs/sessions/2026-08/2026-08-19-reflective-questions-and-coach-answers.md)
 **Time:** ⚠️ not measured (see session Notes) | **Focus:** Feature - Video Quiz / Bug Fix - Builder Inputs / Docs - Client Estimate | **Block:** 2
@@ -489,8 +507,15 @@ Initial project analysis and progress tracking system implementation.
 | 2026-05 | 47.25h | Animated backgrounds, pillar pages, goalie invitations, email delivery, pricing, admin redesign, language lock | 5 |
 | 2026-06 | 144h | Coach onboarding, coach panel, baseline questionnaire, L-Index, blue design system, parent + coach charting modules, Growth Points, video review | 10 |
 | 2026-07 | 41h | Mobile responsiveness, baseline scores, contact form, invitations + admin invite management, video library, invite validation, Seven Pillars public pages | 7 |
-| 2026-08 (to 16th) | 18.65h | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit, content library grid overflow fix | 3 |
-| **Total** | **363.65h** | - | **41** |
+| 2026-08 (to 23rd) | 18.65h measured, 5 sessions unmeasured | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit, content library grid overflow fix, reflective questions + coach answers view, onboarding back-navigation, eighth pillar, pillar identity resolution, Mind Vault per-category forms, ESLint repair | 8 |
+| **Total** | **363.65h measured** | - | **46** |
+
+> ⚠️ **Five August sessions carry no hours: 2026-08-19, 20, 21, 22 and 23.** The 19th was not
+> measured at the time; the 20th–22nd were reconstructed from git on 2026-08-23; the 23rd needs its
+> measured figure filled in. These are left blank rather than estimated. An estimate written into a
+> time column becomes a billing figure the moment someone reads this file in a hurry, and the
+> standing rule on this project is that Michael is billed measured elapsed time, never a
+> human-effort estimate.
 
 ---
 

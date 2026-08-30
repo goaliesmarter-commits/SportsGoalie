@@ -426,8 +426,15 @@ export const STUDENT_BASELINE_SECTIONS: V2Section[] = [
       {
         id: 'C6',
         section: 'C',
-        inputType: 'radio',
-        question: 'Of the following — which area do you feel needs the most work right now?',
+        /*
+          Michael, 21 Aug: on his third pass through this question he wanted to
+          pick four or five areas, not one — a goalie working on their mental
+          game is usually working on their skating too. The renderer prints
+          "Select all that apply" for multi_select, so the note below does not
+          repeat it.
+        */
+        inputType: 'multi_select',
+        question: 'Of the following — which areas do you feel need the most work right now?',
         note: 'These are examples to help you think. If your answer is something we did not list — tell us in your own words. We do not want to lead you.',
         evolutionEligible: true,
         options: [

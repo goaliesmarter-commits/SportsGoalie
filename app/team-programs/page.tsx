@@ -427,8 +427,10 @@ export default function TeamProgramsPage() {
           </p>
           <ApplicationSteps
             steps={[
-              // Registering as a Coach is what opens the coach questionnaire.
-              { num: '01', text: 'Complete the coach questionnaire — 5 minutes', href: '/auth/register', action: 'Start' },
+              // Registering as a Coach is what opens the coach questionnaire — the
+              // account has to exist first. The "5 minutes" claim was removed on
+              // 26 August; the baseline profile is much longer than that.
+              { num: '01', text: 'Create your coach account, then complete the coach questionnaire', href: '/auth/register', action: 'Start' },
               { num: '02', text: 'Coach Mike personally reviews your application' },
               // /contact is the "Set Up the Call" form; its role list includes Team Manager.
               { num: '03', text: 'Coach Mike calls you personally', href: '/contact', action: 'Set up the call' },

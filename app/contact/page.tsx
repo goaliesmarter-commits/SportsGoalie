@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
 import { ThemedSelect, themedSelectCss } from './ThemedSelect';
@@ -42,26 +42,57 @@ const labelStyle: React.CSSProperties = {
 const S = 'clamp(44px,5.5vw,72px) 0';
 const H = 'clamp(24px,3.5vw,48px)';
 
+// Michael's ten roles, in the order he gave them (Q11, 25 August 2026), plus
+// 'Other' as the catch-all. Goalie and Parent lead the list on purpose: until
+// open sign-up ships in October this form is the only way either of them can
+// reach him, so it doubles as the request-to-join path.
 const ROLE_OPTIONS = [
-  'Head Coach', 'Goalie Coach', 'Team Manager', 'Organisation / Association Executive',
-  'Federation Representative', 'Camp Director / Hockey Business',
-  'Sports Academy / Facility Director', 'Education Institution', 'Grassroots Program',
-  'Parent Group Representative', 'Other',
+  'Goalie', 'Parent', 'Coach', 'Goalie Coach', 'Team Manager',
+  'Organisation / Association Executive', 'Federation Representative',
+  'Camp Director / Hockey Business', 'Sports Academy / Facility Director',
+  'Education Institution', 'Other',
 ];
 const TEAM_OPTIONS    = ['1 team', '2–5 teams', '6–15 teams', '16+ teams', 'Camp / seasonal program'];
 const GOALIE_OPTIONS  = ['1–2', '3–10', '11–30', '31+'];
 const CONTACT_OPTIONS = ['Phone call', 'Video call', 'Email first'];
 
+/*
+  The three pills above the form are a progress indicator, not controls. Coach read
+  them as dead buttons on 18 August, which is fair: they are pill-shaped, bordered
+  and upper-cased exactly like the "Set Up the Call" CTA below them, so they look
+  like the things you press. They are rendered as an ordered list below, explicitly
+  non-interactive, and the step actually reached is marked — there is nothing here
+  to click, and now it reads that way.
+
+  Labels are Michael's and are left exactly as written.
+*/
+const STEPS = [
+  { label: 'Answer the Questions', color: BLUE },
+  { label: 'Pick Your Time', color: BLUE2 },
+  { label: 'We Chat', color: BLUE3 },
+];
+
+const EMPTY_FORM = {
+  name: '', role: '', organisation: '', location: '',
+  teams: '', goalies: '', goals: '', email: '', phone: '',
+  preferred_contact: '', consent: false,
+};
+
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [roleError, setRoleError] = useState(false);
-  const [form, setForm] = useState({
-    name: '', role: '', organisation: '', location: '',
-    teams: '', goalies: '', goals: '', email: '', phone: '',
-    preferred_contact: '', consent: false,
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  // The confirmation dialog closes on Escape like any modal.
+  useEffect(() => {
+    if (!showConfirm) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowConfirm(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showConfirm]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
@@ -100,7 +131,12 @@ export default function ContactPage() {
       });
       const data = await res.json() as { success: boolean; error?: string };
       if (!data.success) throw new Error(data.error || 'Submission failed');
+      // The form stays on the page for anyone who wants to send another
+      // enquiry — it just empties, and the confirmation appears as a dialog.
       setSubmitted(true);
+      setShowConfirm(true);
+      setForm(EMPTY_FORM);
+      setRoleError(false);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -289,27 +325,29 @@ export default function ContactPage() {
           <h2 style={{ fontSize: H, fontWeight: 900, color: '#fff', lineHeight: 1.0, letterSpacing: '-0.025em', marginBottom: '2px' }}>A Few Specific Questions.</h2>
           <h2 style={{ fontSize: H, fontWeight: 900, color: BLUE2, lineHeight: 1.0, letterSpacing: '-0.025em', marginBottom: '24px' }}>Then a Call on the Calendar.</h2>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-            {[['Answer the Questions', BLUE], ['→', null], ['Pick Your Time', BLUE2], ['→', null], ['We Chat', BLUE3]].map(([label, color], i) => (
-              color === null
-                ? <span key={i} style={{ color: BLUE, fontSize: '16px', fontWeight: 700 }}>{label}</span>
-                : <span key={i} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', border: `1px solid ${color}55`, color: color as string, borderRadius: '99px', padding: '7px 16px', background: 'rgba(4,20,50,0.8)', textTransform: 'uppercase' }}>{label}</span>
-            ))}
-          </div>
+          <ol style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', margin: '0 0 10px', padding: 0, listStyle: 'none' }}>
+            {STEPS.map((step, i) => {
+              // Only the first step is something the manager completes on this page.
+              const done = submitted && i === 0;
+              const color = done ? GREEN : step.color;
+              return (
+                <li key={step.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {i > 0 && <span aria-hidden="true" style={{ color: BLUE, fontSize: '16px', fontWeight: 700 }}>→</span>}
+                  <span
+                    aria-current={done ? undefined : (submitted && i === 1 ? 'step' : undefined)}
+                    style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', border: `1px solid ${color}55`, color, borderRadius: '99px', padding: '7px 16px', background: 'rgba(4,20,50,0.8)', textTransform: 'uppercase', cursor: 'default', userSelect: 'none' }}
+                  >
+                    {done ? `✓ ${step.label}` : step.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
           <p style={{ fontSize: '13px', color: MUTED, fontStyle: 'italic', marginBottom: '22px' }}>
             Direct to the Smarter Goalie team — a real conversation about where your program wants to go.
           </p>
 
-          {submitted ? (
-            <div style={{ background: CARD_BG, border: '1px solid rgba(55,181,255,0.3)', borderRadius: '18px', padding: 'clamp(32px,5vw,52px) clamp(20px,4vw,36px)', textAlign: 'center', maxWidth: '560px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>✓</div>
-              <h3 style={{ fontSize: 'clamp(20px,3vw,24px)', fontWeight: 800, marginBottom: '10px', color: BLUE2 }}>Your answers are on their way.</h3>
-              <p style={{ fontSize: '15px', color: MUTED, lineHeight: 1.7, margin: 0 }}>
-                The Smarter Goalie team will be in touch to set up the call. We look forward to hearing about your program.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ background: CARD_BG, border: CARD_BDR, borderRadius: '18px', padding: 'clamp(18px,3vw,32px)', maxWidth: '860px' }}>
+          <form onSubmit={handleSubmit} style={{ background: CARD_BG, border: CARD_BDR, borderRadius: '18px', padding: 'clamp(18px,3vw,32px)', maxWidth: '860px' }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 <div className="flex flex-col">
@@ -413,20 +451,65 @@ export default function ContactPage() {
                   {loading ? 'Sending…' : 'Set Up the Call'}
                 </button>
               </div>
+              {/*
+                Was "and the calendar opens to pick your time." No calendar opens — there is no
+                booking page, no scheduling integration and no route between this form and a
+                call anywhere in the app; submitting emails the team and the confirmation card
+                below already says they will be in touch. That was the one genuinely dead step
+                in the manager path. The replacement clause is the confirmation card's own
+                approved wording rather than anything new, so it is one line to put back the
+                moment real booking exists.
+              */}
               <p style={{ textAlign: 'center', fontSize: '12px', color: MUTED, fontStyle: 'italic', marginTop: '10px', marginBottom: 0 }}>
-                Your answers reach the Smarter Goalie team directly — and the calendar opens to pick your time.
+                Your answers reach the Smarter Goalie team directly — and we'll be in touch to set up your time.
               </p>
-            </form>
-          )}
+          </form>
         </div>
       </section>
+
+      {/* ── SUBMISSION CONFIRMATION DIALOG ── */}
+      {showConfirm && (
+        <div
+          onClick={() => setShowConfirm(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-confirm-title"
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,6,18,0.72)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ position: 'relative', background: CARD_BG, border: '1px solid rgba(55,181,255,0.3)', borderRadius: '18px', padding: 'clamp(32px,5vw,52px) clamp(20px,4vw,36px)', textAlign: 'center', maxWidth: '480px', width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.55)' }}
+          >
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', borderRadius: '18px 18px 0 0', background: `linear-gradient(90deg, transparent, ${BLUE}, ${BLUE2}88, transparent)` }} />
+            <button
+              onClick={() => setShowConfirm(false)}
+              aria-label="Close"
+              style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', borderRadius: '8px', background: 'transparent', border: 'none', color: MUTED, fontSize: '20px', lineHeight: 1, cursor: 'pointer' }}
+            >
+              ×
+            </button>
+            <div style={{ fontSize: '40px', marginBottom: '16px', color: GREEN }}>✓</div>
+            <h3 id="contact-confirm-title" style={{ fontSize: 'clamp(20px,3vw,24px)', fontWeight: 800, marginBottom: '10px', color: BLUE2 }}>Your answers are on their way.</h3>
+            <p style={{ fontSize: '15px', color: MUTED, lineHeight: 1.7, margin: '0 0 24px' }}>
+              The Smarter Goalie team will be in touch to set up the call. We look forward to hearing about your program.
+            </p>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="cta-btn"
+              style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: '#fff', background: `linear-gradient(135deg, ${BLUE3}, #0369a1)`, border: 'none', borderRadius: '10px', padding: '12px 34px', cursor: 'pointer', boxShadow: '0 6px 22px rgba(14,165,233,0.35)', transition: 'all .2s' }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── CLOSING ── */}
       <section style={{ padding: 'clamp(36px,5vw,60px) 0', background: 'linear-gradient(160deg, #040f24 0%, #061a38 100%)', textAlign: 'center' }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 w-full">
           <div style={{ maxWidth: '660px', margin: '0 auto' }}>
-            <p style={{ fontSize: 'clamp(17px, 2.6vw, 30px)', fontWeight: 900, lineHeight: 1.3, color: '#fff', marginBottom: '4px' }}>We build the human behind the goalie.</p>
-            <p style={{ fontSize: 'clamp(17px, 2.6vw, 30px)', fontWeight: 900, lineHeight: 1.3, color: '#fff', marginBottom: '4px' }}>We build athletes for life.</p>
+            <p style={{ fontSize: 'clamp(17px, 2.6vw, 30px)', fontWeight: 900, lineHeight: 1.3, color: '#fff', marginBottom: '4px' }}>We build goalies who lead by example.</p>
+            <p style={{ fontSize: 'clamp(17px, 2.6vw, 30px)', fontWeight: 900, lineHeight: 1.3, color: '#fff', marginBottom: '4px' }}>We build intelligent athletic humans.</p>
             <p style={{ fontSize: 'clamp(17px, 2.6vw, 30px)', fontWeight: 900, lineHeight: 1.3, color: BLUE2, marginBottom: '16px' }}>We build starters.</p>
             <p style={{ fontSize: 'clamp(12px, 1.4vw, 15px)', color: MUTED, letterSpacing: '.1em', textTransform: 'uppercase', fontWeight: 700, margin: 0 }}>
               That's Smarter Goalie. <span style={{ color: BLUE }}>Think Smart. Play Smart.</span>

@@ -44,6 +44,7 @@ export default function AcceptanceListPage() {
       if (result.success) {
         const reload = await mindVaultService.getEntriesByCategory(user.id, 'acceptance');
         if (reload.success && reload.data) setEntries(reload.data);
+        toast.success('Saved to your Acceptance List.');
       } else {
         toast.error(result.error?.message || result.message || 'Failed to add entry');
       }
@@ -52,12 +53,19 @@ export default function AcceptanceListPage() {
     }
   };
 
-  const handleAddCustom = async (content: string, isVoice: boolean) => {
+  /*
+    `subcategory` is optional so the catch-all form at the bottom of the page still
+    works unchanged. Entries added before per-category forms existed have no
+    subcategory either, which is why the ungrouped list below is kept rather than
+    folded into the categories.
+  */
+  const handleAddCustom = async (content: string, isVoice: boolean, subcategory?: string) => {
     if (!user?.id) return;
-    const result = await mindVaultService.addEntry({ studentId: user.id, category: 'acceptance', content, isVoiceEntry: isVoice, source: 'manual' });
+    const result = await mindVaultService.addEntry({ studentId: user.id, category: 'acceptance', ...(subcategory ? { subcategory } : {}), content, isVoiceEntry: isVoice, source: 'manual' });
     if (result.success) {
       const reload = await mindVaultService.getEntriesByCategory(user.id, 'acceptance');
       if (reload.success && reload.data) setEntries(reload.data);
+      toast.success('Saved to your Acceptance List.');
     } else toast.error(result.error?.message || result.message || 'Failed to add entry');
   };
 
@@ -70,6 +78,10 @@ export default function AcceptanceListPage() {
 
   const promptTexts = new Set(ACCEPTANCE_PROMPTS.map(p => p.text));
   const customEntries = entries.filter(e => !promptTexts.has(e.content));
+  const subcategorySlugs = new Set(ACCEPTANCE_SUBCATEGORIES.map(s => s.slug as string));
+  // Anything whose subcategory we no longer recognise stays visible at the bottom
+  // rather than disappearing with the category it used to belong to.
+  const ungroupedCustomEntries = customEntries.filter(e => !e.subcategory || !subcategorySlugs.has(e.subcategory));
 
   if (loading) return <div style={{ padding: '16px' }}><SkeletonListPage cols={2} count={4} /></div>;
 
@@ -113,6 +125,7 @@ export default function AcceptanceListPage() {
             const prompts = ACCEPTANCE_PROMPTS.filter(p => p.subcategory === sub.slug);
             const isExpanded = expandedSubcategories[sub.slug];
             const acceptedCount = prompts.filter(p => acceptedTexts.has(p.text)).length;
+            const subCustomEntries = customEntries.filter(e => e.subcategory === sub.slug);
             return (
               <div key={sub.slug} style={{ background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.15)', borderRadius: '14px', padding: '14px', overflow: 'hidden' }}>
                 <button
@@ -137,6 +150,19 @@ export default function AcceptanceListPage() {
                     {prompts.map(prompt => (
                       <AcceptancePromptItem key={prompt.id} promptText={prompt.text} isAccepted={acceptedTexts.has(prompt.text)} onAccept={text => handleAcceptPrompt(text, sub.slug)} />
                     ))}
+                    {subCustomEntries.map(entry => (
+                      <MindVaultEntryCard key={entry.id} entry={entry} onDelete={handleDeleteEntry} />
+                    ))}
+                    {/*
+                      Michael, 18 Aug: the add-suggestion button sat once after the last
+                      category, so a goalie reading one category had to scroll past all the
+                      others to record what that category just prompted. One per category.
+                    */}
+                    <MindVaultEntryForm
+                      onSubmit={(content, isVoice) => handleAddCustom(content, isVoice, sub.slug)}
+                      placeholder={`Add your own acceptance for ${sub.name}, in your own words...`}
+                      label={`Add your own to ${sub.name}`}
+                    />
                   </div>
                 )}
               </div>
@@ -144,18 +170,19 @@ export default function AcceptanceListPage() {
           })}
         </div>
 
-        {/* Custom entries */}
-        {customEntries.length > 0 && (
+        {/* Custom entries that belong to no category — including everything added
+            before the per-category forms above existed. */}
+        {ungroupedCustomEntries.length > 0 && (
           <div style={{ background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.15)', borderRadius: '14px', padding: '18px 20px' }}>
             <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '12px' }}>Your Custom Entries</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {customEntries.map(entry => <MindVaultEntryCard key={entry.id} entry={entry} onDelete={handleDeleteEntry} />)}
+              {ungroupedCustomEntries.map(entry => <MindVaultEntryCard key={entry.id} entry={entry} onDelete={handleDeleteEntry} />)}
             </div>
           </div>
         )}
 
-        {/* Add custom entry */}
-        <MindVaultEntryForm onSubmit={handleAddCustom} placeholder="Add your own acceptance in your own words..." />
+        {/* Add custom entry — for anything that fits none of the categories above */}
+        <MindVaultEntryForm onSubmit={handleAddCustom} placeholder="Add your own acceptance in your own words..." label="Add an entry outside these categories" />
       </div>
     </div>
   );

@@ -26,6 +26,17 @@ export interface RegisterCredentials {
   firstName?: string;
   lastName?: string;
   skipEmailVerification?: boolean; // For invited coaches - email already verified via invitation link
+  /**
+   * True only when the flow that collected these credentials actually showed
+   * the Terms and Privacy documents and required them to be accepted.
+   *
+   * This gates whether `legalAcceptance` is written to the user record. The
+   * sign-up form sets it; the invitation flow does not, because it has no
+   * tickbox — an invited coach has never been shown either document, and
+   * recording an acceptance they never gave would be worse than recording
+   * nothing. Closing that gap is part of the agreements gate work.
+   */
+  agreeToTerms?: boolean;
 }
 
 // Profile update data

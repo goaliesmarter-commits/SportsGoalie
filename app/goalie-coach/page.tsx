@@ -404,14 +404,20 @@ export default function GoalieCoachPage() {
           </p>
           <ApplicationSteps
             steps={[
-              { num: '01', text: 'Complete the goalie coach questionnaire — 5 minutes', href: '/auth/register', action: 'Start' },
+              // Was /auth/register until 26 August. Sending a goalie coach there
+              // put them in the general coach panel — there is no goalie coach
+              // area yet, and no agreement gate, so they reached Michael's content
+              // having signed nothing. /contact lists 'Goalie Coach' and routes the
+              // enquiry to him, which is the correct destination until both the
+              // panel and the agreements gate exist.
+              { num: '01', text: 'Tell Coach Mike about yourself — 5 minutes', href: '/contact', action: 'Start' },
               { num: '02', text: 'Coach Mike personally reviews your application' },
               // /contact lists Goalie Coach in its role dropdown.
               { num: '03', text: 'Coach Mike calls you personally — peer to peer', href: '/contact', action: 'Set up the call' },
             ]}
           />
           <button
-            onClick={() => router.push('/auth/register')}
+            onClick={() => router.push('/contact')}
             style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE3} 100%)`, color: '#fff', border: 'none', padding: 'clamp(16px,2vw,22px) clamp(32px,4vw,56px)', borderRadius: '12px', fontSize: 'clamp(13px,1.5vw,16px)', fontWeight: 900, letterSpacing: '2px', cursor: 'pointer', textTransform: 'uppercase', boxShadow: '0 8px 32px rgba(14,165,233,0.35)', transition: 'all 0.2s', display: 'inline-block', marginBottom: '36px' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 14px 44px rgba(14,165,233,0.55)'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 32px rgba(14,165,233,0.35)'; }}

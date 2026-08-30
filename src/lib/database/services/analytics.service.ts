@@ -2,6 +2,7 @@ import { BaseDatabaseService } from '../base.service';
 import { userService } from './user.service';
 import { sportsService } from './sports.service';
 import { ApiResponse } from '@/types';
+import { sportDisplayName } from '@/lib/utils/pillars';
 import { logger } from '../../utils/logger';
 
 export interface PlatformAnalytics {
@@ -9,9 +10,11 @@ export interface PlatformAnalytics {
     total: number;
     active: number;
     inactive: number;
+    paused: number;
     newThisMonth: number;
     adminCount: number;
     studentCount: number;
+    activeStudentCount: number;
   };
   content: {
     totalSports: number;
@@ -288,7 +291,7 @@ export class AnalyticsService extends BaseDatabaseService {
       // Use real metadata from sports or return zero values for new data
       const popularityData: ContentPopularity[] = sportsResult.data.items.map(sport => ({
         sportId: sport.id,
-        sportName: sport.name,
+        sportName: sportDisplayName(sport),
         views: sport.metadata?.totalEnrollments || 0,
         completions: sport.metadata?.totalCompletions || 0,
         averageRating: sport.metadata?.averageRating || 0,
@@ -373,8 +376,12 @@ export class AnalyticsService extends BaseDatabaseService {
 
     const userStats = {
       total: users.length,
-      active: users.filter(u => u.isActive).length,
+      // Paused accounts are Michael's subscription pause switch: still fully
+      // on the books, but not active until switched back on.
+      active: users.filter(u => u.isActive && u.isPaused !== true).length,
       inactive: users.filter(u => !u.isActive).length,
+      paused: users.filter(u => u.isPaused === true).length,
+      activeStudentCount: users.filter(u => u.role === 'student' && u.isPaused !== true).length,
       newThisMonth: users.filter(u => u.createdAt && (typeof u.createdAt === 'object' && 'toDate' in u.createdAt ? u.createdAt.toDate() : new Date(u.createdAt as unknown as string | number)) >= startOfMonth).length,
       adminCount: users.filter(u => u.role === 'admin').length,
       studentCount: users.filter(u => u.role === 'student').length,

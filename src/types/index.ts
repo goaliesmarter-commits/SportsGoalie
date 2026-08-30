@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import type { LegalAcceptance } from './legal';
 
 export type UserRole = 'student' | 'admin' | 'coach' | 'parent';
 export type WorkflowType = 'automated' | 'custom';
@@ -45,6 +46,24 @@ export interface User {
   parentOnboardingComplete?: boolean; // Whether parent has completed onboarding
   coachOnboardingComplete?: boolean;      // Whether coach has completed baseline profile
   coachOnboardingCompletedAt?: Timestamp; // When coach completed baseline profile
+
+  /**
+   * Terms and Privacy acceptance, stamped at registration from the versions in
+   * `src/data/legal`. Optional because every account created before 27 August
+   * 2026 predates this being recorded — absent means unknown, not refused.
+   */
+  legalAcceptance?: LegalAcceptance;
+
+  /**
+   * Subscription pause switch, flipped only by an admin. Paused accounts stop
+   * counting as active and cannot enter the app, but every part of their
+   * record is left exactly as it was — resuming puts them back where they
+   * left off. Absent means active: accounts predate the field. Distinct from
+   * `isActive`, which is the soft-delete flag.
+   */
+  isPaused?: boolean;
+  pausedAt?: Timestamp;
+  resumedAt?: Timestamp;
 
   // Timestamps
   createdAt: Timestamp;

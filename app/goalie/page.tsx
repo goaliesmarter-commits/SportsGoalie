@@ -715,16 +715,21 @@ export default function GoaliePage() {
 
           <ApplicationSteps
             steps={[
-              { num: '01', text: 'Complete the questionnaire in 5 minutes', href: '/auth/register', action: 'Start' },
+              // Was /auth/register until 26 August, which was a dead end: goalies
+              // are invitation-only by Michael's decision, so the sign-up page
+              // offers Parent and Coach and nothing else. Anyone following this
+              // step hit a wall. /contact now lists 'Goalie' first and reaches him
+              // directly — the interim request-to-join path until the application-
+              // by-questionnaire flow ships.
+              { num: '01', text: 'Tell Coach Mike about yourself — 5 minutes', href: '/contact', action: 'Start' },
               { num: '02', text: 'Coach Mike personally reviews your application, with no automation and no filter' },
-              // Inert on purpose — see the parent page. There is no goalie-facing
-              // booking form for this to point at.
-              { num: '03', text: 'Coach Mike calls you personally' },
+              // Live as of 26 August: 'Goalie' is now in the /contact role list.
+              { num: '03', text: 'Coach Mike calls you personally', href: '/contact', action: 'Set up the call' },
             ]}
           />
 
           <button
-            onClick={() => router.push('/auth/register')}
+            onClick={() => router.push('/contact')}
             style={{
               background: RED, color: '#fff', border: 'none',
               padding: 'clamp(16px,2vw,22px) clamp(32px,4vw,56px)',
