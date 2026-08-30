@@ -25,6 +25,7 @@ import {
 import { logAuthError, logInfo, logDebug } from '@/lib/errors/error-logger';
 import { generateStudentId } from '@/lib/utils/student-id-generator';
 import { userService } from '@/lib/database/services/user.service';
+import { CURRENT_LEGAL_VERSIONS } from '@/data/legal';
 
 /**
  * Global flag to prevent auth state listener from signing out during registration.
@@ -130,6 +131,21 @@ export class AuthService implements IAuthService {
             },
           },
           isActive: true,
+          // Terms and Privacy acceptance — see the matching block in
+          // src/lib/auth/context.tsx for the full reasoning.
+          //
+          // Kept in step with that one deliberately. This class is currently
+          // reached only by its own test, while the live sign-up path runs
+          // through the context, but two registration implementations that
+          // disagree about what they record is exactly how a gap gets missed
+          // later. Change one, change both.
+          ...(credentials.agreeToTerms === true && {
+            legalAcceptance: {
+              termsVersion: CURRENT_LEGAL_VERSIONS.terms,
+              privacyVersion: CURRENT_LEGAL_VERSIONS.privacy,
+              acceptedAt: new Date(),
+            },
+          }),
           createdAt: new Date(),
           updatedAt: new Date(),
         };

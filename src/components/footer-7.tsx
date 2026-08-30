@@ -51,7 +51,7 @@ const defaultSections = [
       { name: "info@smartergoalie.com", href: "mailto:info@smartergoalie.com" },
       { name: "+1 (416) 939-0555", href: "tel:+14169390555" },
       { name: "Help Center", href: "#" },
-      { name: "Privacy", href: "#" },
+      { name: "Privacy", href: "/privacy" },
     ],
   },
 ];
@@ -66,9 +66,13 @@ const defaultSocialLinks = [
   { icon: <FaReddit className="size-5" />, href: "#", label: "Reddit" },
 ];
 
+// Both were href="#" until 27 August 2026 — the pages did not exist. Named
+// "Terms of Service" rather than "Terms and Conditions" to match the sign-up
+// tickbox and the document's own title; three names for one document is how
+// people end up unsure whether they have read it.
 const defaultLegalLinks = [
-  { name: "Terms and Conditions", href: "#" },
-  { name: "Privacy Policy", href: "#" },
+  { name: "Terms of Service", href: "/terms" },
+  { name: "Privacy Policy", href: "/privacy" },
 ];
 
 export const Footer7 = ({

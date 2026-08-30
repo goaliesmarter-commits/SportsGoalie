@@ -24,6 +24,7 @@ import {
 import { userService } from '@/lib/database/services/user.service';
 import { ProgressService } from '@/lib/database/services/progress.service';
 import { normalizeCoachCode } from '@/lib/utils/coach-code-generator';
+import { CURRENT_LEGAL_VERSIONS } from '@/data/legal';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -95,6 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...(userData.assignedCoachId && { assignedCoachId: userData.assignedCoachId }),
           ...(userData.studentNumber && { studentNumber: userData.studentNumber }),
           ...(userData.coachCode && { coachCode: userData.coachCode }),
+          // The pause switch must reach the route guards, or a paused member
+          // could keep using the app until their next full sign-out.
+          ...(userData.isPaused !== undefined && { isPaused: userData.isPaused }),
           // Include onboarding fields
           ...(userData.onboardingCompleted !== undefined && { onboardingCompleted: userData.onboardingCompleted }),
           ...(userData.onboardingCompletedAt && { onboardingCompletedAt: userData.onboardingCompletedAt }),
@@ -281,6 +285,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }),
         // Add coach code for coaches
         ...(credentials.role === 'coach' && coachCode && { coachCode }),
+        // Terms and Privacy acceptance. The sign-up form has always required
+        // the tickbox, but until 27 August 2026 the answer was validated and
+        // then discarded — nothing was written down, so there was no way to
+        // show what any member had agreed to.
+        //
+        // Versions come from src/data/legal rather than being hard-coded here,
+        // so what is recorded cannot drift from what the pages actually say.
+        // Recording the version is the whole point: "they ticked a box" proves
+        // very little, "they accepted version 1.0 on this date" is the part
+        // that answers the question if it is ever asked.
+        //
+        // Gated on agreeToTerms so it is only stamped by a flow that genuinely
+        // showed the documents. The invitation flow has no tickbox, so invited
+        // coaches get no acceptance record — which is correct, because they
+        // have not given one.
+        ...(credentials.agreeToTerms === true && {
+          legalAcceptance: {
+            termsVersion: CURRENT_LEGAL_VERSIONS.terms,
+            privacyVersion: CURRENT_LEGAL_VERSIONS.privacy,
+            acceptedAt: Timestamp.now(),
+          },
+        }),
         preferences: {
           theme: 'light',
           notifications: true,
