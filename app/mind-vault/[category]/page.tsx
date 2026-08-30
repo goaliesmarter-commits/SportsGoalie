@@ -45,6 +45,7 @@ export default function MindVaultCategoryPage() {
     if (result.success) {
       const reload = await mindVaultService.getEntriesByCategory(user.id, categorySlug);
       if (reload.success && reload.data) setEntries(reload.data);
+      toast.success('Saved to your Mind Vault.');
     } else toast.error(result.error?.message || 'Failed to add entry');
   };
 

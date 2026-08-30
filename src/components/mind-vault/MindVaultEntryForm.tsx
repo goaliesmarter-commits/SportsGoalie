@@ -8,9 +8,18 @@ import { VoiceRecorder } from '@/components/charting/inputs/VoiceRecorder';
 interface Props {
   onSubmit: (content: string, isVoice: boolean) => Promise<void>;
   placeholder?: string;
+  /**
+   * Text on the collapsed button. Defaults to "Add Entry".
+   *
+   * The Acceptance and Cannot Accept pages now sit one of these at the bottom of
+   * every category rather than a single one after the last, so the button has to
+   * name the category it files into — otherwise eight identical "Add Entry"
+   * buttons give the goalie no clue where the entry lands.
+   */
+  label?: string;
 }
 
-export function MindVaultEntryForm({ onSubmit, placeholder }: Props) {
+export function MindVaultEntryForm({ onSubmit, placeholder, label }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState('');
   const [isVoice, setIsVoice] = useState(false);
@@ -42,7 +51,7 @@ export function MindVaultEntryForm({ onSubmit, placeholder }: Props) {
         className="w-full rounded-xl border-dashed border-[rgba(55,181,255,0.3)] bg-[rgba(55,181,255,0.08)] text-[#37b5ff] transition-all hover:-translate-y-0.5 hover:border-[rgba(55,181,255,0.5)] hover:bg-[rgba(55,181,255,0.14)] hover:text-[#5ac4ff]"
       >
         <Plus className="h-4 w-4 mr-2" />
-        Add Entry
+        {label || 'Add Entry'}
       </Button>
     );
   }
