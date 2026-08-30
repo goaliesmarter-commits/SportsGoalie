@@ -556,13 +556,15 @@ export default function ParentRolePage() {
           </p>
           <ApplicationSteps
             steps={[
-              // Registering as a Parent is what opens the parent questionnaire.
-              { num: '01', text: 'Complete the parent questionnaire — 5 minutes', href: '/auth/register', action: 'Start' },
+              // Registering as a Parent is what opens the parent questionnaire —
+              // the account has to exist first, so say so rather than implying the
+              // questionnaire is the first thing they meet. The "5 minutes" claim
+              // was removed on 26 August: the baseline profile is far longer than
+              // that and the promise was not one the page could keep.
+              { num: '01', text: 'Create your parent account, then complete the parent questionnaire', href: '/auth/register', action: 'Start' },
               { num: '02', text: 'Coach Mike personally reviews your application — no automation, no filter' },
-              // Step 03 stays inert on purpose: /contact is the programs-and-
-              // organisations form and its role list has nothing a parent fits.
-              // Sending a parent there would be worse than sending them nowhere.
-              { num: '03', text: 'Coach Mike calls you personally' },
+              // Live as of 26 August: 'Parent' is now in the /contact role list.
+              { num: '03', text: 'Coach Mike calls you personally', href: '/contact', action: 'Set up the call' },
             ]}
           />
           <button
