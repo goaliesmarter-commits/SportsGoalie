@@ -249,6 +249,62 @@ export class UserService extends BaseDatabaseService {
     return this.update<User>(this.USERS_COLLECTION, userId, { role: newRole });
   }
 
+  /**
+   * The subscription pause switch. Pausing freezes the account — the member
+   * can no longer enter the app and stops counting as active — while leaving
+   * every part of their record untouched. Admin-only, and admins themselves
+   * cannot be paused (an admin locked out of the admin panel could not be
+   * unlocked from the UI).
+   */
+  async pauseUser(userId: string, adminUserId: string): Promise<ApiResponse<void>> {
+    const permissionError = await this.verifyPauseRequest(userId, adminUserId);
+    if (permissionError) return permissionError;
+
+    return this.update<User>(this.USERS_COLLECTION, userId, {
+      isPaused: true,
+      pausedAt: Timestamp.fromDate(new Date()),
+    });
+  }
+
+  async resumeUser(userId: string, adminUserId: string): Promise<ApiResponse<void>> {
+    const permissionError = await this.verifyPauseRequest(userId, adminUserId);
+    if (permissionError) return permissionError;
+
+    return this.update<User>(this.USERS_COLLECTION, userId, {
+      isPaused: false,
+      resumedAt: Timestamp.fromDate(new Date()),
+    });
+  }
+
+  private async verifyPauseRequest(userId: string, adminUserId: string): Promise<ApiResponse<void> | null> {
+    const adminResult = await this.getUser(adminUserId);
+    if (!adminResult.success || !adminResult.data || adminResult.data.role !== 'admin') {
+      return {
+        success: false,
+        error: { code: 'INSUFFICIENT_PERMISSIONS', message: 'Only admins can pause or resume accounts' },
+        timestamp: new Date(),
+      };
+    }
+
+    const targetResult = await this.getUser(userId);
+    if (!targetResult.success || !targetResult.data) {
+      return {
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'User not found' },
+        timestamp: new Date(),
+      };
+    }
+    if (targetResult.data.role === 'admin') {
+      return {
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Admin accounts cannot be paused' },
+        timestamp: new Date(),
+      };
+    }
+
+    return null;
+  }
+
   async deactivateUser(userId: string): Promise<ApiResponse<void>> {
     // Soft delete by marking as inactive
     return this.update<User>(this.USERS_COLLECTION, userId, {

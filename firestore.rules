@@ -131,11 +131,13 @@ service cloud.firestore {
       // After createUserWithEmailAndPassword, the user is automatically signed in
       allow create: if request.auth != null && request.auth.uid == userId;
 
-      // Users can update their own profile (except role and email), admins can update any
+      // Users can update their own profile (except role, email, and the admin-only
+      // pause switch — otherwise a paused member could simply unpause themselves)
       // Parents can update a student's linkedParentIds (needed for parent-child linking)
       allow update: if (isOwner(userId) &&
                        !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                       !('email' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                       !('email' in request.resource.data.diff(resource.data).affectedKeys()) &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPaused', 'pausedAt', 'resumedAt'])) ||
                       isAdmin() ||
                       (isParent() &&
                        resource.data.role == 'student' &&

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth/context';
+import { PausedAccountScreen } from '@/components/auth/PausedAccountScreen';
 import { UserRole } from '@/types';
 import {
   SkeletonContentPage,
@@ -105,6 +106,15 @@ export function ProtectedRoute({
 
   if (requiredRole && user?.role !== requiredRole) {
     return null; // Will redirect in useEffect
+  }
+
+  // The subscription pause switch. A paused member keeps their account and
+  // every scrap of their data, but the door is closed until an admin flips
+  // them back on. Checked here so it covers every guarded page at once.
+  // Admins are exempt — an admin must never be lockable out of the panel
+  // that controls the switch.
+  if (user?.isPaused && user.role !== 'admin') {
+    return <PausedAccountScreen />;
   }
 
   return <>{children}</>;
