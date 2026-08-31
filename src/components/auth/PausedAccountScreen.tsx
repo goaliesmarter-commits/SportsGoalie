@@ -76,8 +76,10 @@ export function PausedAccountScreen() {
         </p>
 
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* Same recipients as the contact form: the advertised inbox first,
+              Gmail as fallback while info@ delivery is being confirmed. */}
           <a
-            href="mailto:info@smartergoalie.com"
+            href="mailto:info@smartergoalie.com,goaliesmarter@gmail.com"
             className="paused-btn"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: `linear-gradient(135deg, ${BLUE}, #0ea5e9)`, borderRadius: '10px', padding: '11px 22px', color: '#001426', fontSize: '13px', fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', textDecoration: 'none', boxShadow: '0 6px 22px rgba(55,181,255,0.3)' }}
           >
