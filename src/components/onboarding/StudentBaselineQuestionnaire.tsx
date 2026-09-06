@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { generateStudentV2IntelligenceProfile } from '@/lib/scoring/v2-baseline-scoring';
 import {
   STUDENT_BASELINE_SECTIONS,
@@ -14,6 +14,22 @@ import type {
   V2QuestionOption,
   SectionKey,
 } from '@/data/student-baseline-profile-v2';
+import {
+  DRIVER_OR_PASSENGER_SCREEN,
+  DRIVER_OR_PASSENGER_OPTIONS,
+  getDriverOrPassengerOption,
+} from '@/data/driver-or-passenger';
+import type { DriverOrPassengerChoiceId } from '@/data/driver-or-passenger';
+import {
+  SIGNUP_INTAKE_SCREEN,
+  SIGNUP_AGE_BANDS,
+  SIGNUP_LEVELS,
+} from '@/data/goalie-signup-intake';
+import type {
+  GoalieSignupIntake,
+  SignupAgeBandId,
+  SignupLevelId,
+} from '@/data/goalie-signup-intake';
 import {
   Mic,
   ChevronRight,
@@ -54,7 +70,16 @@ const btnPrimary: React.CSSProperties = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Phase = 'hero' | 'privacy_gate' | 'section_intro' | 'question' | 'poise_note' | 'closing';
+type Phase =
+  | 'hero'
+  | 'intake'
+  | 'dp_choice'
+  | 'dp_reply'
+  | 'privacy_gate'
+  | 'section_intro'
+  | 'question'
+  | 'poise_note'
+  | 'closing';
 
 interface QState {
   phase: Phase;
@@ -62,6 +87,12 @@ interface QState {
   questionIndex: number;
   responses: Record<string, string | string[]>;
   openExtras: Record<string, string>;
+  /** Driver-or-Passenger choice. Optional so drafts saved before the screen
+   *  existed still load; those goalies simply never saw it. */
+  driverChoice?: DriverOrPassengerChoiceId | null;
+  /** The four sign-up intake answers (Item 2). Optional for the same reason —
+   *  drafts saved before the intake screen existed still load. */
+  intake?: Partial<GoalieSignupIntake>;
 }
 
 // ─── Draft persistence ──────────────────────────────────────────────────────
@@ -123,17 +154,30 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function StudentBaselineQuestionnaire({ userId, userName: _userName, onComplete }: Props): React.ReactElement {
-  const [state, setState] = useState<QState>(
-    () =>
-      loadDraft(userId) ?? {
-        phase: 'hero',
-        sectionIndex: 0,
-        questionIndex: 0,
-        responses: {},
-        openExtras: {},
-      }
-  );
+export function StudentBaselineQuestionnaire({ userId, userName, onComplete }: Props): React.ReactElement {
+  const [state, setState] = useState<QState>(() => {
+    // The account already knows their display name — start the intake's name
+    // field with it rather than asking them to type it again. They can still
+    // correct it, and it is trimmed and re-read on submit either way.
+    const seededIntake = { name: userName?.trim() ?? '' };
+
+    const draft = loadDraft(userId);
+    if (draft) {
+      // Drafts saved before the intake screen existed carry no intake. Seed
+      // one so stepping back into the screen does not show a blank name.
+      return draft.intake ? draft : { ...draft, intake: seededIntake };
+    }
+
+    return {
+      phase: 'hero',
+      sectionIndex: 0,
+      questionIndex: 0,
+      responses: {},
+      openExtras: {},
+      driverChoice: null,
+      intake: seededIntake,
+    };
+  });
 
   // Auto-save progress so a failed submit or dropped connection never loses answers.
   useEffect(() => {
@@ -162,7 +206,14 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
   // ── Progress ───────────────────────────────────────────────────────────────
 
   const progressPct = useMemo((): number => {
-    if (state.phase === 'hero' || state.phase === 'privacy_gate') return 0;
+    if (
+      state.phase === 'hero' ||
+      state.phase === 'intake' ||
+      state.phase === 'dp_choice' ||
+      state.phase === 'dp_reply' ||
+      state.phase === 'privacy_gate'
+    )
+      return 0;
     if (state.phase === 'closing') return 100;
     const sectionContrib = state.sectionIndex / totalSections;
     const questionContrib =
@@ -228,6 +279,16 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
     setShowTooltip(false);
 
     if (state.phase === 'hero') {
+      setState((prev) => ({ ...prev, phase: 'intake' }));
+      return;
+    }
+
+    // 'intake' has its own Continue handler (submitIntake) — it writes the four
+    // answers away before advancing, so it is not driven from here.
+
+    // dp_choice has no Next button — pressing one of the four buttons advances.
+
+    if (state.phase === 'dp_reply') {
       setState((prev) => ({ ...prev, phase: 'privacy_gate' }));
       return;
     }
@@ -340,9 +401,108 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
     }
 
     if (state.phase === 'privacy_gate') {
+      // Back to the reply they read, or straight to the choice screen for a
+      // draft saved before Driver-or-Passenger existed.
+      setState((prev) => ({
+        ...prev,
+        phase: prev.driverChoice ? 'dp_reply' : 'dp_choice',
+      }));
+      return;
+    }
+
+    if (state.phase === 'dp_reply') {
+      setState((prev) => ({ ...prev, phase: 'dp_choice' }));
+      return;
+    }
+
+    if (state.phase === 'dp_choice') {
+      setState((prev) => ({ ...prev, phase: 'intake' }));
+      return;
+    }
+
+    if (state.phase === 'intake') {
       setState((prev) => ({ ...prev, phase: 'hero' }));
       return;
     }
+  };
+
+  const chooseDriverOrPassenger = (id: DriverOrPassengerChoiceId): void => {
+    setState((prev) => ({ ...prev, driverChoice: id, phase: 'dp_reply' }));
+  };
+
+  // ── Sign-up intake (Item 2 — name, age, level, why they are here) ──────────
+
+  const setIntakeField = <K extends keyof GoalieSignupIntake>(
+    key: K,
+    value: GoalieSignupIntake[K]
+  ): void => {
+    setState((prev) => ({ ...prev, intake: { ...prev.intake, [key]: value } }));
+  };
+
+  /** All four answered. Name and reason are free text, so they are trimmed
+   *  before being judged — whitespace is not an answer. */
+  const intakeComplete = useMemo((): boolean => {
+    const i = state.intake;
+    if (!i) return false;
+    return (
+      typeof i.name === 'string' &&
+      i.name.trim().length >= 2 &&
+      !!i.ageBand &&
+      !!i.level &&
+      typeof i.reason === 'string' &&
+      i.reason.trim().length >= 2
+    );
+  }, [state.intake]);
+
+  /**
+   * Continue from the intake screen.
+   *
+   * The four answers are written to the user record here rather than at the
+   * end, because the whole point of asking at sign-up is that a goalie who
+   * never finishes the 74 questions still leaves behind who they are and why
+   * they came. They are written a second time with the finished profile.
+   *
+   * The write is best-effort: a dropped connection must not trap someone on
+   * this screen. The answers are in the local draft either way, and the final
+   * submit writes them again.
+   */
+  const submitIntake = async (): Promise<void> => {
+    if (!intakeComplete) return;
+
+    const intake: GoalieSignupIntake = {
+      name: (state.intake?.name ?? '').trim(),
+      ageBand: state.intake!.ageBand as SignupAgeBandId,
+      level: state.intake!.level as SignupLevelId,
+      reason: (state.intake?.reason ?? '').trim(),
+    };
+
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        signupIntake: intake,
+        signupIntakeAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('submitIntake: early write failed, continuing anyway', err);
+    }
+    setSaving(false);
+
+    // Baseline questions A1 (full name) and A2 (age) ask exactly what we just
+    // asked. Pre-fill them from the intake so nobody types the same answer
+    // twice — and re-fill on every pass, so editing the intake on the way back
+    // corrects the baseline rather than leaving the two disagreeing.
+    const ageBandOptionId = SIGNUP_AGE_BANDS.find((b) => b.id === intake.ageBand)?.baselineOptionId;
+
+    setState((prev) => ({
+      ...prev,
+      intake,
+      responses: {
+        ...prev.responses,
+        A1: intake.name,
+        ...(ageBandOptionId ? { A2: ageBandOptionId } : {}),
+      },
+      phase: 'dp_choice',
+    }));
   };
 
   // ── Save ───────────────────────────────────────────────────────────────────
@@ -363,6 +523,11 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
       submittedAt: serverTimestamp(),
       responses: state.responses,
       openExtras: state.openExtras,
+      // null only for drafts started before the Driver-or-Passenger screen existed
+      driverOrPassenger: state.driverChoice ?? null,
+      // The four sign-up answers, alongside the profile they led into. null for
+      // drafts started before the intake screen existed.
+      signupIntake: (state.intake && intakeComplete ? state.intake : null) as GoalieSignupIntake | null,
       sectionsCompleted: sectionKeys,
       intelligenceProfile: {
         overallScore: intelligenceProfile.overallScore,
@@ -379,6 +544,12 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
       onboardingCompletedAt: serverTimestamp(),
       pacingLevel: intelligenceProfile.pacingLevel,
       overallScore: intelligenceProfile.overallScore,
+      // On the user record too, so future voice responses and triggers can key
+      // off it without a second read.
+      ...(state.driverChoice ? { driverOrPassenger: state.driverChoice } : {}),
+      // Written once already when they left the intake screen; written again
+      // here so a failed early write still ends up correct.
+      ...(intakeComplete ? { signupIntake: state.intake as GoalieSignupIntake } : {}),
     });
     await batch.commit();
   };
@@ -989,6 +1160,379 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
     </div>
   );
 
+  // ── Sign-up intake (Michael's Item 2 — name, age, level, why they are here) ──
+  // Asked once, before Driver-or-Passenger, and written away immediately.
+
+  const renderIntakeLabel = (text: string, index: number): React.ReactElement => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+      <div
+        style={{
+          flexShrink: 0,
+          width: '24px',
+          height: '24px',
+          borderRadius: '7px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(55,181,255,0.14)',
+          border: '1px solid rgba(55,181,255,0.28)',
+          color: BLUE,
+          fontWeight: 800,
+          fontSize: '12px',
+        }}
+      >
+        {index}
+      </div>
+      <label style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>{text}</label>
+    </div>
+  );
+
+  const renderIntakePill = (
+    label: string,
+    isActive: boolean,
+    onClick: () => void,
+    fullWidth: boolean
+  ): React.ReactElement => (
+    <button
+      key={label}
+      onClick={onClick}
+      className="sbq-btn"
+      style={{
+        flex: fullWidth ? '1 1 100%' : '0 1 auto',
+        padding: fullWidth ? '12px 16px' : '10px 16px',
+        borderRadius: '10px',
+        border: isActive ? `2px solid ${BLUE}` : '2px solid rgba(255,255,255,0.1)',
+        background: isActive ? 'rgba(55,181,255,0.12)' : 'rgba(2,18,44,0.7)',
+        color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+        fontWeight: isActive ? 700 : 600,
+        fontSize: '14px',
+        textAlign: fullWidth ? 'left' : 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        boxShadow: isActive ? '0 0 0 1px rgba(55,181,255,0.25)' : 'none',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  const renderIntake = (): React.ReactElement => {
+    const intake = state.intake ?? {};
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div style={{ maxWidth: '620px', width: '100%' }} className="sbq-fade">
+          <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: `${BLUE}99`, marginBottom: '12px', textAlign: 'center' }}>
+            {SIGNUP_INTAKE_SCREEN.eyebrow}
+          </p>
+          <h1 style={{ fontSize: 'clamp(24px,4vw,36px)', fontWeight: 900, color: '#fff', marginBottom: '8px', lineHeight: 1.1, letterSpacing: '-0.01em', textAlign: 'center' }}>
+            {SIGNUP_INTAKE_SCREEN.heading}
+          </h1>
+          <p style={{ fontSize: '15px', fontStyle: 'italic', color: 'rgba(255,255,255,0.5)', marginBottom: '24px', textAlign: 'center' }}>
+            {SIGNUP_INTAKE_SCREEN.subline}
+          </p>
+
+          <div style={{ ...cardStyle, padding: '28px' }} className="sbq-card-pad">
+            {/* 1 — Name */}
+            <div style={{ marginBottom: '26px' }}>
+              {renderIntakeLabel(SIGNUP_INTAKE_SCREEN.fields.name, 1)}
+              <input
+                type="text"
+                value={intake.name ?? ''}
+                onChange={(e) => setIntakeField('name', e.target.value)}
+                placeholder="First and last name"
+                autoComplete="name"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'rgba(2,18,44,0.7)',
+                  border: '1px solid rgba(55,181,255,0.18)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  fontSize: '15px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                className="sbq-input"
+              />
+            </div>
+
+            {/* 2 — Age */}
+            <div style={{ marginBottom: '26px' }}>
+              {renderIntakeLabel(SIGNUP_INTAKE_SCREEN.fields.age, 2)}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {SIGNUP_AGE_BANDS.map((band) =>
+                  renderIntakePill(
+                    band.label,
+                    intake.ageBand === band.id,
+                    () => setIntakeField('ageBand', band.id),
+                    false
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* 3 — Level */}
+            <div style={{ marginBottom: '26px' }}>
+              {renderIntakeLabel(SIGNUP_INTAKE_SCREEN.fields.level, 3)}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {SIGNUP_LEVELS.map((lvl) =>
+                  renderIntakePill(
+                    lvl.label,
+                    intake.level === lvl.id,
+                    () => setIntakeField('level', lvl.id),
+                    true
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* 4 — Why they are here */}
+            <div>
+              {renderIntakeLabel(SIGNUP_INTAKE_SCREEN.fields.reason, 4)}
+              <textarea
+                value={intake.reason ?? ''}
+                onChange={(e) => setIntakeField('reason', e.target.value)}
+                placeholder={SIGNUP_INTAKE_SCREEN.reasonPlaceholder}
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  background: 'rgba(2,18,44,0.7)',
+                  border: '1px solid rgba(55,181,255,0.18)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  lineHeight: 1.6,
+                  resize: 'vertical',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                className="sbq-textarea"
+              />
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', margin: '8px 0 0' }}>
+                {SIGNUP_INTAKE_SCREEN.reasonHint}
+              </p>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '20px' }}>
+            <button
+              onClick={goBack}
+              disabled={saving}
+              className="sbq-nav-back"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.45)',
+                padding: '10px 18px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '14px',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.4 : 1,
+                transition: 'all 0.2s',
+              }}
+            >
+              <ChevronLeft style={{ width: '16px', height: '16px' }} />
+              Back
+            </button>
+
+            <button
+              onClick={() => void submitIntake()}
+              disabled={!intakeComplete || saving}
+              className="sbq-nav-next"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background:
+                  intakeComplete && !saving
+                    ? `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`
+                    : 'rgba(55,181,255,0.25)',
+                border: 'none',
+                color: '#fff',
+                padding: '12px 28px',
+                borderRadius: '10px',
+                fontWeight: 700,
+                fontSize: '15px',
+                cursor: !intakeComplete || saving ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: intakeComplete && !saving ? '0 4px 16px rgba(55,181,255,0.25)' : 'none',
+              }}
+            >
+              {saving ? (
+                <>
+                  <Loader2 style={{ width: '16px', height: '16px', animation: 'sbq-spin 1s linear infinite' }} />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ChevronRight style={{ width: '16px', height: '16px' }} />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Driver or Passenger (Michael's Item 4 — wording verbatim from src/data/driver-or-passenger.ts) ──
+
+  const renderDriverChoice = (): React.ReactElement => (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ maxWidth: '660px', width: '100%' }} className="sbq-fade">
+        {/* No textTransform here — Michael's wording renders with his exact capitalisation */}
+        <p style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.08em', color: `${BLUE}99`, marginBottom: '16px', textAlign: 'center' }}>
+          {DRIVER_OR_PASSENGER_SCREEN.eyebrow}
+        </p>
+
+        <div style={{ ...cardStyle, padding: '28px', marginBottom: '20px' }} className="sbq-card-pad">
+          <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, letterSpacing: '0.02em', margin: '0 0 22px' }}>
+            {DRIVER_OR_PASSENGER_SCREEN.intro}
+          </p>
+
+          <h1 style={{ fontSize: 'clamp(20px,3.4vw,30px)', fontWeight: 900, color: '#fff', lineHeight: 1.25, letterSpacing: '-0.01em', margin: '0 0 22px', textAlign: 'center' }}>
+            {DRIVER_OR_PASSENGER_SCREEN.question}
+          </h1>
+
+          <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, letterSpacing: '0.02em', margin: '0 0 14px' }}>
+            {DRIVER_OR_PASSENGER_SCREEN.contrast}
+          </p>
+          <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, letterSpacing: '0.02em', margin: '0 0 22px' }}>
+            {DRIVER_OR_PASSENGER_SCREEN.identity}
+          </p>
+
+          <div
+            style={{
+              padding: '12px 18px',
+              background: 'rgba(55,181,255,0.08)',
+              borderLeft: `3px solid ${BLUE}`,
+              borderRadius: '0 10px 10px 0',
+            }}
+          >
+            <p style={{ fontSize: '14px', fontWeight: 800, letterSpacing: '0.08em', color: BLUE, margin: 0 }}>
+              {DRIVER_OR_PASSENGER_SCREEN.tagline}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {DRIVER_OR_PASSENGER_OPTIONS.map((option) => {
+            const selected = state.driverChoice === option.id;
+            return (
+              <button
+                key={option.id}
+                onClick={() => chooseDriverOrPassenger(option.id)}
+                className={selected ? undefined : 'sbq-opt'}
+                style={{
+                  width: '100%',
+                  padding: '14px 18px',
+                  borderRadius: '12px',
+                  border: selected ? `2px solid ${BLUE}` : '2px solid rgba(255,255,255,0.08)',
+                  background: selected ? 'rgba(55,181,255,0.1)' : 'rgba(2,18,44,0.55)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  transition: 'border-color 0.2s, background 0.2s',
+                }}
+              >
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '9px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    background: selected ? BLUE : 'rgba(255,255,255,0.07)',
+                    color: selected ? '#fff' : 'rgba(255,255,255,0.45)',
+                  }}
+                >
+                  {option.letter}
+                </div>
+                <span style={{ flex: 1, fontWeight: 700, fontSize: '16px', color: selected ? '#fff' : 'rgba(255,255,255,0.85)' }}>
+                  {option.label}
+                </span>
+                <ChevronRight style={{ width: '17px', height: '17px', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={goBack}
+          style={{
+            display: 'block',
+            margin: '18px auto 0',
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255,255,255,0.3)',
+            fontSize: '13px',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+          }}
+          className="sbq-prefer-not"
+        >
+          Back
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDriverReply = (): React.ReactElement => {
+    const option = getDriverOrPassengerOption(state.driverChoice);
+    // No stored choice means the goalie landed here without pressing a button —
+    // show the choice screen instead of an empty reply.
+    if (!option) return renderDriverChoice();
+
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div style={{ maxWidth: '620px', width: '100%' }} className="sbq-fade">
+          <div style={{ ...cardStyle, padding: '36px', borderColor: 'rgba(55,181,255,0.22)' }} className="sbq-card-pad">
+            <div style={{ height: '3px', background: `linear-gradient(90deg, ${BLUE}, #0ea5e9, transparent)`, borderRadius: '99px', marginBottom: '28px' }} />
+            <p style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.12em', color: `${BLUE}`, marginBottom: '18px' }}>
+              {option.replyTitle}
+            </p>
+            <p style={{ fontSize: 'clamp(15px,2vw,17px)', color: 'rgba(255,255,255,0.75)', lineHeight: 1.85, marginBottom: '28px' }}>
+              {option.reply}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <button onClick={goNext} style={{ ...btnPrimary, fontSize: '15px' }} className="sbq-btn sbq-cta">
+                CONTINUE
+                <ChevronRight style={{ width: '16px', height: '16px' }} />
+              </button>
+              <button
+                onClick={goBack}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.3)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+                className="sbq-prefer-not"
+              >
+                Change my answer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrivacyGate = (): React.ReactElement => (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ maxWidth: '540px', width: '100%' }} className="sbq-fade">
@@ -1442,6 +1986,9 @@ export function StudentBaselineQuestionnaire({ userId, userName: _userName, onCo
 
         {/* Phase content */}
         {state.phase === 'hero' && renderHero()}
+        {state.phase === 'intake' && renderIntake()}
+        {state.phase === 'dp_choice' && renderDriverChoice()}
+        {state.phase === 'dp_reply' && renderDriverReply()}
         {state.phase === 'privacy_gate' && renderPrivacyGate()}
         {state.phase === 'poise_note' && renderPoiseNote()}
         {state.phase === 'section_intro' && renderSectionIntro()}
