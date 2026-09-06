@@ -24,83 +24,61 @@ export default function PricingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const plans = [
-    {
-      name: '1 Pillar',
-      description: 'Focused training for one skill pillar.',
-      upfront: '$95',
-      monthly: '$15',
-      highlight: false,
-      features: [
-        '1 skill pillar access',
-        'Video lessons + quizzes',
-        'Progress tracking dashboard',
-        'Parent access included',
-      ],
-    },
-    {
-      name: '3+ Pillars',
-      description: 'Balanced plan for multi-skill growth.',
-      upfront: '$150',
-      monthly: '$15',
-      highlight: true,
-      features: [
-        '3+ skill pillars access',
-        'Advanced quizzes + analytics',
-        'Session charting system',
-        'Coach feedback tools',
-        'Weekly progress reports',
-      ],
-    },
-    {
-      name: 'All 7 Pillars',
-      description: 'Full platform access for complete development.',
-      upfront: '$225',
-      monthly: '$15',
-      highlight: false,
-      features: [
-        'All 7 pillars unlocked',
-        'Full lesson + quiz library',
-        'Advanced charting + analytics',
-        'Priority support + feedback',
-      ],
-    },
+  /**
+   * Every price and promise on this page comes from Michael's founding-member
+   * email of 2 September 2026 — the same text the sign-up at /founding sends to
+   * the buyer. The two must never disagree: a visitor reads this page, signs up,
+   * and receives that email minutes later.
+   *
+   * Nothing goes on this page that he has not put in writing. The per-pillar
+   * packages he described on 2 September ("one pillar, three, or all of them")
+   * are deliberately absent — he has not given prices for them.
+   */
+  const foundingTerms = [
+    { label: '$300, one time', detail: 'A registration fee, not a monthly plan — and it is yours for life.' },
+    { label: 'Your first month is free', detail: 'Nothing at all is charged in your first month.' },
+    { label: 'Then $15 a month', detail: 'That is your founding rate, and it holds for two years.' },
+    { label: 'After two years, $20 a month', detail: 'That is the rate for life, and the only increase there will ever be.' },
+    { label: 'Switch it off whenever you like', detail: 'Take the summer off, pay nothing, switch back on for pre-season. Your record is exactly where you left it.' },
+    { label: '30 days, no questions, your money back', detail: 'If it is not what was described, you get your money back, no argument.' },
   ];
 
-  const comparisonRows = [
-    { offer: 'Video Review - 1 Hour',         founding: '$35 (50% off)',                       postFounding: '$70' },
-    { offer: 'Video Review - 3 Hours',         founding: '$105 (50% off)',                      postFounding: '$210' },
-    { offer: 'Goalie Subscription',            founding: 'Join now and lock your active rate',  postFounding: '$15/mo' },
-    { offer: 'Team Subscription',              founding: 'Founding access + lock-in option',    postFounding: '$20/mo' },
-    { offer: 'Organization Subscription',      founding: 'Founding access + lock-in option',    postFounding: '$100/mo' },
-    { offer: 'Federation Subscription',        founding: 'Founding access + lock-in option',    postFounding: '$200/mo' },
-    { offer: 'Full Platform Launch Pricing',   founding: 'Enter before launch to secure founding terms', postFounding: '$1,500 one-time + $20–$35/mo' },
+  const rateTimeline = [
+    { when: 'When you join',        pay: '$300 one time — a registration fee, yours for life' },
+    { when: 'Your first month',     pay: 'Free' },
+    { when: 'Months 2 to 24',       pay: '$15 a month — your founding rate' },
+    { when: 'After two years',      pay: '$20 a month, for life — the only increase there will ever be' },
+    { when: 'Any month you pause',  pay: 'Nothing. Your record waits exactly where you left it.' },
   ];
 
   const faqs = [
     {
       q: 'What does "founding member" mean?',
-      a: 'Founding members join during our early-access period and lock in the lowest prices ever offered permanently. When the full platform launches, standard pricing will be significantly higher.',
+      a: 'There will only ever be one first group. Founding members join at $300 one time with the first month free, then $15 a month — a rate that holds for two years before it becomes $20 a month for life. That is the only increase there will ever be, and you are told about it on the day you join rather than finding it on a statement three years from now.',
     },
     {
       q: 'What is the 30-day guarantee?',
-      a: 'Your upfront payment is held for 30 days. Cancel in weeks 1–2 for a full refund. Sign the early waiver for immediate payment release. On day 30, the payment is released and your access continues.',
+      a: 'Thirty days. If it is not what was described, you get your money back, no argument. And if you decide inside the first two weeks that you do not need the guarantee, you can waive it — Coach Mike gives you an hour of video analysis, or up to three hours at half price. That is $70 an hour normally, and a lot of clips fit in an hour. Founding members who waive their own guarantee go up on the site: not a testimonial anybody wrote, a count of people who decided they were staying.',
     },
     {
-      q: 'Can I upgrade from 1 Pillar to more later?',
-      a: 'Yes. You can upgrade your pillar access at any time by paying the difference at founding rates, as long as the founding period is still open.',
+      q: 'Can I pause my membership?',
+      a: 'Yes. Take the summer off, pay nothing, and switch back on for pre-season. Your record is exactly where you left it — you are not ever starting over. If you are on the full year, it simply runs straight through.',
     },
     {
-      q: 'What is a Skill Pillar?',
-      a: 'Our 7 Pillars are MindSet, Skating, 7AMS (Seven Angle-Mark System, above the icing line), the 6 Zone – 7 Point System™ (below the icing line), Form, Game, Practice, and Lifestyle. 7AMS and the 6 Zone – 7 Point System™ are the two halves of Pillar 3. Each pillar is a complete learning module.',
+      q: 'How do I pay?',
+      a: 'Interac e-transfer to info@smartergoalie.com, with the name of the goalie in the message so Coach Mike can match it. Prefer a cheque? Say so when you sign up and he will send you the details. There is no card processing here and no card details are stored anywhere.',
     },
     {
-      q: 'Do parents get access with any plan?',
-      a: "Yes. All plans include parent access so guardians can monitor progress, view reports, and stay connected to their child's development.",
+      q: 'What happens after I pay?',
+      a: 'As soon as it clears, Coach Mike marks you paid and your account opens fully. You will hear from him — not a system message, him.',
     },
     {
-      q: 'Is there team pricing?',
-      a: 'Teams are $20/mo, organizations $100/mo, and federations $200/mo post-founding. Contact us for custom team packages during the founding period.',
+      q: 'What are the 7 Pillars?',
+      a: 'In order: 1. MindSet, 2. Skating, 3. 7AMS — the 7 Angle-Marker System, above the icing line, 4. the 6 Zone – 7 Point System™, below the icing line, 5. Form, 6. Team-Practice, 7. Life Style. 7AMS and the 6 Zone – 7 Point System™ sit under one umbrella but are two different programs.',
+    },
+    {
+      q: 'Is there team or organization pricing?',
+      a: 'Team and organization programs are arranged directly with Coach Mike rather than bought off a page. Contact us and he will set it up with you personally.',
     },
   ];
 
@@ -180,7 +158,7 @@ export default function PricingPage() {
 
       {/* ── Hero ── */}
       <section className="text-center px-4 sm:px-6 pt-16 sm:pt-24 pb-16 sm:pb-20">
-        <SectionLabel>Founding Member Rates — Live Now</SectionLabel>
+        <SectionLabel>There Will Only Ever Be One First Group</SectionLabel>
 
         <h1
           className="font-black uppercase mx-auto"
@@ -200,130 +178,97 @@ export default function PricingPage() {
           className="mt-5 mx-auto"
           style={{ fontSize: '15px', color: 'rgba(255,255,255,0.7)', maxWidth: '520px', lineHeight: 1.7 }}
         >
-          Lock in founding member rates before the full platform launch. Choose your pillar path and pay upfront once to unlock your pillars.
+          One registration, one rate, and it is yours for life. $300 to join, your first month free, then $15 a month.
         </p>
 
         <div
           className="flex flex-wrap justify-center items-center gap-3 mt-8"
           style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.5px' }}
         >
-          <span>From $95 upfront</span>
+          <span>$300 one time</span>
           <span style={{ color: 'rgba(55,181,255,0.4)' }}>|</span>
-          <span>Only $15/month</span>
+          <span>First month free</span>
+          <span style={{ color: 'rgba(55,181,255,0.4)' }}>|</span>
+          <span>Then $15/month</span>
           <span style={{ color: 'rgba(55,181,255,0.4)' }}>|</span>
           <span>30-day guarantee</span>
         </div>
       </section>
 
-      {/* ── Pricing Cards ── */}
+      {/* ── The Founding Offer — one price, one card ── */}
       <section className="px-4 sm:px-6 pb-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6 items-stretch">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                style={plan.highlight ? cardHighlight : cardBase}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLDivElement;
-                  el.style.transform = 'translateY(-6px)';
-                  el.style.boxShadow = `0 24px 48px rgba(55,181,255,0.15), 0 0 0 1.5px ${BLUE}55`;
-                  el.style.borderColor = BLUE;
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLDivElement;
-                  el.style.transform = 'translateY(0)';
-                  el.style.boxShadow = plan.highlight ? `0 0 40px rgba(55,181,255,0.12)` : 'none';
-                  el.style.borderColor = plan.highlight ? BLUE : 'rgba(55,181,255,0.18)';
-                }}
-              >
-                {/* Tag */}
-                {plan.highlight && (
-                  <div
-                    className="text-center mb-5"
-                    style={{
-                      background: BLUE,
-                      color: '#000f28',
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      letterSpacing: '2px',
-                      textTransform: 'uppercase',
-                      padding: '5px 14px',
-                      borderRadius: '20px',
-                      alignSelf: 'flex-start',
-                    }}
-                  >
-                    Most Popular
-                  </div>
-                )}
+        <div className="mx-auto" style={{ maxWidth: '560px' }}>
+          <div style={cardHighlight}>
+            <p
+              style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                letterSpacing: '2.5px',
+                textTransform: 'uppercase',
+                color: BLUE,
+                marginBottom: '10px',
+              }}
+            >
+              Founding Membership
+            </p>
 
-                {/* Plan name */}
-                <p
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '2.5px',
-                    textTransform: 'uppercase',
-                    color: BLUE,
-                    marginBottom: '10px',
-                  }}
-                >
-                  {plan.name}
-                </p>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '24px', lineHeight: 1.6 }}>
+              The complete system, and a rate that holds.
+            </p>
 
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '24px', lineHeight: 1.6 }}>
-                  {plan.description}
-                </p>
+            {/* Price */}
+            <div style={{ marginBottom: '28px' }}>
+              <span style={{ fontSize: '52px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>$300</span>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+                One time. Then your first month free, and $15/mo.
+              </p>
+            </div>
 
-                {/* Price */}
-                <div style={{ marginBottom: '28px' }}>
-                  <span style={{ fontSize: '52px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                    {plan.upfront}
+            <div style={{ height: '1px', background: 'rgba(55,181,255,0.15)', marginBottom: '24px' }} />
+
+            {/* Terms — his words */}
+            <ul style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+              {foundingTerms.map((term) => (
+                <li key={term.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <Check size={14} style={{ color: BLUE, flexShrink: 0, marginTop: '4px' }} />
+                  <span>
+                    <span style={{ display: 'block', fontSize: '13.5px', color: '#fff', fontWeight: 700, lineHeight: 1.5 }}>
+                      {term.label}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginTop: '2px' }}>
+                      {term.detail}
+                    </span>
                   </span>
-                  <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
-                    One-time + {plan.monthly}/mo
-                  </p>
-                </div>
+                </li>
+              ))}
+            </ul>
 
-                {/* Divider */}
-                <div style={{ height: '1px', background: 'rgba(55,181,255,0.15)', marginBottom: '24px' }} />
+            <button
+              onClick={() => router.push('/founding')}
+              style={{
+                marginTop: '32px',
+                width: '100%',
+                padding: '16px 0',
+                borderRadius: '10px',
+                border: 'none',
+                background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`,
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 800,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'filter 0.2s',
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)')}
+            >
+              Join the Experience →
+            </button>
 
-                {/* Features */}
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                  {plan.features.map((f, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                      <Check size={14} style={{ color: BLUE, flexShrink: 0, marginTop: '2px' }} />
-                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                <button
-                  onClick={() => router.push('/auth/register')}
-                  style={{
-                    marginTop: '28px',
-                    width: '100%',
-                    padding: '14px 0',
-                    borderRadius: '10px',
-                    border: plan.highlight ? 'none' : `1px solid ${BLUE}55`,
-                    background: plan.highlight
-                      ? `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`
-                      : 'rgba(55,181,255,0.08)',
-                    color: '#fff',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '2px',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    transition: 'filter 0.2s',
-                  }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)')}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)')}
-                >
-                  Book a Demo →
-                </button>
-              </div>
-            ))}
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: '14px', lineHeight: 1.6 }}>
+              Payment is by Interac e-transfer or cheque. No card processing, and no card details stored anywhere.
+            </p>
           </div>
         </div>
       </section>
@@ -332,16 +277,16 @@ export default function PricingPage() {
       <section className="px-4 sm:px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <SectionLabel>Founding Plans</SectionLabel>
+            <SectionLabel>What You Pay, And When</SectionLabel>
             <h2
               className="font-black uppercase mx-auto"
               style={{ fontSize: 'clamp(20px, 3.5vw, 40px)', color: '#fff', letterSpacing: '-0.02em', maxWidth: '600px' }}
             >
-              FOUNDING VS{' '}
-              <span style={{ color: BLUE }}>POST-FOUNDING</span>
+              THE WHOLE COST,{' '}
+              <span style={{ color: BLUE }}>IN ONE PLACE</span>
             </h2>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginTop: '12px' }}>
-              A side-by-side view of what you get by joining now vs. standard pricing after the founding period.
+              Nothing else is added later. This is every dollar the membership will ever ask of you.
             </p>
           </div>
 
@@ -358,7 +303,7 @@ export default function PricingPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                 <thead>
                   <tr style={{ background: 'rgba(55,181,255,0.18)', borderBottom: '1.5px solid rgba(55,181,255,0.35)' }}>
-                    {['Offer', 'Founding Member', 'Post-Founding'].map((h) => (
+                    {['When', 'What You Pay'].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -377,11 +322,11 @@ export default function PricingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {comparisonRows.map((row, i) => (
+                  {rateTimeline.map((row, i) => (
                     <tr
-                      key={row.offer}
+                      key={row.when}
                       style={{
-                        borderBottom: i < comparisonRows.length - 1 ? '1px solid rgba(55,181,255,0.1)' : 'none',
+                        borderBottom: i < rateTimeline.length - 1 ? '1px solid rgba(55,181,255,0.1)' : 'none',
                         background: i % 2 === 0 ? 'rgba(55,181,255,0.05)' : 'rgba(255,255,255,0.025)',
                         transition: 'background 0.15s',
                       }}
@@ -393,14 +338,11 @@ export default function PricingPage() {
                           i % 2 === 0 ? 'rgba(55,181,255,0.05)' : 'rgba(255,255,255,0.025)';
                       }}
                     >
-                      <td style={{ padding: '18px 28px', fontSize: '13.5px', fontWeight: 700, color: '#fff' }}>
-                        {row.offer}
+                      <td style={{ padding: '18px 28px', fontSize: '13.5px', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>
+                        {row.when}
                       </td>
                       <td style={{ padding: '18px 28px', fontSize: '13.5px', color: BLUE2, fontWeight: 600 }}>
-                        {row.founding}
-                      </td>
-                      <td style={{ padding: '18px 28px', fontSize: '13.5px', color: 'rgba(255,255,255,0.55)' }}>
-                        {row.postFounding}
+                        {row.pay}
                       </td>
                     </tr>
                   ))}
@@ -520,14 +462,14 @@ export default function PricingPage() {
               background: `linear-gradient(90deg, transparent, ${BLUE}, transparent)`,
             }}
           />
-          <SectionLabel>Limited Founding Spots</SectionLabel>
+          <SectionLabel>The Founding Group</SectionLabel>
 
           <h3
             className="font-black uppercase"
             style={{ fontSize: 'clamp(22px, 4vw, 48px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}
           >
-            LOCK IN YOUR{' '}
-            <span style={{ color: BLUE }}>RATE TODAY</span>
+            THE RATE YOU JOIN AT{' '}
+            <span style={{ color: BLUE }}>IS THE RATE YOU KEEP</span>
           </h3>
 
           <p
@@ -541,11 +483,11 @@ export default function PricingPage() {
               margin: '16px auto 36px',
             }}
           >
-            Join now and permanently secure founding member pricing before the platform goes live at full price.
+            $15 a month for two years, then $20 a month for life. That is the only increase there will ever be, and it is written into your membership from the day you join.
           </p>
 
           <button
-            onClick={() => router.push('/auth/register')}
+            onClick={() => router.push('/founding')}
             style={{
               background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`,
               color: '#fff',
@@ -571,7 +513,7 @@ export default function PricingPage() {
               el.style.boxShadow = '0 8px 32px rgba(55,181,255,0.3)';
             }}
           >
-            Claim Founding Rate →
+            Join the Experience →
           </button>
         </div>
       </section>
