@@ -23,6 +23,14 @@ export interface RegisterCredentials {
   role: 'student' | 'admin' | 'coach' | 'parent';
   workflowType?: 'automated' | 'custom'; // For students: learning workflow type
   coachCode?: string; // Required for custom workflow students
+  /**
+   * Date of birth as `YYYY-MM-DD`, collected from goalies at sign-up.
+   *
+   * Optional here because the invitation flow and the parent and coach forms
+   * do not ask for it. The registration schema is what makes it required for
+   * a goalie signing themselves up.
+   */
+  dateOfBirth?: string;
   firstName?: string;
   lastName?: string;
   skipEmailVerification?: boolean; // For invited coaches - email already verified via invitation link
@@ -46,7 +54,8 @@ export interface ProfileUpdateData {
   lastName?: string;
   profileImage?: string;
   workflowType?: 'automated' | 'custom';
-  assignedCoachId?: string;
+  assignedCoachId?: string | null; // null clears the coach link (e.g. switching back to self-paced)
+  assignedCoachName?: string | null;
 }
 
 // Auth error types

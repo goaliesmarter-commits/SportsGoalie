@@ -1,10 +1,31 @@
 import { z } from 'zod';
 
+import { isLoginHandle } from '@/lib/auth/child-account';
+import {
+  MAX_SIGNUP_AGE,
+  MIN_SIGNUP_AGE,
+  calculateAge,
+  parseDateOfBirth,
+} from '@/lib/auth/signup-policy';
+
 export const loginSchema = z.object({
+  /**
+   * An email address, or the short handle of a goalie whose parent holds their
+   * account (item 6c). Still called `email` because that is what it is for
+   * everyone but a handful of young goalies, and renaming it would touch every
+   * caller for the sake of the minority case.
+   *
+   * `isLoginHandle` is strict — name, hyphen, exactly four characters — so a
+   * mistyped address still gets "please enter a valid email address" rather
+   * than being taken for a handle and failing later as "no such account".
+   */
   email: z
     .string()
     .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+    .refine(
+      (value) => isLoginHandle(value) || z.string().email().safeParse(value.trim()).success,
+      'Please enter a valid email address'
+    ),
   password: z
     .string()
     .min(1, 'Password is required')
@@ -33,6 +54,19 @@ export const registerSchema = z
       .min(2, 'Name must be at least 2 characters')
       .max(50, 'Name cannot exceed 50 characters'),
     role: z.enum(['student', 'admin', 'coach', 'parent']).default('student'),
+    /**
+     * Date of birth as the browser date input gives it: `YYYY-MM-DD`.
+     *
+     * Held as a string rather than a Date because that is what the form
+     * produces and what a half-typed field looks like mid-entry. It is parsed
+     * into a real date by the refinements below, and parsed again on the way
+     * to Firestore, rather than being trusted anywhere in between.
+     *
+     * Required for goalies and optional for everyone else — a parent or coach
+     * signing themselves up is an adult by definition, and asking for a
+     * birthday nobody reads would be collecting it for nothing.
+     */
+    dateOfBirth: z.string().optional(),
     workflowType: z.enum(['automated', 'custom']).optional().default('automated'),
     coachCode: z.string().optional(),
     agreeToTerms: z
@@ -43,6 +77,45 @@ export const registerSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   })
+  .refine(
+    (data) => {
+      // Only goalies are asked for a birthday. Nobody else is held to one.
+      if (data.role !== 'student') return true;
+      return !!data.dateOfBirth && data.dateOfBirth.trim().length > 0;
+    },
+    {
+      message: 'Date of birth is required',
+      path: ['dateOfBirth'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role !== 'student' || !data.dateOfBirth) return true;
+      // Catches malformed input and dates that only look real, such as
+      // 30 February, which JavaScript would otherwise roll forward into March.
+      const dob = parseDateOfBirth(data.dateOfBirth);
+      return dob !== null && dob.getTime() <= Date.now();
+    },
+    {
+      message: 'Please enter a real date of birth',
+      path: ['dateOfBirth'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role !== 'student' || !data.dateOfBirth) return true;
+      const dob = parseDateOfBirth(data.dateOfBirth);
+      // A malformed date already failed the refinement above. Passing it here
+      // avoids showing two errors for one mistake.
+      if (!dob) return true;
+      const age = calculateAge(dob);
+      return age >= MIN_SIGNUP_AGE && age <= MAX_SIGNUP_AGE;
+    },
+    {
+      message: `Please check the year — that works out to an age outside ${MIN_SIGNUP_AGE}-${MAX_SIGNUP_AGE}.`,
+      path: ['dateOfBirth'],
+    }
+  )
   .refine(
     (data) => {
       // Coach code is required for custom workflow students

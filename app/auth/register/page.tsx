@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -9,6 +9,13 @@ import { Eye, EyeOff, Loader2, Mail, ChevronDown } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/context';
 import { registerSchema, type RegisterFormData } from '@/lib/validation/auth';
+import {
+  GOALIE_SELF_REGISTRATION_ENABLED,
+  MAX_SIGNUP_AGE,
+  PARENT_HELD_ACCOUNT_AGE,
+  parseDateOfBirth,
+  requiresParentHeldAccount,
+} from '@/lib/auth/signup-policy';
 import { isAuthError } from '@/lib/errors/auth-errors';
 import { toast } from 'sonner';
 
@@ -70,12 +77,45 @@ export default function RegisterPage() {
       password: '',
       confirmPassword: '',
       displayName: '',
+      dateOfBirth: '',
     },
   });
 
   const selectedRole = watch('role');
 
+  const dateOfBirthValue = watch('dateOfBirth');
+
+  // Bounds for the date input. `max` stops a birthday in the future being
+  // picked at all, and `min` keeps the picker's year list to something a person
+  // would scroll. Computed once — the page is not open across a midnight.
+  const [todayISO, earliestDobISO] = useMemo(() => {
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    const iso = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const now = new Date();
+    const earliest = new Date(now.getFullYear() - MAX_SIGNUP_AGE, now.getMonth(), now.getDate());
+    return [iso(now), iso(earliest)];
+  }, []);
+
+  // Whether this sign-up has to go through a parent instead (item 6b).
+  // Recomputed as they type — a half-entered date parses to null, so the notice
+  // does not flash while the year is still being typed.
+  const needsParentAccount = useMemo((): boolean => {
+    if (selectedRole !== 'student') return false;
+    const dob = parseDateOfBirth(dateOfBirthValue);
+    return dob !== null && requiresParentHeldAccount(dob);
+  }, [selectedRole, dateOfBirthValue]);
+
   const onSubmit = async (data: Record<string, unknown>) => {
+    // Belt and braces. The submit button is disabled while this is true, but a
+    // keyboard submit or a browser autofill can still arrive here, and what is
+    // on the other side of this function is a real account.
+    if (needsParentAccount) {
+      setError('dateOfBirth', {
+        message: 'A parent or guardian needs to create this account.',
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       await registerUser(data as RegisterFormData);
@@ -135,25 +175,29 @@ export default function RegisterPage() {
             </h1>
           </div>
 
-          {/* Goalie notice */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              borderRadius: '8px',
-              border: `1px solid rgba(55,181,255,0.2)`,
-              background: 'rgba(55,181,255,0.06)',
-              padding: '8px 12px',
-              marginBottom: '14px',
-            }}
-          >
-            <Mail size={12} style={{ color: BLUE, flexShrink: 0 }} />
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, margin: 0 }}>
-              <span style={{ color: BLUE, fontWeight: 700 }}>Goalie?</span>{' '}
-              Register via your personal invite link — check your email.
-            </p>
-          </div>
+          {/* Goalie notice — only while goalies are invitation-only. Once
+              self-registration is switched on, "check your email" would be
+              telling a goalie to wait for an invitation that is not coming. */}
+          {!GOALIE_SELF_REGISTRATION_ENABLED && (
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center',
+                borderRadius: '8px',
+                border: `1px solid rgba(55,181,255,0.2)`,
+                background: 'rgba(55,181,255,0.06)',
+                padding: '8px 12px',
+                marginBottom: '14px',
+              }}
+            >
+              <Mail size={12} style={{ color: BLUE, flexShrink: 0 }} />
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, margin: 0 }}>
+                <span style={{ color: BLUE, fontWeight: 700 }}>Goalie?</span>{' '}
+                Register via your personal invite link — check your email.
+              </p>
+            </div>
+          )}
 
           <style dangerouslySetInnerHTML={{ __html: `
             @media (max-width: 480px) {
@@ -174,7 +218,7 @@ export default function RegisterPage() {
                   <select
                     id="role"
                     value={selectedRole}
-                    onChange={(e) => setValue('role', e.target.value as 'parent' | 'coach')}
+                    onChange={(e) => setValue('role', e.target.value as 'parent' | 'coach' | 'student')}
                     data-testid="role-select"
                     style={{ ...inputStyle, background: '#001628', appearance: 'none', paddingRight: '30px', cursor: 'pointer' }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = BLUE)}
@@ -182,6 +226,9 @@ export default function RegisterPage() {
                   >
                     <option value="parent" style={{ background: '#001628', color: '#fff' }}>Parent</option>
                     <option value="coach" style={{ background: '#001628', color: '#fff' }}>Coach</option>
+                    {GOALIE_SELF_REGISTRATION_ENABLED && (
+                      <option value="student" style={{ background: '#001628', color: '#fff' }}>Goalie</option>
+                    )}
                   </select>
                   <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.35)', pointerEvents: 'none' }} />
                 </div>
@@ -202,6 +249,71 @@ export default function RegisterPage() {
                 {errors.displayName && <p style={{ fontSize: '11px', color: '#f87171', marginTop: '4px' }} data-testid="display-name-error">{errors.displayName.message}</p>}
               </div>
             </div>
+
+            {/* Date of birth — goalies only (item 6b). A parent or coach signing
+                themselves up is an adult by definition and is not asked. */}
+            {selectedRole === 'student' && (
+              <div>
+                <label htmlFor="dateOfBirth" style={labelStyle}>Date of Birth</label>
+                <input
+                  id="dateOfBirth"
+                  type="date"
+                  max={todayISO}
+                  min={earliestDobISO}
+                  {...register('dateOfBirth')}
+                  data-testid="date-of-birth-input"
+                  style={{ ...inputStyle, colorScheme: 'dark' }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = BLUE)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(55,181,255,0.2)')}
+                />
+                {errors.dateOfBirth && <p style={{ fontSize: '11px', color: '#f87171', marginTop: '4px' }} data-testid="date-of-birth-error">{errors.dateOfBirth.message}</p>}
+              </div>
+            )}
+
+            {/* The under-age route. Shown the moment the date says so, rather than
+                after a completed form is rejected — and it offers the way through
+                instead of only closing the door. */}
+            {needsParentAccount && (
+              <div
+                data-testid="parent-account-required"
+                style={{
+                  borderRadius: '8px',
+                  border: '1px solid rgba(55,181,255,0.28)',
+                  background: 'rgba(55,181,255,0.07)',
+                  padding: '12px 14px',
+                }}
+              >
+                <p style={{ fontSize: '12px', fontWeight: 800, color: BLUE, margin: '0 0 6px', letterSpacing: '0.5px' }}>
+                  A parent needs to start this one
+                </p>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.55, margin: 0 }}>
+                  Under {PARENT_HELD_ACCOUNT_AGE}, a parent or guardian creates and holds the
+                  account — and the goalie still gets their own login inside it. Ask them to
+                  sign up here as a parent; they can add you from their dashboard straight
+                  afterwards, and you will have your own login before they close the laptop.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setValue('role', 'parent')}
+                  data-testid="switch-to-parent"
+                  style={{
+                    marginTop: '10px',
+                    background: 'transparent',
+                    border: `1px solid ${BLUE}`,
+                    color: BLUE,
+                    borderRadius: '6px',
+                    padding: '7px 12px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign up as a parent →
+                </button>
+              </div>
+            )}
 
             {/* Email */}
             <div>
@@ -280,14 +392,14 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || needsParentAccount}
               data-testid="register-submit"
               style={{
                 width: '100%', padding: '13px 0', borderRadius: '8px', border: 'none',
-                background: isLoading ? 'rgba(55,181,255,0.3)' : `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`,
+                background: isLoading || needsParentAccount ? 'rgba(55,181,255,0.3)' : `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`,
                 color: '#fff', fontSize: '12px', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                boxShadow: isLoading ? 'none' : '0 4px 24px rgba(55,181,255,0.28)',
+                cursor: isLoading || needsParentAccount ? 'not-allowed' : 'pointer',
+                boxShadow: isLoading || needsParentAccount ? 'none' : '0 4px 24px rgba(55,181,255,0.28)',
                 transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}
             >

@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
-import type { LegalAcceptance } from './legal';
+import type { LegalAcceptance, ParentalConsent } from './legal';
+import type { GoalieSignupIntake } from '@/data/goalie-signup-intake';
+import type { AgeBracket } from '@/lib/auth/signup-policy';
 
 export type UserRole = 'student' | 'admin' | 'coach' | 'parent';
 export type WorkflowType = 'automated' | 'custom';
@@ -20,6 +22,7 @@ export interface User {
   studentNumber?: string; // Random unique ID for students (e.g., "SG-K7M9-P2X4")
   workflowType?: WorkflowType; // Learning workflow: automated (self-paced) or custom (coach-guided)
   assignedCoachId?: string; // Required for custom workflow students
+  assignedCoachName?: string; // Display name of the assigned coach, written at invite acceptance / coach-code entry
   coachCode?: string; // Unique code for coaches (LASTNAME-XXXX format)
   profileImage?: string;
   emailVerified: boolean;
@@ -30,6 +33,64 @@ export interface User {
   onboardingCompleted?: boolean;
   onboardingCompletedAt?: Timestamp;
   initialAssessmentLevel?: 'beginner' | 'intermediate' | 'advanced';
+  driverOrPassenger?: 'driver' | 'aspiring_driver' | 'passenger' | 'undecided'; // Michael's Driver-or-Passenger screen (Item 4) — which button the goalie pressed before the baseline questionnaire
+
+  /**
+   * The four sign-up intake answers — name, age, level and why they are here.
+   * Written as soon as the goalie leaves the intake screen, before the 74
+   * baseline questions, so an abandoned questionnaire still leaves a record.
+   * Absent on every account created before 6 September 2026.
+   */
+  signupIntake?: GoalieSignupIntake;
+  signupIntakeAt?: Timestamp;
+
+  /**
+   * Date of birth, asked of goalies at sign-up (Item 6b) and of nobody else.
+   *
+   * Stored as the calendar date the goalie typed — `YYYY-MM-DD` — rather than a
+   * Timestamp. A birthday is a date, not an instant: stored as an instant it
+   * shifts a day either side of midnight depending on the reader's timezone,
+   * which is enough to move a goalie across the age line on their birthday.
+   *
+   * Distinct from `profile.dateOfBirth`, which is an older optional field the
+   * sign-up form has never written to.
+   */
+  dateOfBirth?: string;
+
+  /**
+   * Which consent bracket applied when the account was created.
+   *
+   * Derived from `dateOfBirth` and stored anyway, because the question a
+   * privacy request asks is "what rules applied to this account when it was
+   * made", and re-deriving that years later answers a different question.
+   */
+  ageBracket?: AgeBracket;
+
+  /**
+   * The parent who holds this account, for goalies too young to hold their own
+   * (item 6c). Set once, when the parent creates the account, and never after.
+   *
+   * Distinct from `linkedParentIds`, which says who can *see* this goalie and
+   * can hold several people. This says who the account belongs to, and there
+   * is exactly one of them. A goalie who signed themselves up has none.
+   */
+  accountHolderId?: string;
+
+  /**
+   * Consent the account holder gave on this goalie's behalf, stamped when the
+   * account was created. Present only on parent-created accounts.
+   */
+  parentalConsent?: ParentalConsent;
+
+  /**
+   * Short login name for a goalie who has no email address of their own —
+   * `jake-a7k2`, which the login page turns back into the address Firebase
+   * stores. Present only when the parent chose the no-email option.
+   *
+   * Its presence is also what says "this account cannot be emailed": no
+   * verification, no password reset. The parent resets it instead.
+   */
+  loginHandle?: string;
 
   // Charting configuration — admin-assigned
   chartLevel?: 'basic' | 'five_pillar'; // Basic = 2-3 min entry experience; 5-Pillar = full advanced chart. Default (undefined) = five_pillar.

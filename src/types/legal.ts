@@ -72,3 +72,31 @@ export interface LegalAcceptance {
   /** Date object on write; a Firestore Timestamp when read back. */
   acceptedAt: Date | import('firebase/firestore').Timestamp;
 }
+
+/**
+ * Consent given by a parent on behalf of an under-age goalie (item 6c).
+ *
+ * Separate from `LegalAcceptance` rather than reusing it, because the two
+ * answer different questions. `LegalAcceptance` records what the account
+ * holder agreed to for themselves. This records that somebody agreed on
+ * behalf of somebody else — and if that is ever questioned, the useful part
+ * is *who*, which is why the parent's id, name and email are stamped in
+ * rather than looked up later from a record that may since have changed.
+ *
+ * `ageAtConsent` is stored for the same reason `ageBracket` is: the question
+ * is not how old the goalie is now, it is how old they were when the consent
+ * was given.
+ */
+export interface ParentalConsent {
+  /** User id of the parent or guardian who consented. */
+  consentedByUserId: string;
+  consentedByName: string;
+  consentedByEmail: string;
+  relationship: 'parent' | 'guardian' | 'other';
+  termsVersion: string;
+  privacyVersion: string;
+  /** Whole years, at the moment consent was given. */
+  ageAtConsent: number;
+  /** Date object on write; a Firestore Timestamp when read back. */
+  consentedAt: Date | import('firebase/firestore').Timestamp;
+}

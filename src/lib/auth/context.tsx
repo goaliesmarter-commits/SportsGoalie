@@ -19,8 +19,17 @@ import {
   createAuthErrorFromFirebase,
   createErrorContext,
   InvalidCoachCodeError,
+  ParentAccountRequiredError,
   isAuthError,
 } from '@/lib/errors/auth-errors';
+import {
+  calculateAge,
+  getAgeBracket,
+  parseDateOfBirth,
+  requiresParentHeldAccount,
+  type AgeBracket,
+} from '@/lib/auth/signup-policy';
+import { resolveLoginIdentifier } from '@/lib/auth/child-account';
 import { userService } from '@/lib/database/services/user.service';
 import { ProgressService } from '@/lib/database/services/progress.service';
 import { normalizeCoachCode } from '@/lib/utils/coach-code-generator';
@@ -94,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Include student/coach specific fields from Firestore
           ...(userData.workflowType && { workflowType: userData.workflowType }),
           ...(userData.assignedCoachId && { assignedCoachId: userData.assignedCoachId }),
+          ...(userData.assignedCoachName && { assignedCoachName: userData.assignedCoachName }),
           ...(userData.studentNumber && { studentNumber: userData.studentNumber }),
           ...(userData.coachCode && { coachCode: userData.coachCode }),
           // The pause switch must reach the route guards, or a paused member
@@ -181,9 +191,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
+      // A goalie whose parent holds their account may sign in with a short
+      // handle instead of an email (item 6c). Resolved here rather than on the
+      // login page so that every caller of login() gets it, not just the one
+      // form that happens to exist today.
+      const identifier = resolveLoginIdentifier(credentials.email);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        credentials.email,
+        identifier,
         credentials.password
       );
 
@@ -243,6 +259,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('✅ Coach code validated, assigning to coach:', coachResult.data.displayName);
       }
 
+      // Age check (item 6b), run BEFORE creating the Firebase user so a
+      // refusal leaves nothing behind to clean up.
+      //
+      // The sign-up form already routes an under-age goalie to the parent path
+      // rather than submitting, so in practice this never fires from there.
+      // It is here because register() is exported and callable from any flow,
+      // and what it creates is a real login — a rule this important should not
+      // depend on every future caller remembering to ask first.
+      let ageBracket: AgeBracket | undefined;
+      if (credentials.role === 'student' && credentials.dateOfBirth) {
+        const dob = parseDateOfBirth(credentials.dateOfBirth);
+        if (dob) {
+          if (requiresParentHeldAccount(dob)) {
+            throw new ParentAccountRequiredError(context);
+          }
+          ageBracket = getAgeBracket(calculateAge(dob));
+        }
+      }
+
       // Generate coach code for coaches BEFORE creating Firebase user
       let coachCode: string | undefined;
       if (credentials.role === 'coach') {
@@ -282,6 +317,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...(credentials.role === 'student' && {
           workflowType: credentials.workflowType || 'automated',
           ...(assignedCoachId && { assignedCoachId }),
+          // Kept as the calendar date the goalie typed. Only written when it
+          // parsed and passed the age check above — a half-valid birthday is
+          // worse than none, because it looks like a verified one.
+          ...(ageBracket && {
+            dateOfBirth: credentials.dateOfBirth,
+            ageBracket,
+          }),
         }),
         // Add coach code for coaches
         ...(credentials.role === 'coach' && coachCode && { coachCode }),
@@ -457,7 +499,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updatedUser.workflowType = data.workflowType;
       }
       if (data.assignedCoachId !== undefined) {
-        updatedUser.assignedCoachId = data.assignedCoachId;
+        updatedUser.assignedCoachId = data.assignedCoachId ?? undefined;
+      }
+      if (data.assignedCoachName !== undefined) {
+        updatedUser.assignedCoachName = data.assignedCoachName ?? undefined;
       }
 
       setUser(updatedUser);
