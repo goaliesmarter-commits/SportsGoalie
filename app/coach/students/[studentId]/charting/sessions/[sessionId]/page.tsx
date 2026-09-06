@@ -161,7 +161,7 @@ const PRIORITY_FACTOR_LABELS: Record<CoachPriorityFactor, string> = {
   mental_composure: 'Mental Composure',
   skating_in_sync:  'Skating in Sync',
   positioning_7ams: 'Positioning (7AMS)',
-  below_line_6zs:   'Below the Line (6ZS)',
+  below_line_6zs:   'Below the Line (6Z-7PS)',
   form:             'Form',
   reading_play:     'Reading the Play',
 };
@@ -269,7 +269,7 @@ function IntroOverlay({ onStart }: { onStart: () => void }) {
             <div className="space-y-4">
               {[
                 { icon: <Timer className="w-4 h-4" />, label: 'Pre-Game', color: '#7dd3fc', body: "Goalie's readiness level and warmup quality — your technical read before the puck drops." },
-                { icon: <BarChart3 className="w-4 h-4" />, label: 'Periods', color: '#a78bfa', body: "7-factor evaluation per period — Engagement, Composure, Skating, 7AMS, 6ZS, Form, and Reading the Play." },
+                { icon: <BarChart3 className="w-4 h-4" />, label: 'Periods', color: '#a78bfa', body: "7-factor evaluation per period — Engagement, Composure, Skating, 7AMS, 6Z-7PS, Form, and Reading the Play." },
                 { icon: <MessageSquare className="w-4 h-4" />, label: 'Post-Game', color: '#34d399', body: "Overall game read, ONE strength, and ONE priority — the flag that shapes the goalie's development path." },
               ].map(item => (
                 <div key={item.label} className="flex gap-3.5 items-start">
@@ -990,7 +990,7 @@ export default function CoachChartPage() {
               breakdownKey="positioning" starDefs={SEVEN_AMS_DEFS}
             />
             <FactorRow
-              label="Below the Line (6ZS)"
+              label="Below the Line (6Z-7PS)"
               helpText="Zone reads below the icing line — wrap-arounds, behind-net, post integration, low-angle threats, repositioning."
               rating={periods[activePeriod].belowLineRating}
               onRatingChange={v => updatePeriod(activePeriod, 'belowLineRating', v)}

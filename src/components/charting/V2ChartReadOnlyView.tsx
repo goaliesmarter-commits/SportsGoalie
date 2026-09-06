@@ -432,7 +432,7 @@ function PostGameSection({ data, flat }: { data: V2PostGameData; flat?: boolean 
                   {({
                     mind_control: 'Emotional Balance',
                     goal_decisions: 'Reading the Play',
-                    seven_point: '6ZS',
+                    seven_point: '6Z-7PS',
                   } as Record<string, string>)[data.improvementFocus]
                     ?? data.improvementFocus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                 </p>
