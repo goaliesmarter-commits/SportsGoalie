@@ -9,21 +9,26 @@
   padding-bottom: 8rem;
 }
 
+/* Below xl the cards are single-column with a height that follows the copy, so
+   the sticky offset can't be a constant — a card taller than the space under
+   the pin would have an unreachable bottom, which is what cut off the closing
+   paragraph of every card on phones. ScrollStack.tsx measures each card and
+   sets `top` on it; the offset here is only the pre-measurement default. */
 .scroll-stack-card {
   position: sticky;
-  top: 88px;
+  top: 80px;
   width: 100%;
   margin-bottom: var(--scroll-stack-gap, 100px);
   isolation: isolate;
 }
 
-/* Cards are a fixed 560px tall from md: up, so the sticky offset is set to
-   roughly center that height in the viewport. A transform-based centering
-   trick isn't used here because it would also shift the card's normal
-   in-flow position before it engages stickiness, dragging it up into the
-   intro copy above the section. Mobile card height varies with content, so
-   it keeps a simple offset below the navbar instead. */
-@media (min-width: 768px) {
+/* From xl (1280px) up the cards go two-column at a fixed 560px — the measured
+   width where the copy fits that box and where 560px clears the pin — so the
+   offset is constant and CSS owns it. It roughly centers the card in the
+   viewport; a transform-based centering trick isn't used because it would also
+   shift the card's normal in-flow position before it engages stickiness,
+   dragging it up into the intro copy above the section. */
+@media (min-width: 1280px) {
   .scroll-stack-card {
     top: var(--scroll-stack-top, calc(50vh - 280px));
   }
@@ -41,9 +46,9 @@
   margin-bottom: 0;
 }
 
+/* Scroll runway that holds the last card pinned while it finishes stacking */
 .scroll-stack-end {
   height: 20vh;
   width: 100%;
   pointer-events: none;
 }
-

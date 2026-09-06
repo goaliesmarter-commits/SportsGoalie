@@ -4,8 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle, Mail, Lock, User, Shield, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
 import { invitationService } from '@/lib/services/invitation.service';
 import { coachInvitationService } from '@/lib/services/coach-invitation.service';
 import { Invitation, InvitationValidationReason } from '@/types/invitation';
@@ -208,7 +206,20 @@ function AcceptInviteContent() {
           role: 'coach',
           skipEmailVerification: true,
         });
-        await coachInvitationService.acceptInvitation(invitationId(invitation), userId);
+        // The account now exists — a failure past this point must not be
+        // reported as "Failed to create account". Retry once, then proceed
+        // with a truthful message; an admin can tidy the invite up later.
+        try {
+          await coachInvitationService.acceptInvitation(invitationId(invitation), userId);
+        } catch {
+          try {
+            await coachInvitationService.acceptInvitation(invitationId(invitation), userId);
+          } catch {
+            toast.error('Your account was created, but marking your invitation as used failed. You can log in normally — please let your administrator know.');
+            router.push('/coach');
+            return;
+          }
+        }
         toast.success('Coach account created! Welcome aboard.');
         router.push('/coach');
         return;
@@ -236,7 +247,6 @@ function AcceptInviteContent() {
       });
 
       // Post-registration Firestore patches
-      const userRef = doc(db, 'users', userId);
       const patches: Record<string, unknown> = {};
 
       if (role === 'student' && inv.metadata?.assignedCoachId) {
@@ -248,25 +258,32 @@ function AcceptInviteContent() {
         patches.role = 'goalie_coach';
       }
 
-      if (Object.keys(patches).length > 0) {
-        await updateDoc(userRef, patches);
-      }
-
-      // Mark invitation accepted in the generic collection
-      await invitationService.acceptInvitation(invitationId(invitation), userId);
-
-      toast.success(`${roleLabel(invitation)} account created! Welcome aboard.`);
       // Redirect directly to the appropriate destination — the user is already authenticated
       // after register(), so routing through /auth/login would cause an immediate re-redirect.
-      if (registerRole === 'student') {
-        router.push('/onboarding');
-      } else if (registerRole === 'parent') {
-        router.push('/onboarding?role=parent');
-      } else if (registerRole === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/coach');
+      const destination =
+        registerRole === 'student' ? '/onboarding'
+        : registerRole === 'parent' ? '/onboarding?role=parent'
+        : registerRole === 'admin' ? '/admin'
+        : '/coach';
+
+      // The account now exists — apply the coach link / role patch and mark the
+      // invitation accepted in ONE atomic batch, so a failure here can never
+      // leave the goalie half set up. Retry once before giving up; the batch is
+      // all-or-nothing, so a final failure means nothing extra was written.
+      try {
+        await invitationService.acceptInvitationWithUserSetup(invitationId(invitation), userId, patches);
+      } catch {
+        try {
+          await invitationService.acceptInvitationWithUserSetup(invitationId(invitation), userId, patches);
+        } catch {
+          toast.error('Your account was created, but finishing your invitation setup failed. Please contact support so we can complete it for you.');
+          router.push(destination);
+          return;
+        }
       }
+
+      toast.success(`${roleLabel(invitation)} account created! Welcome aboard.`);
+      router.push(destination);
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
       setSubmitting(false);

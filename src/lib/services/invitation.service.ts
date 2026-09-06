@@ -20,6 +20,7 @@ import {
   where,
   Timestamp,
   orderBy,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import {
@@ -205,6 +206,36 @@ class InvitationService {
       logInfo('Invitation accepted', { invitationId, userId });
     } catch (error) {
       logError('Failed to accept invitation', error instanceof Error ? error : undefined);
+      throw error;
+    }
+  }
+
+  /**
+   * Marks the invitation accepted and applies the post-registration patches to
+   * the new user's document in ONE atomic batch. Either the coach link, role
+   * patch, and acceptance all land, or none of them do — a goalie can never end
+   * up half set up (e.g. account created but coach missing, or coach attached
+   * while the invite still reads pending).
+   */
+  async acceptInvitationWithUserSetup(
+    invitationId: string,
+    userId: string,
+    userPatches: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const batch = writeBatch(db);
+      if (Object.keys(userPatches).length > 0) {
+        batch.update(doc(db, 'users', userId), userPatches);
+      }
+      batch.update(doc(db, COLLECTION, invitationId), {
+        status: 'accepted',
+        acceptedAt: Timestamp.fromDate(new Date()),
+        acceptedUserId: userId,
+      });
+      await batch.commit();
+      logInfo('Invitation accepted with user setup', { invitationId, userId });
+    } catch (error) {
+      logError('Failed to accept invitation with user setup', error instanceof Error ? error : undefined);
       throw error;
     }
   }

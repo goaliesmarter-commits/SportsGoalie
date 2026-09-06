@@ -47,7 +47,10 @@ function DashboardContent() {
     if (user?.role === 'student' && !user?.onboardingCompleted) router.push('/onboarding');
   }, [user, router]);
   if (user?.role === 'student' && !user?.onboardingCompleted) return <SkeletonDashboard />;
-  if (user?.role === 'student' && user?.workflowType === 'custom') return <CustomCurriculumDashboard user={user} />;
+  // Custom-workflow goalies get the coach-curriculum dashboard only while they
+  // actually have a coach — without one there is no curriculum to show, so they
+  // fall back to the standard self-paced dashboard instead of a dead end.
+  if (user?.role === 'student' && user?.workflowType === 'custom' && user?.assignedCoachId) return <CustomCurriculumDashboard user={user} />;
   return <StandardDashboard />;
 }
 

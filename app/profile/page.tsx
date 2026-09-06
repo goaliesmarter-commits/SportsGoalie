@@ -92,7 +92,7 @@ export default function ProfilePage() {
           setWorkflowError('Invalid coach code. Please check with your coach and try again.');
           return;
         }
-        await updateUserProfile({ workflowType: 'custom', assignedCoachId: coachResult.data.id });
+        await updateUserProfile({ workflowType: 'custom', assignedCoachId: coachResult.data.id, assignedCoachName: coachResult.data.displayName });
         setWorkflowSuccess(`Switched to Coach-Guided mode with ${coachResult.data.displayName}.`);
         setShowCoachCodeInput(false);
         setCoachCode('');
@@ -101,7 +101,9 @@ export default function ProfilePage() {
     } else {
       try {
         setIsWorkflowSwitching(true);
-        await updateUserProfile({ workflowType: 'automated' });
+        // Clear the coach link too — leaving it behind would keep this goalie on
+        // the old coach's roster queries after they've left coach-guided mode.
+        await updateUserProfile({ workflowType: 'automated', assignedCoachId: null, assignedCoachName: null });
         setWorkflowSuccess('Switched to Self-Paced mode.');
         setShowCoachCodeInput(false);
         setCoachCode('');
