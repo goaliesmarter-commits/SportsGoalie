@@ -11,9 +11,15 @@ export type ParentRelationship = 'parent' | 'guardian' | 'other';
 export type ParentLinkStatus = 'active' | 'revoked';
 
 /**
- * How the link was created
+ * How the link was created.
+ *
+ * 'parent_created' is the under-age path (item 6c): the parent made the
+ * goalie's account, so the link existed from the account's first moment and
+ * was never consented to by the goalie. Worth telling apart from a link the
+ * goalie handed a code over for, because only one of the two is theirs to
+ * revoke.
  */
-export type LinkMethod = 'code' | 'invite';
+export type LinkMethod = 'code' | 'invite' | 'parent_created';
 
 /**
  * Parent-Child Link Document

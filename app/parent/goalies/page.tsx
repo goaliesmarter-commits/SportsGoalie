@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Users, UserPlus, ChevronRight, Trophy, Flame, Clock, CheckCircle2 } from 'lucide-react';
+import { Users, UserPlus, Link2 as LinkIcon, ChevronRight, Trophy, Flame, Clock, CheckCircle2 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/context';
 import { parentLinkService } from '@/lib/database';
@@ -58,11 +58,21 @@ export default function ParentGoaliesPage() {
                 {children.length} goalie{children.length !== 1 ? 's' : ''} linked to your account
               </p>
             </div>
-            <Link href="/parent/link-child" style={{ textDecoration: 'none' }}>
-              <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`, color: '#000f28', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(55,181,255,0.3)', whiteSpace: 'nowrap' }}>
-                <UserPlus size={16} /> Link Goalie
-              </button>
-            </Link>
+            {/* Two ways in, and they are not the same thing. "Add" creates an
+                account for an under-age goalie who has none (item 6c); "Link"
+                connects to a goalie who already has their own. */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <Link href="/parent/add-goalie" style={{ textDecoration: 'none' }}>
+                <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`, color: '#000f28', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(55,181,255,0.3)', whiteSpace: 'nowrap' }}>
+                  <UserPlus size={16} /> Add Goalie
+                </button>
+              </Link>
+              <Link href="/parent/link-child" style={{ textDecoration: 'none' }}>
+                <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: '1px solid rgba(55,181,255,0.35)', background: 'transparent', color: BLUE, fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                  <LinkIcon size={16} /> Link Goalie
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -71,15 +81,24 @@ export default function ParentGoaliesPage() {
             <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(55,181,255,0.08)', border: '1px solid rgba(55,181,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Users size={24} color="rgba(255,255,255,0.3)" />
             </div>
-            <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>No linked goalies yet</h3>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', maxWidth: '300px', margin: '0 auto 20px', lineHeight: 1.6 }}>
-              Ask your goalie for their link code from their profile settings.
+            <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>No goalies yet</h3>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', maxWidth: '340px', margin: '0 auto 20px', lineHeight: 1.6 }}>
+              If your goalie is under 18 and has no account, create one here — you hold it, they
+              get their own login inside it. If they already have an account, ask them for the
+              link code in their profile settings.
             </p>
-            <Link href="/parent/link-child" style={{ textDecoration: 'none' }}>
-              <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`, color: '#000f28', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(55,181,255,0.3)' }}>
-                Link Your Goalie
-              </button>
-            </Link>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/parent/add-goalie" style={{ textDecoration: 'none' }}>
+                <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)`, color: '#000f28', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 16px rgba(55,181,255,0.3)' }}>
+                  <UserPlus size={16} /> Add a Goalie
+                </button>
+              </Link>
+              <Link href="/parent/link-child" style={{ textDecoration: 'none' }}>
+                <button className="pg-link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: '1px solid rgba(55,181,255,0.35)', background: 'transparent', color: BLUE, fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <LinkIcon size={16} /> Link an existing one
+                </button>
+              </Link>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
