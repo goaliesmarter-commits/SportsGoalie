@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, UserPlus, BarChart3, BookOpen, Trophy,
   Video, FileText, MessageSquare, Shield, Settings, LogOut,
   ChevronLeft, Menu, X, User, BarChart2, Dumbbell, HelpCircle,
+  BadgeDollarSign,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 
@@ -31,6 +32,7 @@ const navSections: NavSection[] = [
       { label: 'All Users', href: '/admin/users', icon: Users },
       { label: 'Coaches', href: '/admin/coaches', icon: UserPlus },
       { label: 'Goalies', href: '/admin/goalies', icon: User },
+      { label: 'Founding Members', href: '/admin/founding', icon: BadgeDollarSign },
     ],
   },
   {

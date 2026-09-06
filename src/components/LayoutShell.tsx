@@ -27,6 +27,11 @@ const NAKED_ROUTES = [
   '/7-pillars',
   '/pillar',
   '/offer',
+  // The founding-member sign-up renders its own PublicPageNav and Footer7, like
+  // the rest of the marketing site. Without this entry it falls through to the
+  // default branch at the bottom of this file and comes out wrapped in the
+  // goalie dashboard sidebar.
+  '/founding',
   // Legal pages render their own PublicPageNav and Footer7, like the rest of
   // the marketing site. Without these entries they fall through to the default
   // branch at the bottom of this file and come out wrapped in the goalie
@@ -94,6 +99,7 @@ function getPageTitle(pathname: string): string {
   if (first === 'parent') {
     const titles: Record<string, string> = {
       parent: 'Dashboard', goalies: 'My Goalies', 'link-child': 'Link Goalie',
+      'add-goalie': 'Add a Goalie',
       onboarding: 'Assessment', perception: 'Perception', profile: 'Profile', child: 'Goalie Details',
     };
     return titles[segments[1]] || 'Dashboard';
