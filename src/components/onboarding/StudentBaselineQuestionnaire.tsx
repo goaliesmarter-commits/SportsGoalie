@@ -20,6 +20,7 @@ import {
   getDriverOrPassengerOption,
 } from '@/data/driver-or-passenger';
 import type { DriverOrPassengerChoiceId } from '@/data/driver-or-passenger';
+import type { ApplicationStatus } from '@/types/application';
 import {
   SIGNUP_INTAKE_SCREEN,
   SIGNUP_AGE_BANDS,
@@ -150,11 +151,20 @@ interface Props {
   userId: string;
   userName: string;
   onComplete: () => void;
+  /**
+   * The applicant's current status, when this questionnaire is being filled in
+   * as an application rather than by an existing member (item 2).
+   *
+   * Passing `'applying'` makes submission move them into Michael's queue as
+   * part of the same atomic write as the profile — see attemptSaveProfile.
+   * Undefined for ordinary members, which is the overwhelming majority.
+   */
+  applicationStatus?: ApplicationStatus;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function StudentBaselineQuestionnaire({ userId, userName, onComplete }: Props): React.ReactElement {
+export function StudentBaselineQuestionnaire({ userId, userName, onComplete, applicationStatus }: Props): React.ReactElement {
   const [state, setState] = useState<QState>(() => {
     // The account already knows their display name — start the intake's name
     // field with it rather than asking them to type it again. They can still
@@ -550,6 +560,14 @@ export function StudentBaselineQuestionnaire({ userId, userName, onComplete }: P
       // Written once already when they left the intake screen; written again
       // here so a failed early write still ends up correct.
       ...(intakeComplete ? { signupIntake: state.intake as GoalieSignupIntake } : {}),
+      // An applicant joins Michael's queue in the same batch that saves their
+      // profile (item 2). Atomic on purpose: a submitted questionnaire that
+      // left the account reading 'applying' would sit in nobody's list, and
+      // the applicant would be told to go and finish something they had
+      // already finished.
+      ...(applicationStatus === 'applying'
+        ? { applicationStatus: 'submitted', applicationSubmittedAt: serverTimestamp() }
+        : {}),
     });
     await batch.commit();
   };

@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import type { LegalAcceptance, ParentalConsent } from './legal';
 import type { GoalieSignupIntake } from '@/data/goalie-signup-intake';
 import type { AgeBracket } from '@/lib/auth/signup-policy';
+import type { ApplicationStatus } from './application';
 
 export type UserRole = 'student' | 'admin' | 'coach' | 'parent';
 export type WorkflowType = 'automated' | 'custom';
@@ -125,6 +126,36 @@ export interface User {
   isPaused?: boolean;
   pausedAt?: Timestamp;
   resumedAt?: Timestamp;
+
+  /**
+   * Application by questionnaire (item 2). Present only on accounts that came
+   * in through the front door at /apply; absent on every member who did not,
+   * which is every account created before 8 September 2026.
+   *
+   * ABSENT MEANS ORDINARY MEMBER, NOT "PENDING". The content wall in
+   * ProtectedRoute keys off this field, so a default of anything other than
+   * undefined would lock out the entire existing membership. Use
+   * `isWalledApplicant` from `@/types/application` rather than testing it by
+   * hand.
+   */
+  applicationStatus?: ApplicationStatus;
+  /** When the applicant account was created — the date their record starts. */
+  appliedAt?: Timestamp;
+  /** When they finished the baseline questionnaire and joined Michael's queue. */
+  applicationSubmittedAt?: Timestamp;
+  applicationDecidedAt?: Timestamp;
+  applicationDecidedBy?: string;
+  applicationDecidedByName?: string;
+  /** Michael's note against the decision, in his words. */
+  applicationNote?: string;
+  /**
+   * Send-once guards for the two application emails. Server-side only — they
+   * are not mapped onto the client User by createUserFromFirebaseUser, and
+   * nothing in the UI reads them. Declared here so the shape of the document
+   * is written down in one place rather than only in the API routes.
+   */
+  applicationReceivedEmailSent?: boolean;
+  applicationDecisionEmailSent?: boolean;
 
   // Timestamps
   createdAt: Timestamp;

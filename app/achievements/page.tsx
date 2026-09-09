@@ -63,7 +63,7 @@ function AchievementsContent() {
             Unlock Your Milestones,<br /><span style={{ color: BLUE }}>Track Every Win.</span>
           </h1>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '28px', maxWidth: '520px' }}>
-            Keep building momentum through Knowledge Checks, consistency, and focused progress across all 7 Pillars.
+            Keep building momentum through Knowledge Checks, consistency, and focused progress across all 8 Pillars.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', maxWidth: '600px' }}>
             {[

@@ -118,7 +118,7 @@ function ProgressContent() {
             <span style={{ color: BLUE }}>Learning Journey</span>
           </h1>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, maxWidth: '520px', margin: '0 auto' }}>
-            Detailed analytics and insights to measure your growth across all seven pillars.
+            Detailed analytics and insights to measure your growth across all eight pillars.
           </p>
         </div>
       </section>

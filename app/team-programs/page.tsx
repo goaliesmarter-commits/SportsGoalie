@@ -340,7 +340,7 @@ export default function TeamProgramsPage() {
             <div style={{ position: 'absolute', left: '-36px', top: '16px', width: '6px', bottom: 0, background: BLUE2, boxShadow: `0 0 15px ${BLUE2}`, borderRadius: '3px', zIndex: 0 }} />
             {[
               { num: '01', label: 'Coach Observation Chart', desc: 'Structured framework for watching the goalie with educated eyes' },
-              { num: '02', label: 'Game Charting Data', desc: 'Factor Ratios, good goal / bad goal analysis, V.M.P. intensity' },
+              { num: '02', label: 'Game Charting Data', desc: 'Factor Ratios, good goal / weak goal analysis, V.M.P. intensity' },
               { num: '03', label: 'Practice Charting', desc: 'What was worked, what improved, what needs more attention' },
               { num: '04', label: 'Development Loop', desc: 'Game Chart → Practice Index → Practice Chart → Next Game Chart' },
               { num: '05', label: 'Cross-Reference Engine', desc: 'Compares your observations with the goalie\'s self-evaluation and parent observation' },
@@ -389,7 +389,7 @@ export default function TeamProgramsPage() {
           {/* Description */}
           <div style={{ maxWidth: '820px', marginBottom: '40px' }}>
             <p style={{ fontSize: 'clamp(17px, 2.1vw, 22px)', color: '#fff', lineHeight: 1.9, marginBottom: '18px', fontWeight: 600 }}>
-              A self-directed learning experience across all 7 Pillars of the Smarter Goalie system.
+              A self-directed learning experience across all 8 Pillars of the Smarter Goalie system.
             </p>
             <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'rgba(184,212,240,0.85)', lineHeight: 1.9 }}>
               You select what you want to understand. Coach Mike guides every topic. No linear requirement. The system meets you where you are and grows with your knowledge.

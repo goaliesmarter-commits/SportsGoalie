@@ -45,6 +45,17 @@ export interface RegisterCredentials {
    * nothing. Closing that gap is part of the agreements gate work.
    */
   agreeToTerms?: boolean;
+
+  /**
+   * True when this registration is an *application*, not a membership.
+   *
+   * Sets `applicationStatus: 'applying'` on the new account, which raises the
+   * content wall in ProtectedRoute. The applicant can reach the baseline
+   * questionnaire and nothing else until Michael approves them. Only /apply
+   * sets this; ordinary sign-up leaves it undefined and the account is a
+   * member as before.
+   */
+  asApplicant?: boolean;
 }
 
 // Profile update data

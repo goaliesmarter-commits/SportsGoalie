@@ -13,9 +13,10 @@ const geistSans = GeistSans;
 const geistMono = GeistMono;
 
 export const metadata: Metadata = {
-  title: 'SmarterGoalie - Digital Learning Platform',
+  // Michael's wording, verbatim — the system's name as it is spoken and sold.
+  title: 'SMARTER GOALIE EDUCATIONAL SYSTEMS — DESIGNED FOR THE MOTIVATED',
   description:
-    'Learn sports skills, track your progress, and assess your knowledge through interactive quizzes.',
+    'Train the Mind. Understand the mechanics. Think Smart - Play Smarter. Build 8 Pillars of Intelligent Goaltending through cognitive awareness, technical precision, and proven positional systems.',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

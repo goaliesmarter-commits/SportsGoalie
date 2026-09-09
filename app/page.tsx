@@ -443,7 +443,7 @@ export default function Home() {
               </p>
             </div>
             <ScrollStack useWindowScroll={true} itemDistance={200} itemScale={0.02} itemStackDistance={30} stackPosition="calc(50vh - 280px)" scaleEndPosition="15%" baseScale={0.95}>
-              {/* 1 — The 7 Pillars of Intelligent Goaltending */}
+              {/* 1 — The 8 Pillars of Intelligent Goaltending */}
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
@@ -451,17 +451,17 @@ export default function Home() {
                       <FeatureVideoPanel
                         src={SEVEN_PILLARS_VIDEO_SRC}
                         poster={SEVEN_PILLARS_VIDEO_POSTER}
-                        label="The 7 Pillars introduction video"
+                        label="The 8 Pillars introduction video"
                       />
                       <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>1/5</span></div>
-                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">THE 7 PILLARS</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">THE 8 PILLARS</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>
                           Raw talent is one thing. Building it into a SMARTER goaltender is another.
                         </p>
-                        <p className="text-zinc-400 text-base leading-relaxed mb-5">Through 7 Pillars, we lay the foundation.</p>
+                        <p className="text-zinc-400 text-base leading-relaxed mb-5">Through 8 Pillars, we lay the foundation.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
-                          We build INTELLIGENT ATHLETIC GOALTENDERS through 7 Pillars — anchored by two UNIQUE, PROVEN positional systems: the Seven Angle-Mark System (7AMS) above the icing line and the 6 Zone – 7 Point System™ below it. From MINDSET to Skating, Form, Game, Practice, and LIFESTYLE — mastering each pillar builds lasting consistency.
+                          We build INTELLIGENT ATHLETIC GOALTENDERS through 8 Pillars — anchored by two UNIQUE, PROVEN positional systems: the 7 Angle-Marker System (7AMS) above the icing line and the 6 Zone – 7 Point System™ below it. From MINDSET to Skating, Form, Game, Practice, and LIFESTYLE — mastering each pillar builds lasting consistency.
                         </p>
                       </div>
                     </div>
@@ -553,7 +553,7 @@ export default function Home() {
           <section className="py-6 overflow-hidden" style={{ background: '#041530', borderTop: '1px solid rgba(55,181,255,0.12)', borderBottom: '1px solid rgba(55,181,255,0.12)' }}>
             <div className="relative flex" style={{ '--duration': '30s', '--gap': '2rem' } as React.CSSProperties}>
               <div className="flex shrink-0 animate-marquee items-center gap-8">
-                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6Z-7PS', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6Z-7PS', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>
@@ -561,7 +561,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="flex shrink-0 animate-marquee items-center gap-8" aria-hidden="true">
-                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6Z-7PS', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6Z-7PS', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>

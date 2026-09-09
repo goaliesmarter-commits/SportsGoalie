@@ -715,21 +715,28 @@ export default function GoaliePage() {
 
           <ApplicationSteps
             steps={[
-              // Was /auth/register until 26 August, which was a dead end: goalies
-              // are invitation-only by Michael's decision, so the sign-up page
-              // offers Parent and Coach and nothing else. Anyone following this
-              // step hit a wall. /contact now lists 'Goalie' first and reaches him
-              // directly — the interim request-to-join path until the application-
-              // by-questionnaire flow ships.
-              { num: '01', text: 'Tell Coach Mike about yourself — 5 minutes', href: '/contact', action: 'Start' },
+              // The interim /contact detour ended on 8 September: the
+              // application-by-questionnaire flow it was waiting for now exists,
+              // so step 01 is the real front door again. /apply creates the
+              // account and hands straight to the questionnaire — and it routes
+              // an under-18 goalie to the parent-held path rather than refusing
+              // them, which is why /auth/register was a dead end before.
+              //
+              // The time claim is honest now: this is the 20-minute baseline,
+              // not a 5-minute form.
+              { num: '01', text: 'Do the questionnaire — about 20 minutes, and it becomes your baseline', href: '/apply', action: 'Apply now' },
               { num: '02', text: 'Coach Mike personally reviews your application, with no automation and no filter' },
-              // Live as of 26 August: 'Goalie' is now in the /contact role list.
-              { num: '03', text: 'Coach Mike calls you personally', href: '/contact', action: 'Set up the call' },
+              // The booking link goes out inside the approval email and nowhere
+              // else, so there is nothing for a visitor to click here — this is
+              // Michael's move, not theirs.
+              { num: '03', text: 'If he says yes, he emails you a link to book the call — and your account opens' },
             ]}
           />
 
+          {/* The button says "apply", so it goes to the application. It went to
+              /contact only while there was nothing to apply to. */}
           <button
-            onClick={() => router.push('/contact')}
+            onClick={() => router.push('/apply')}
             style={{
               background: RED, color: '#fff', border: 'none',
               padding: 'clamp(16px,2vw,22px) clamp(32px,4vw,56px)',

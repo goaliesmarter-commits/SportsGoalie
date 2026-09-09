@@ -14,7 +14,7 @@ const EVENT_LABELS: Record<string, string> = {
   CHART_LOGGED: 'Chart Logged',
   STREAK_MILESTONE: 'Streak Milestone',
   PILLAR_COMPLETE: 'Pillar Completed',
-  ALL_PILLARS_COMPLETE: 'All 7 Pillars Completed!',
+  ALL_PILLARS_COMPLETE: 'All 8 Pillars Completed!',
   GOAL_COMPLETE: 'Goal Completed',
   PERK_REDEMPTION: 'Perk Redeemed',
 };

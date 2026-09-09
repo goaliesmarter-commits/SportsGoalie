@@ -1,5 +1,5 @@
 /**
- * Goalie-specific skills for all 7 pillars, 3 difficulty levels each.
+ * Goalie-specific skills for all 8 pillars, 3 difficulty levels each.
  * Each pillar has 3 skills per level = 9 skills per pillar = 63 total.
  */
 
@@ -95,7 +95,7 @@ export const PILLAR_SKILLS: SkillSeedData[] = [
   { sportId: PILLAR_IDS.positioning, name: 'Game Film Analysis & Positioning Review', description: 'Learn to analyze your own game footage to identify positional strengths and areas for improvement.', difficulty: 'refinement', estimatedTimeToComplete: 35, learningObjectives: ['Review positioning on goals against', 'Identify positional patterns in your game', 'Create positioning improvement plans from film'], tags: ['film', 'analysis', 'refinement'], order: 9 },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PILLAR 5: 7 POINT SYSTEM BELOW ICING LINE
+  // PILLAR 5: 6Z-7PS BELOW ICING LINE
   // ═══════════════════════════════════════════════════════════════════════════
 
   // Introduction

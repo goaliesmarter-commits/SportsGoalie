@@ -109,6 +109,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // The pause switch must reach the route guards, or a paused member
           // could keep using the app until their next full sign-out.
           ...(userData.isPaused !== undefined && { isPaused: userData.isPaused }),
+          // Same reasoning as the pause switch: the content wall is enforced in
+          // ProtectedRoute off this field, so it has to survive the mapping or an
+          // applicant would walk straight into the app on their next page load.
+          ...(userData.applicationStatus && { applicationStatus: userData.applicationStatus }),
+          ...(userData.appliedAt && { appliedAt: userData.appliedAt }),
+          ...(userData.applicationSubmittedAt && { applicationSubmittedAt: userData.applicationSubmittedAt }),
           // Include onboarding fields
           ...(userData.onboardingCompleted !== undefined && { onboardingCompleted: userData.onboardingCompleted }),
           ...(userData.onboardingCompletedAt && { onboardingCompletedAt: userData.onboardingCompletedAt }),
@@ -327,6 +333,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }),
         // Add coach code for coaches
         ...(credentials.role === 'coach' && coachCode && { coachCode }),
+        // Application by questionnaire (item 2). Written only for /apply, so an
+        // ordinary sign-up carries no applicationStatus at all and stays a member.
+        // `appliedAt` is the date Michael asked for: their record starts the day
+        // they applied, not the day they paid.
+        ...(credentials.asApplicant === true && {
+          applicationStatus: 'applying' as const,
+          appliedAt: Timestamp.now(),
+        }),
         // Terms and Privacy acceptance. The sign-up form has always required
         // the tickbox, but until 27 August 2026 the answer was validated and
         // then discarded — nothing was written down, so there was no way to
