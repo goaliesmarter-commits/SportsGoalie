@@ -28,10 +28,10 @@ interface Footer7Props {
 
 const defaultSections = [
   {
-    title: "Platform",
+    title: "The System",
     links: [
       { name: "Goaltending: 8 Pillars", href: "#features" },
-      { name: "Test Your Knowledge", href: "#features" },
+      { name: "Knowledge Checks", href: "#features" },
       { name: "Performance Analytics", href: "#features" },
       { name: "Dashboard Command Center", href: "#" },
     ],

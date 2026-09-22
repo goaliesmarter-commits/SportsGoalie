@@ -73,8 +73,8 @@ export default function PricingPage() {
       a: 'As soon as it clears, Coach Mike marks you paid and your account opens fully. You will hear from him — not a system message, him.',
     },
     {
-      q: 'What are the 7 Pillars?',
-      a: 'In order: 1. MindSet, 2. Skating, 3. 7AMS — the 7 Angle-Marker System, above the icing line, 4. the 6 Zone – 7 Point System™, below the icing line, 5. Form, 6. Team-Practice, 7. Life Style. 7AMS and the 6 Zone – 7 Point System™ sit under one umbrella but are two different programs.',
+      q: 'What are the 8 Pillars?',
+      a: 'In order: 1. MindSet, 2. Skating Tech, 3. 7 Angle-Marker System (7AMS) — above the icing line, 4. 6 Zone – 7 Point System™ (6Z-7PS) — below the icing line, 5. Form Tech, 6. Game Performance Charting System, 7. Practice System, 8. Lifestyle & Hockey. 7AMS and the 6 Zone – 7 Point System™ sit under one umbrella but are two different programs.',
     },
     {
       q: 'Is there team or organization pricing?',

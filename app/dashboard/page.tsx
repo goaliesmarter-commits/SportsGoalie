@@ -381,7 +381,7 @@ function StandardDashboard() {
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#fff', marginBottom: '16px' }}>Quick Actions</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <QuickActionCard href="/pillars" icon={<BookOpen size={22} />} label="Pillars" sub="Browse content" color={BLUE} />
-                <QuickActionCard href="/quizzes" icon={<Trophy size={22} />} label="Knowledge Checks" sub="Test yourself" color="#4ade80" />
+                <QuickActionCard href="/quizzes" icon={<Trophy size={22} />} label="Knowledge Checks" sub="Check yourself" color="#4ade80" />
                 <QuickActionCard href="/progress" icon={<TrendingUp size={22} />} label="Progress" sub="View analytics" color="#a78bfa" />
                 <QuickActionCard href="/charting" icon={<Target size={22} />} label="Charting" sub="Track sessions" color="#fb923c" />
               </div>
