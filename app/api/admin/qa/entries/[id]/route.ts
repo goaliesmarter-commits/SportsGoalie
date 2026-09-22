@@ -4,11 +4,12 @@ import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { verifyAdminRequest } from '@/lib/auth/admin-request';
 import { logger } from '@/lib/utils/logger';
+import { QA_CATEGORIES } from '@/types/qa';
 
 /**
  * Admin: one library entry.
  *
- *   PATCH  /api/admin/qa/entries/:id — edit question, answer, or status
+ *   PATCH  /api/admin/qa/entries/:id — edit question, answer, status or category
  *   DELETE /api/admin/qa/entries/:id — remove it permanently
  */
 
@@ -17,6 +18,10 @@ const updateSchema = z
     question: z.string().trim().min(3).max(500).optional(),
     answer: z.string().trim().min(1).max(10000).optional(),
     status: z.enum(['published', 'draft']).optional(),
+    // Nullable as well as optional: clearing a category back to Uncategorised
+    // is a real edit, and `undefined` would be dropped by the spread below.
+    category: z.enum(QA_CATEGORIES).nullable().optional(),
+    keywords: z.array(z.string().trim().min(1)).max(40).optional(),
   })
   .refine(data => Object.keys(data).length > 0, { message: 'Nothing to update' });
 
