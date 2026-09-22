@@ -49,6 +49,14 @@ service firebase.storage {
       return request.resource.contentType.matches('video/.*');
     }
 
+    function isValidAudioSize() {
+      return request.resource.size < 25 * 1024 * 1024; // 25MB
+    }
+
+    function isValidAudioType() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
     function isValidDocumentType() {
       return request.resource.contentType.matches('application/pdf') ||
              request.resource.contentType.matches('application/msword') ||
@@ -189,6 +197,16 @@ service firebase.storage {
     match /documents/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isValidDocumentSize() && isValidDocumentType();
+      allow delete: if isAdmin();
+    }
+
+    // Coach Audio - Michael's recorded voice lines.
+    // Deterministic filenames (coach-audio/V-A-01.mp3) so re-uploading a line
+    // replaces it rather than leaving an orphaned object behind.
+    match /coach-audio/{fileName} {
+      // Public read: the marketing pages play these to signed-out visitors.
+      allow read: if true;
+      allow write: if isAdmin() && isValidAudioSize() && isValidAudioType();
       allow delete: if isAdmin();
     }
 

@@ -4,6 +4,7 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
 import { AuthProvider } from '@/lib/auth/context';
+import { CoachAudioProvider } from '@/lib/audio/context';
 import { Toaster } from '@/components/ui/sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 
@@ -39,10 +40,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <Suspense fallback={null}>
-            <LayoutShell>{children}</LayoutShell>
-          </Suspense>
-          <Toaster />
+          <CoachAudioProvider>
+            <Suspense fallback={null}>
+              <LayoutShell>{children}</LayoutShell>
+            </Suspense>
+            <Toaster />
+          </CoachAudioProvider>
         </AuthProvider>
       </body>
     </html>

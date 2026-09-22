@@ -90,7 +90,7 @@ function getPageTitle(pathname: string): string {
       admin: 'Dashboard', analytics: 'Analytics', users: 'Users', coaches: 'Coaches',
       pillars: 'Pillars', quizzes: 'Quizzes', 'video-reviews': 'Video Reviews',
       'form-templates': 'Form Templates', messages: 'Messages', moderation: 'Moderation',
-      'question-index': 'Question Index',
+      'question-index': 'Question Index', 'coach-audio': 'Coach Audio',
       charting: 'Charting', settings: 'Settings', 'project-assistant': 'Project Assistant',
     };
     return titles[segments[1]] || 'Dashboard';

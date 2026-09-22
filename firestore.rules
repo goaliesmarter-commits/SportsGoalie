@@ -1216,6 +1216,20 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Coach Audio - Michael's recorded voice lines (V-A-01 ... V-B-22).
+    // Metadata only: url, storage path, duration, size.
+    match /coach_audio_clips/{clipId} {
+      // Public read. The marketing pages play these to visitors who are not
+      // signed in, and the client loads the whole collection in one query, so
+      // this cannot be narrowed per-document without splitting that query.
+      // If Michael decides the trigger recordings (V-B-*) should be
+      // goalie-only, that becomes two queries and a rule on the id prefix.
+      allow read: if true;
+
+      // Only Michael uploads. Everything here is written by /admin/coach-audio.
+      allow create, update, delete: if isAdmin();
+    }
+
     // Catch-all rule for any other collections
     match /{document=**} {
       // Deny all access to undefined collections
