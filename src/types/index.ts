@@ -301,7 +301,7 @@ export type {
   VideoQuestionAnswer,
   VideoQuizQuestionWithState,
   VideoPlayerState,
-  QuestionOverlayProps,
+  QuestionPanelProps,
   VideoControlsProps,
   DropOffPoint
 } from './video-quiz';

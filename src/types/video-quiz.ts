@@ -19,6 +19,64 @@ export interface VideoQuizQuestion extends Question {
    * `VideoQuestionAnswer.reflective`.
    */
   reflective?: boolean;
+
+  // ---------------------------------------------------------------------------
+  // The freeze point (SG-09 / SG-10).
+  //
+  // These are not a second mechanism. A freeze point IS a question trigger: the
+  // clock reaches `timestamp`, the frame holds, and what happens next is
+  // described by the fields below. Michael's "step" and this freeze point are
+  // the same thing under two names, which is why `stepNumber` lives here rather
+  // than in a structure of its own.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Hold the frame and play the voice, but ask nothing. The goalie is looking at
+   * the moment while Michael talks over it, then carries on. There is no answer
+   * to record and nothing to grade, so this question never enters the score.
+   */
+  holdOnly?: boolean;
+
+  /**
+   * The line shown beside the held frame - what to look at, in Michael's words.
+   * Loaded as a string so wording can change up to launch without a rebuild.
+   */
+  holdText?: string;
+
+  /**
+   * A clip id from the coach audio catalogue (e.g. 'V-A-14'), played once while
+   * the frame is held. Same catalogue the page buttons use; see
+   * CoachAudioButton. Absent means the frame holds in silence.
+   */
+  voiceClipId?: string;
+
+  /**
+   * What happens once the goalie has answered.
+   *
+   * - `'resume'` - playback continues by itself. This is what the player has
+   *   always done and stays the default when the field is absent.
+   * - `'choose'` - the goalie is offered PLAY ON or REWIND and nothing moves
+   *   until one is chosen.
+   */
+  afterAnswer?: 'resume' | 'choose';
+
+  /**
+   * Where REWIND goes back to, in seconds. Only read when `afterAnswer` is
+   * `'choose'`. Absent means rewind to the start of this question's own segment
+   * - the previous freeze point, or 0 if this is the first.
+   */
+  rewindTo?: number;
+
+  /**
+   * Which step of the clip this freeze point is. The cumulative Knowledge Check
+   * reads these to decide what to ask and in what order.
+   *
+   * IMPORTANT, and this is Michael's rule rather than an implementation detail:
+   * the newest step is asked FIRST, then the older ones. Do not sort these into
+   * chronological order anywhere they are read back. The ordering IS the
+   * teaching.
+   */
+  stepNumber?: number;
 }
 
 /**
@@ -134,9 +192,17 @@ export interface VideoQuestionAnswer {
  * Student progress through video quiz
  */
 export interface VideoQuizProgress {
+  /**
+   * Unique per attempt. Historically this was `progress_<userId>_<quizId>`, which meant a
+   * retake wrote over the previous attempt instead of adding to it. New attempts use
+   * `attempt_<userId>_<quizId>_<timestamp>`; legacy ids still load because every query
+   * filters on the userId/videoQuizId fields, never on the document id.
+   */
   id: string;
   userId: string;
   videoQuizId: string;
+  /** Title of the Knowledge Check as it was named when this attempt was taken. */
+  quizTitle?: string;
   skillId: string;
   sportId: string;
   currentTime: number; // last watched position in seconds
@@ -180,15 +246,44 @@ export interface VideoPlayerState {
 }
 
 /**
- * Props for question overlay
+ * Props for the freeze point panel.
+ *
+ * Named "panel", not "overlay", deliberately: Michael's rule is that the
+ * question sits underneath the video, with no overlay, no blur and no dimming.
+ * See QuestionPanel.tsx.
  */
-export interface QuestionOverlayProps {
+export interface QuestionPanelProps {
   question: VideoQuizQuestion;
   questionNumber: number;
   totalQuestions: number;
   onAnswer: (answer: string | string[]) => void;
   onSkip?: () => void;
   showSkip?: boolean;
+
+  // ---------------------------------------------------------------------------
+  // The freeze point (SG-09 / SG-11).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The frame is still held and the goalie has been offered PLAY ON or REWIND.
+   * Set once a question has been answered, or immediately for a `holdOnly`
+   * freeze whose `afterAnswer` is `'choose'`. Nothing moves until one of the two
+   * is picked.
+   */
+  awaitingChoice?: boolean;
+
+  /**
+   * A `holdOnly` freeze asks nothing, so there is no answer to submit. This is
+   * the goalie saying they have looked, and is the only way such a freeze ends
+   * when `afterAnswer` is not `'choose'`.
+   */
+  onAcknowledge?: () => void;
+
+  /** Carry on from where the frame was held. */
+  onPlayOn?: () => void;
+
+  /** Go back and watch the segment again. See `VideoQuizQuestion.rewindTo`. */
+  onRewind?: () => void;
 }
 
 /**
