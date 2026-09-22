@@ -568,13 +568,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (firebaseUser) {
-        const user = await createUserFromFirebaseUser(firebaseUser);
-        setUser(user);
-      } else {
-        setUser(null);
+      try {
+        if (firebaseUser) {
+          const user = await createUserFromFirebaseUser(firebaseUser);
+          setUser(user);
+        } else {
+          setUser(null);
+        }
+      } finally {
+        // Always clear the flag. Every guarded page waits on it, so if this is
+        // skipped the app sits on a loading skeleton forever with no error to show
+        // for it — which is exactly what a blank page on refresh looks like.
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

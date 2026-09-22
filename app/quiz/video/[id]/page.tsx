@@ -28,8 +28,17 @@ function VideoQuizPageContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (quizId && user) { loadQuizData(); }
-  }, [quizId, user]);
+    // Keyed on the id, not the user object: the auth context hands out a new object
+    // whenever it refreshes, and reloading here would remount the player and drop a
+    // goalie back to the start of a check they were part way through.
+    if (quizId && user?.id) {
+      loadQuizData();
+    } else {
+      // Never leave the page on a skeleton with no way out.
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizId, user?.id]);
 
   const loadQuizData = async () => {
     try {
