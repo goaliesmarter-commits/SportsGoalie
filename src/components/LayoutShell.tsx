@@ -14,7 +14,10 @@ import { ApplicantHoldingScreen } from '@/components/auth/ApplicantHoldingScreen
 import { useAuth } from '@/lib/auth/context';
 import { isWalledApplicant } from '@/types/application';
 
-const BARE_ROUTES = ['/auth'];
+// /coming-soon is the closed-site holding page (see preLaunchGate in proxy.ts).
+// It renders its own full-screen layout, so it must not pick up the dashboard
+// sidebar the default branch at the bottom of this file would wrap it in.
+const BARE_ROUTES = ['/auth', '/coming-soon'];
 const NAKED_ROUTES = [
   '/explain',
   '/goalie',
