@@ -8,8 +8,15 @@
 
 **Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Last Updated:** 2026-08-23
+**Last Updated:** 2026-09-22
 **Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
+
+> ⚠️ **Second logging lapse: 2026-08-29 to 2026-09-10.** Twenty-five commits across four
+> working days (08-29, 08-31, 09-06, 09-10) have no session file — the public question box,
+> account pause/resume, legal acceptance tracking, goalie login handles, the founding-member
+> sign-up, the applicant holding screen, the 6Z-7PS rename. This file and PROJECT_TRACKER.md
+> both stopped at 2026-08-23. The 2026-09-22 entry below is logged first-hand; the gap is
+> **not** back-filled and is listed as an open task rather than reconstructed silently.
 
 > ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
 
@@ -118,6 +125,10 @@
 > ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
 
 > ⚠️ **Sessions dated 2026-08-20, 2026-08-21 and 2026-08-22 were reconstructed on 2026-08-23 from git history.** Logging lapsed for four sessions. **No hours are claimed for those three** — the elapsed time was not measured at the time, and it is not estimated after the fact. What each entry states is what the commit demonstrably changed; reasoning that was not written down then has not been invented now.
+
+### 2026-09-22 - [Freeze Point, Coach Audio Foundation, QA Import + the No-Charge Fault List](docs/sessions/2026-09/2026-09-22-freeze-point-coach-audio-qa-import.md)
+**Time:** not tracked — figure to be supplied | **Focus:** Feature - Freeze Point / Feature - Coach Audio / Feature - QA Library / Bug Fix - Dashboard & Auth | **Block:** 2
+Six commits, three of them billable and three not — the split is recorded in `docs/BILLING-LEDGER.md`, new this session. **SG-09, the freeze point** (`729c8c2`): `QuestionOverlay` deleted and replaced by `QuestionPanel`, the rename being the point rather than incidental — Michael's rule is that the question sits underneath the video with no overlay, blur or dimming, and a component called "overlay" invites the next person to put it back on top. Six fields threaded through types, builder and player: `holdOnly` (hold the frame, play the voice, ask nothing — excluded from the score *and* from the question count in both the analytics service and the results page, because a freeze point that asks nothing is not a question the goalie failed), `holdText`, `voiceClipId`, `afterAnswer` defaulting to `'resume'` when absent so every existing quiz behaves exactly as before, `rewindTo`, and `stepNumber` — with the newest-first ordering written into the type comment as Michael's teaching method, not an implementation detail to be "fixed" into chronological order later. **H-19 Block A** (`2d862dd`): the voice foundation, which did not exist in any form — no player, storage, upload path or attachment mechanism anywhere. `coach_audio_clips` holds metadata only; files sit at `coach-audio/<clipId>.mp3` on deterministic names so re-uploading a line replaces it rather than orphaning the old object. Public read on both rules is deliberate and commented as such: the marketing pages play clips to signed-out visitors and the client loads the whole collection in one query, so narrowing it per-document means splitting that query. **Foundation only — the 37 V-A clips (SG-04) are not wired.** **H-22** (`df920e0`): Michael's eight categories replace the pillar-keyed scheme rather than merging with it, the letter prefix kept because it is how he refers to rows ("A7", "G24"); `category` nullable rather than merely optional so clearing one back to Uncategorised is a real edit the spread won't drop; keywords widen the lexical fallback only and are never shown to the AI matcher, which already matches on meaning and would be pulled toward a topic area by a list of loose terms. Import behind a confirm because it writes 100+ documents. **Grasp Level bands** (`03d5235`): every inline `>= 70` replaced by one `SCORE_BANDS` table — the progress page and results page had already drifted to different colours for the same score — and no result is painted red any more. Plus the 7A–7J copy sweep, 7 → 8 Pillars, marquee rebuilt from one constant instead of two hand-maintained arrays. **Platform settings** (`b682fcf`): the admin screen was saving to a one-second `setTimeout` and a success toast, storing nothing; it now persists, and shows back what was *written* so a clamped value stops claiming the number that was rejected. **The no-charge fault list** (`642412a`): A1-b retakes no longer overwrite (per-attempt ids; legacy ids still load because every query filters on fields, never the document id), A4 quiz titles on history rows, the admin tally counted from attempts (the metadata counter could never work — only admins may write `video_quizzes`, so a goalie finishing a check cannot increment it), dashboard pillars derived from attempts for goalies invited straight in who never run enrolment, and the blank-page-on-refresh fixed by moving `setLoading(false)` into a `finally`. One fault found that Michael never reported: **opening the results page created an attempt** — `getUserQuizProgress` was a get-or-create. **Nothing verified in a browser or by a build this session, and the rules are not deployed** — coach audio will deny until they are. Third consecutive unverified session, this one touching the auth loading path and the attempt-id scheme.
 
 ### 2026-08-23 - [Coach Mike's Free-Work List + ESLint Repair](docs/sessions/2026-08/2026-08-23-free-work-list-and-eslint-repair.md)
 **Time:** to be filled from the measured figure | **Focus:** Bug Fix - Mind Vault / UI - Copy / Tooling - Lint | **Block:** 2
@@ -508,7 +519,15 @@ Initial project analysis and progress tracking system implementation.
 | 2026-06 | 144h | Coach onboarding, coach panel, baseline questionnaire, L-Index, blue design system, parent + coach charting modules, Growth Points, video review | 10 |
 | 2026-07 | 41h | Mobile responsiveness, baseline scores, contact form, invitations + admin invite management, video library, invite validation, Seven Pillars public pages | 7 |
 | 2026-08 (to 23rd) | 18.65h measured, 5 sessions unmeasured | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit, content library grid overflow fix, reflective questions + coach answers view, onboarding back-navigation, eighth pillar, pillar identity resolution, Mind Vault per-category forms, ESLint repair | 8 |
-| **Total** | **363.65h measured** | - | **46** |
+| 2026-08 (from 29th) | not measured, 2 sessions unlogged | Sport display names, archived chatbot route, ESLint flat configs, public question box, account pause/resume, legal acceptance, Mind Vault category labels, contact email | 2 |
+| 2026-09 | not measured, 3 sessions | Goalie login handles + signup policy, Driver-or-Passenger assessment, founding-member sign-up, pricing/navigation, invitation atomicity, applicant holding screen, 6Z-7PS rename · then 09-22: freeze point, coach audio foundation, QA import, no-charge fault list | 3 |
+| **Total** | **363.65h measured** | - | **51** |
+
+> ⚠️ **The 2026-08-29 to 2026-09-22 rows carry no hours at all.** Four of those five working
+> days have no session file either. Nothing is estimated from commit scope — the standing rule
+> holds. **Billable vs no-charge for 2026-09-22 is recorded in `docs/BILLING-LEDGER.md`**; the
+> hours column there reads "not tracked" for the same reason, which means no invoice can be
+> built from it until a measured figure exists.
 
 > ⚠️ **Five August sessions carry no hours: 2026-08-19, 20, 21, 22 and 23.** The 19th was not
 > measured at the time; the 20th–22nd were reconstructed from git on 2026-08-23; the 23rd needs its

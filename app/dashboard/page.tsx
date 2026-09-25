@@ -47,7 +47,10 @@ function DashboardContent() {
     if (user?.role === 'student' && !user?.onboardingCompleted) router.push('/onboarding');
   }, [user, router]);
   if (user?.role === 'student' && !user?.onboardingCompleted) return <SkeletonDashboard />;
-  if (user?.role === 'student' && user?.workflowType === 'custom') return <CustomCurriculumDashboard user={user} />;
+  // Custom-workflow goalies get the coach-curriculum dashboard only while they
+  // actually have a coach — without one there is no curriculum to show, so they
+  // fall back to the standard self-paced dashboard instead of a dead end.
+  if (user?.role === 'student' && user?.workflowType === 'custom' && user?.assignedCoachId) return <CustomCurriculumDashboard user={user} />;
   return <StandardDashboard />;
 }
 
@@ -378,7 +381,7 @@ function StandardDashboard() {
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#fff', marginBottom: '16px' }}>Quick Actions</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <QuickActionCard href="/pillars" icon={<BookOpen size={22} />} label="Pillars" sub="Browse content" color={BLUE} />
-                <QuickActionCard href="/quizzes" icon={<Trophy size={22} />} label="Knowledge Checks" sub="Test yourself" color="#4ade80" />
+                <QuickActionCard href="/quizzes" icon={<Trophy size={22} />} label="Knowledge Checks" sub="Check yourself" color="#4ade80" />
                 <QuickActionCard href="/progress" icon={<TrendingUp size={22} />} label="Progress" sub="View analytics" color="#a78bfa" />
                 <QuickActionCard href="/charting" icon={<Target size={22} />} label="Charting" sub="Track sessions" color="#fb923c" />
               </div>

@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Users, UserPlus, BarChart3, BookOpen, Trophy,
   Video, FileText, MessageSquare, Shield, Settings, LogOut,
   ChevronLeft, Menu, X, User, BarChart2, Dumbbell, HelpCircle,
+  BadgeDollarSign, ClipboardCheck, AudioLines,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 
@@ -28,9 +29,11 @@ const navSections: NavSection[] = [
   {
     label: 'People',
     items: [
+      { label: 'Applications', href: '/admin/applications', icon: ClipboardCheck },
       { label: 'All Users', href: '/admin/users', icon: Users },
       { label: 'Coaches', href: '/admin/coaches', icon: UserPlus },
       { label: 'Goalies', href: '/admin/goalies', icon: User },
+      { label: 'Founding Members', href: '/admin/founding', icon: BadgeDollarSign },
     ],
   },
   {
@@ -41,6 +44,7 @@ const navSections: NavSection[] = [
       { label: 'Video Library', href: '/admin/video-library', icon: Video },
       { label: 'Video Reviews', href: '/admin/video-reviews', icon: Video },
       { label: 'Form Templates', href: '/admin/form-templates', icon: FileText },
+      { label: 'Coach Audio', href: '/admin/coach-audio', icon: AudioLines },
     ],
   },
   {

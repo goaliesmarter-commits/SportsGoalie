@@ -10,9 +10,14 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { CoachSidebar } from '@/components/coach/CoachSidebar';
 import { QuestionBox } from '@/components/qa/QuestionBox';
 import { PausedAccountScreen } from '@/components/auth/PausedAccountScreen';
+import { ApplicantHoldingScreen } from '@/components/auth/ApplicantHoldingScreen';
 import { useAuth } from '@/lib/auth/context';
+import { isWalledApplicant } from '@/types/application';
 
-const BARE_ROUTES = ['/auth'];
+// /coming-soon is the closed-site holding page (see preLaunchGate in proxy.ts).
+// It renders its own full-screen layout, so it must not pick up the dashboard
+// sidebar the default branch at the bottom of this file would wrap it in.
+const BARE_ROUTES = ['/auth', '/coming-soon'];
 const NAKED_ROUTES = [
   '/explain',
   '/goalie',
@@ -27,6 +32,15 @@ const NAKED_ROUTES = [
   '/7-pillars',
   '/pillar',
   '/offer',
+  // The founding-member sign-up renders its own PublicPageNav and Footer7, like
+  // the rest of the marketing site. Without this entry it falls through to the
+  // default branch at the bottom of this file and comes out wrapped in the
+  // goalie dashboard sidebar.
+  '/founding',
+  // /apply renders its own PublicPageNav, same as /founding. It is also the one
+  // page a walled applicant must never be walled out of by mistake — though in
+  // practice it redirects a signed-in visitor away before they see it.
+  '/apply',
   // Legal pages render their own PublicPageNav and Footer7, like the rest of
   // the marketing site. Without these entries they fall through to the default
   // branch at the bottom of this file and come out wrapped in the goalie
@@ -79,7 +93,7 @@ function getPageTitle(pathname: string): string {
       admin: 'Dashboard', analytics: 'Analytics', users: 'Users', coaches: 'Coaches',
       pillars: 'Pillars', quizzes: 'Quizzes', 'video-reviews': 'Video Reviews',
       'form-templates': 'Form Templates', messages: 'Messages', moderation: 'Moderation',
-      'question-index': 'Question Index',
+      'question-index': 'Question Index', 'coach-audio': 'Coach Audio',
       charting: 'Charting', settings: 'Settings', 'project-assistant': 'Project Assistant',
     };
     return titles[segments[1]] || 'Dashboard';
@@ -94,6 +108,7 @@ function getPageTitle(pathname: string): string {
   if (first === 'parent') {
     const titles: Record<string, string> = {
       parent: 'Dashboard', goalies: 'My Goalies', 'link-child': 'Link Goalie',
+      'add-goalie': 'Add a Goalie',
       onboarding: 'Assessment', perception: 'Perception', profile: 'Profile', child: 'Goalie Details',
     };
     return titles[segments[1]] || 'Dashboard';
@@ -152,6 +167,33 @@ export function LayoutShell({ children }: { children: ReactNode }) {
   // layer. Admins are exempt: the switch is controlled from their panel.
   if (user?.isPaused && user.role !== 'admin' && !isPublicRoute(pathname)) {
     return <PausedAccountScreen />;
+  }
+
+  // The applicant content wall (item 2). Michael's requirement was blunt: an
+  // applicant "sees nothing, not one video" until he has approved them.
+  //
+  // It sits here, beside the pause switch, for the same reason the pause
+  // switch does — every app shell is replaced in one place, so no individual
+  // area has to know applicants exist. Bolting it onto each area's own guard
+  // instead would have left holes: /parent and /coach do their own auth checks
+  // and never touch ProtectedRoute, so a walled parent applicant would have
+  // walked straight into the parent dashboard.
+  //
+  // Two doors stay open. The marketing site, via the naked / bare / public
+  // branches (the first two return above this line, the third is excluded
+  // here) — they applied after reading it and can carry on reading it. And
+  // /onboarding, because the questionnaire IS the application; walling that
+  // off would wall them out of the only thing they are here to do.
+  //
+  // Admins are exempt, as with the pause switch. ProtectedRoute repeats this
+  // check as a second layer.
+  if (
+    isWalledApplicant(user?.applicationStatus) &&
+    user?.role !== 'admin' &&
+    !isOnboardingRoute(pathname) &&
+    !isPublicRoute(pathname)
+  ) {
+    return <ApplicantHoldingScreen />;
   }
 
   // Onboarding: Header7 navbar (fixed) + dark content below it, no footer

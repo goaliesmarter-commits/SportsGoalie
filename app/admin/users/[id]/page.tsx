@@ -479,7 +479,21 @@ function UserDetailsContent() {
                       {fieldLabel('Date of Birth')}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Calendar size={14} color="rgba(255,255,255,0.3)" />
-                        <p style={{ color: '#fff', fontSize: '15px' }}>{user.profile?.dateOfBirth ? new Date(user.profile.dateOfBirth).toLocaleDateString() : 'Not provided'}</p>
+                        {/* Sign-up writes the top-level `dateOfBirth` (item 6b) as a plain
+                            `YYYY-MM-DD` string; `profile.dateOfBirth` is the older field kept
+                            for accounts that have one. Prefer the one the form actually sets.
+                            Rendered by its parts rather than via Date, so the calendar date
+                            shown is the one the goalie typed and not a timezone away from it. */}
+                        <p style={{ color: '#fff', fontSize: '15px' }}>
+                          {user.dateOfBirth
+                            ? user.dateOfBirth.split('-').reverse().join('/')
+                            : user.profile?.dateOfBirth
+                              ? new Date(user.profile.dateOfBirth).toLocaleDateString()
+                              : 'Not provided'}
+                          {user.ageBracket === 'under_13' && (
+                            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginLeft: '8px' }}>under 13 at sign-up</span>
+                          )}
+                        </p>
                       </div>
                     </div>
                     <div>

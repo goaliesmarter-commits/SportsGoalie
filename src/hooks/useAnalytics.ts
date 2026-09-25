@@ -27,6 +27,8 @@ export interface PillarBreakdown {
 export interface RecentAttempt {
   id: string;
   quizId: string;
+  /** Name of the Knowledge Check. Empty only if the check itself has been deleted. */
+  quizTitle: string;
   skillId: string;
   sportId: string;
   pillarName: string;
@@ -84,6 +86,41 @@ function dateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Fills in the Knowledge Check name on attempts that were taken before the title was
+ * stored alongside the attempt. Mutates in place.
+ *
+ * Only the rows actually on screen are looked up, one read per distinct check rather
+ * than per attempt, and the quiz service caches them — so a goalie who has retaken the
+ * same check ten times still costs a single read.
+ */
+async function fillInMissingTitles(recentAttempts: RecentAttempt[]): Promise<void> {
+  const missingIds = [
+    ...new Set(recentAttempts.filter(a => !a.quizTitle && a.quizId).map(a => a.quizId)),
+  ];
+  if (missingIds.length === 0) return;
+
+  const titles = new Map<string, string>();
+  await Promise.all(
+    missingIds.map(async quizId => {
+      try {
+        const result = await videoQuizService.getVideoQuiz(quizId);
+        if (result.success && result.data?.title) {
+          titles.set(quizId, result.data.title);
+        }
+      } catch {
+        // A deleted check just keeps its fallback label.
+      }
+    })
+  );
+
+  for (const attempt of recentAttempts) {
+    if (!attempt.quizTitle) {
+      attempt.quizTitle = titles.get(attempt.quizId) || '';
+    }
+  }
+}
+
 export function useAnalytics() {
   const { user } = useAuth();
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -96,6 +133,8 @@ export function useAnalytics() {
       return;
     }
 
+    let cancelled = false;
+
     const load = async () => {
       try {
         setLoading(true);
@@ -106,6 +145,8 @@ export function useAnalytics() {
           limit: 2000,
         });
 
+        if (cancelled) return;
+
         if (!result.success || !result.data) {
           setError('Failed to load analytics data');
           return;
@@ -113,17 +154,23 @@ export function useAnalytics() {
 
         const attempts = result.data.items;
         const analytics = aggregateAnalytics(attempts);
+        await fillInMissingTitles(analytics.recentAttempts);
+        if (cancelled) return;
         setData(analytics);
         setError(null);
       } catch (err) {
         console.error('useAnalytics load error:', err);
         setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   return { data, loading, error };
@@ -269,9 +316,11 @@ function aggregateAnalytics(
     return {
       id: a.id,
       quizId: a.videoQuizId,
+      // Filled in from the check itself for attempts saved before the title was stored.
+      quizTitle: a.quizTitle?.trim() || '',
       skillId: a.skillId,
       sportId: a.sportId,
-      pillarName: pillarInfo?.shortName || 'Quiz',
+      pillarName: pillarInfo?.shortName || '',
       percentage: Math.round(a.percentage || 0),
       timeSpent: Math.round((a.timeSpent || a.totalTimeSpent || 0) / 60),
       submittedAt: toDate(a.submittedAt || a.completedAt),

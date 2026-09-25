@@ -4,6 +4,7 @@ import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { verifyAdminRequest } from '@/lib/auth/admin-request';
 import { logger } from '@/lib/utils/logger';
+import { QA_CATEGORIES, isQACategory } from '@/types/qa';
 
 /**
  * Admin: the answer library.
@@ -19,6 +20,10 @@ const createSchema = z.object({
   question: z.string().trim().min(3).max(500),
   answer: z.string().trim().min(1).max(10000),
   status: z.enum(['published', 'draft']),
+  // Optional so the queue-publish path, which has no category to give, keeps
+  // working unchanged. Entries without one show as Uncategorised.
+  category: z.enum(QA_CATEGORIES).nullable().optional(),
+  keywords: z.array(z.string().trim().min(1)).max(40).optional(),
 });
 
 function toIso(value: unknown): string {
@@ -38,6 +43,14 @@ export async function GET(request: NextRequest) {
         question: data.question ?? '',
         answer: data.answer ?? '',
         status: data.status ?? 'draft',
+        // Anything written before the September import has no category field at
+        // all, and an unrecognised one is treated the same way rather than
+        // trusted — the filter offers a fixed list and a stray value would
+        // create a bucket nothing can reach.
+        category: isQACategory(data.category) ? data.category : null,
+        keywords: Array.isArray(data.keywords)
+          ? data.keywords.filter((k: unknown): k is string => typeof k === 'string')
+          : [],
         source: data.source ?? 'manual',
         timesServed: data.timesServed ?? 0,
         createdAt: toIso(data.createdAt),
@@ -66,6 +79,8 @@ export async function POST(request: NextRequest) {
   try {
     const docRef = await adminDb.collection('qaEntries').add({
       ...parsed.data,
+      category: parsed.data.category ?? null,
+      keywords: parsed.data.keywords ?? [],
       source: 'manual',
       timesServed: 0,
       createdAt: FieldValue.serverTimestamp(),

@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronUp, Inbox, Library, Plus, Search, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, DownloadCloud, Inbox, Library, Plus, Search, Trash2, X } from 'lucide-react';
 import { AdminRoute } from '@/components/auth/protected-route';
 import { auth } from '@/lib/firebase/config';
-import type { QAEntry, QASubmission } from '@/types/qa';
+import { QA_CATEGORIES, type QACategory, type QAEntry, type QASubmission } from '@/types/qa';
 import { toast } from 'sonner';
 
 const BLUE = '#37b5ff';
@@ -122,14 +122,28 @@ function QuestionIndexContent() {
 
 /* ── Library ── */
 
+/** Michael's own group names, tidied for display: 'A cold questions' → 'A · Cold questions'. */
+function categoryLabel(category: QACategory): string {
+  return category.slice(0, 1) + ' · ' + category.slice(2, 3).toUpperCase() + category.slice(3);
+}
+
 function LibraryTab({ entries, reload }: { entries: QAEntry[]; reload: () => void }) {
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<QACategory | 'all' | 'none'>('all');
   const [adding, setAdding] = useState(false);
 
   const filtered = entries.filter(e => {
     const s = search.toLowerCase();
-    return !s || e.question.toLowerCase().includes(s) || e.answer.toLowerCase().includes(s);
+    const matchesSearch = !s || e.question.toLowerCase().includes(s) || e.answer.toLowerCase().includes(s);
+    const matchesCategory =
+      category === 'all' || (category === 'none' ? e.category === null : e.category === category);
+    return matchesSearch && matchesCategory;
   });
+
+  // Counts come from the whole library rather than the filtered view, so the
+  // dropdown still says what is in each group once you have narrowed to one.
+  const countFor = (value: QACategory | 'none') =>
+    entries.filter(e => (value === 'none' ? e.category === null : e.category === value)).length;
 
   return (
     <>
@@ -138,6 +152,17 @@ function LibraryTab({ entries, reload }: { entries: QAEntry[]; reload: () => voi
           <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
           <input className="qi-inp" style={{ paddingLeft: '36px' }} placeholder="Search questions and answers…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <select className="qi-inp" style={{ width: 'auto', minWidth: '195px', cursor: 'pointer' }}
+          value={category} onChange={e => setCategory(e.target.value as QACategory | 'all' | 'none')}>
+          <option value="all" style={{ background: '#02122c' }}>All groups ({entries.length})</option>
+          {QA_CATEGORIES.map(value => (
+            <option key={value} value={value} style={{ background: '#02122c' }}>
+              {categoryLabel(value)} ({countFor(value)})
+            </option>
+          ))}
+          <option value="none" style={{ background: '#02122c' }}>Uncategorised ({countFor('none')})</option>
+        </select>
+        <ImportButton reload={reload} />
         <button onClick={() => setAdding(a => !a)} className="qi-btn"
           style={{ display: 'flex', alignItems: 'center', gap: '6px', background: adding ? 'rgba(55,181,255,0.15)' : BLUE, color: adding ? BLUE : '#fff', border: 'none', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
           {adding ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Add answer</>}
@@ -150,8 +175,8 @@ function LibraryTab({ entries, reload }: { entries: QAEntry[]; reload: () => voi
         <div style={{ ...card, padding: '40px', textAlign: 'center' }}>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', margin: 0 }}>
             {entries.length === 0
-              ? 'No answers yet. Add the first one — the public box has nothing to serve until you do.'
-              : 'Nothing matches that search.'}
+              ? 'No answers yet. Add the first one, or import the question index.'
+              : 'Nothing matches that filter.'}
           </p>
         </div>
       ) : (
@@ -163,9 +188,116 @@ function LibraryTab({ entries, reload }: { entries: QAEntry[]; reload: () => voi
   );
 }
 
+interface ImportSummary {
+  created: number;
+  updated: number;
+  total: number;
+  statusDivergences: number;
+  possibleDuplicates: { id: string; question: string }[];
+}
+
+/**
+ * Runs the import of Michael's question index.
+ *
+ * Behind a confirm step because it writes well over a hundred documents at
+ * once. Re-running is safe — the same rows are overwritten rather than copied
+ * — but a bulk write should still be a deliberate press, and the confirm line
+ * is where the two things that are easy to assume wrongly get said out loud:
+ * publish decisions made in this screen are kept, and nothing is deleted.
+ */
+function ImportButton({ reload }: { reload: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
+
+  async function runImport() {
+    setConfirming(false);
+    setRunning(true);
+    try {
+      const res = await authedFetch('/api/admin/qa/import', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSummary(data as ImportSummary);
+        toast.success(`${data.total} answers imported — ${data.created} added, ${data.updated} updated`);
+        reload();
+      } else toast.error(data.error || 'Import failed');
+    } catch {
+      toast.error('Import failed');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <>
+      <button onClick={() => setConfirming(c => !c)} disabled={running} className="qi-btn"
+        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', color: BLUE2, border: '1px solid rgba(55,181,255,0.3)', borderRadius: '10px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: running ? 'wait' : 'pointer' }}>
+        <DownloadCloud size={15} /> {running ? 'Importing…' : 'Import index'}
+      </button>
+
+      {confirming && (
+        <div style={{ ...card, padding: '16px', width: '100%', border: '1px solid rgba(55,181,255,0.3)' }}>
+          <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, margin: '0 0 6px' }}>Import the question index?</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 12px', lineHeight: 1.6 }}>
+            Loads the answers from the sheet Michael sent. Safe to run more than once — it updates the
+            same entries rather than making copies. Anything published from this screen stays published,
+            and nothing is deleted.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button onClick={runImport} className="qi-btn" style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Run the import</button>
+            <button onClick={() => setConfirming(false)} className="qi-btn" style={{ background: 'transparent', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '9px 16px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {summary && (
+        <div style={{ ...card, padding: '16px', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <CheckCircle2 size={15} style={{ color: GREEN, flexShrink: 0 }} />
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>
+              {summary.total} answers imported — {summary.created} added, {summary.updated} updated
+            </span>
+            <button onClick={() => setSummary(null)} className="qi-btn" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 0, display: 'flex' }}>
+              <X size={15} />
+            </button>
+          </div>
+
+          {summary.statusDivergences > 0 && (
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', margin: '0 0 8px', lineHeight: 1.6 }}>
+              {summary.statusDivergences} of them are published or drafted differently here than in the
+              sheet. What you set in this screen was kept.
+            </p>
+          )}
+
+          {summary.possibleDuplicates.length > 0 && (
+            <div style={{ borderTop: '1px solid rgba(55,181,255,0.1)', paddingTop: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <AlertTriangle size={14} style={{ color: AMBER, flexShrink: 0 }} />
+                <span style={{ color: AMBER, fontSize: '12px', fontWeight: 700 }}>
+                  {summary.possibleDuplicates.length} older entr{summary.possibleDuplicates.length === 1 ? 'y asks' : 'ies ask'} the same question
+                </span>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', margin: '0 0 8px' }}>
+                Nothing was deleted. Read both and delete whichever wording you don&apos;t want.
+              </p>
+              <ul style={{ margin: 0, paddingLeft: '18px', color: 'rgba(255,255,255,0.55)', fontSize: '12px', lineHeight: 1.7 }}>
+                {summary.possibleDuplicates.map(row => <li key={row.id}>{row.question}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 function EntryForm({ entry, onDone }: { entry?: QAEntry; onDone: () => void }) {
   const [question, setQuestion] = useState(entry?.question ?? '');
   const [answer, setAnswer] = useState(entry?.answer ?? '');
+  // '' is Uncategorised, which is a real choice rather than a missing one:
+  // everything written before the import has no group, and an answer typed in
+  // here does not have to belong to one of Michael's eight.
+  const [category, setCategory] = useState<QACategory | ''>(entry?.category ?? '');
   const [saving, setSaving] = useState(false);
 
   async function save(status: 'published' | 'draft') {
@@ -173,9 +305,15 @@ function EntryForm({ entry, onDone }: { entry?: QAEntry; onDone: () => void }) {
     if (answer.trim().length < 1) { toast.error('Write the answer first'); return; }
     setSaving(true);
     try {
+      const payload = {
+        question: question.trim(),
+        answer: answer.trim(),
+        status,
+        category: category === '' ? null : category,
+      };
       const res = entry
-        ? await authedFetch(`/api/admin/qa/entries/${entry.id}`, { method: 'PATCH', body: JSON.stringify({ question: question.trim(), answer: answer.trim(), status }) })
-        : await authedFetch('/api/admin/qa/entries', { method: 'POST', body: JSON.stringify({ question: question.trim(), answer: answer.trim(), status }) });
+        ? await authedFetch(`/api/admin/qa/entries/${entry.id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+        : await authedFetch('/api/admin/qa/entries', { method: 'POST', body: JSON.stringify(payload) });
       const data = await res.json();
       if (data.success) { toast.success(status === 'published' ? 'Published' : 'Saved as draft'); onDone(); }
       else toast.error(data.error || 'Failed to save');
@@ -189,6 +327,13 @@ function EntryForm({ entry, onDone }: { entry?: QAEntry; onDone: () => void }) {
       <input className="qi-inp" style={{ marginBottom: '12px' }} value={question} onChange={e => setQuestion(e.target.value)} placeholder="e.g. How much does Smarter Goalie cost?" maxLength={500} />
       <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: BLUE2, marginBottom: '6px' }}>Answer — served word for word</label>
       <textarea className="qi-inp" style={{ minHeight: '120px', resize: 'vertical', marginBottom: '12px' }} value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Exactly what the visitor should read." maxLength={10000} />
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: BLUE2, marginBottom: '6px' }}>Group — for your own filing</label>
+      <select className="qi-inp" style={{ marginBottom: '12px', cursor: 'pointer' }} value={category} onChange={e => setCategory(e.target.value as QACategory | '')}>
+        <option value="" style={{ background: '#02122c' }}>Uncategorised</option>
+        {QA_CATEGORIES.map(value => (
+          <option key={value} value={value} style={{ background: '#02122c' }}>{categoryLabel(value)}</option>
+        ))}
+      </select>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         <button onClick={() => save('published')} disabled={saving} className="qi-btn" style={{ background: BLUE, color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 18px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
           {saving ? 'Saving…' : 'Publish'}
@@ -235,6 +380,11 @@ function EntryRow({ entry, reload }: { entry: QAEntry; reload: () => void }) {
           {published ? 'Live' : 'Draft'}
         </span>
         <span style={{ flex: 1, color: '#fff', fontSize: '14px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.question}</span>
+        {entry.category && (
+          <span className="hidden md:inline" style={{ flexShrink: 0, color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 600, letterSpacing: '.02em' }}>
+            {categoryLabel(entry.category)}
+          </span>
+        )}
         <span style={{ flexShrink: 0, color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
           {entry.timesServed > 0 && `served ${entry.timesServed}×`}
         </span>

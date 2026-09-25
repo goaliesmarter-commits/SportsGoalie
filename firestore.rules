@@ -133,11 +133,27 @@ service cloud.firestore {
 
       // Users can update their own profile (except role, email, and the admin-only
       // pause switch — otherwise a paused member could simply unpause themselves)
+      //
+      // The application fields are locked for the same reason (item 2). An
+      // applicant is walled out of the content by applicationStatus, so if they
+      // could set it themselves the wall would be a suggestion. The single
+      // self-transition allowed is 'applying' -> 'submitted', which is the flip
+      // the baseline questionnaire makes in the same write as the profile.
+      // Everything recording Michael's decision is admin-only.
+      //
       // Parents can update a student's linkedParentIds (needed for parent-child linking)
       allow update: if (isOwner(userId) &&
                        !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
                        !('email' in request.resource.data.diff(resource.data).affectedKeys()) &&
-                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPaused', 'pausedAt', 'resumedAt'])) ||
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPaused', 'pausedAt', 'resumedAt']) &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                         'appliedAt', 'applicationDecidedAt', 'applicationDecidedBy',
+                         'applicationDecidedByName', 'applicationNote',
+                         'applicationReceivedEmailSent', 'applicationDecisionEmailSent'
+                       ]) &&
+                       (!('applicationStatus' in request.resource.data.diff(resource.data).affectedKeys()) ||
+                        (resource.data.get('applicationStatus', '') == 'applying' &&
+                         request.resource.data.applicationStatus == 'submitted'))) ||
                       isAdmin() ||
                       (isParent() &&
                        resource.data.role == 'student' &&
@@ -1198,6 +1214,20 @@ service cloud.firestore {
 
       // The log is append-only: nobody rewrites history except an admin.
       allow update, delete: if isAdmin();
+    }
+
+    // Coach Audio - Michael's recorded voice lines (V-A-01 ... V-B-22).
+    // Metadata only: url, storage path, duration, size.
+    match /coach_audio_clips/{clipId} {
+      // Public read. The marketing pages play these to visitors who are not
+      // signed in, and the client loads the whole collection in one query, so
+      // this cannot be narrowed per-document without splitting that query.
+      // If Michael decides the trigger recordings (V-B-*) should be
+      // goalie-only, that becomes two queries and a rule on the id prefix.
+      allow read: if true;
+
+      // Only Michael uploads. Everything here is written by /admin/coach-audio.
+      allow create, update, delete: if isAdmin();
     }
 
     // Catch-all rule for any other collections

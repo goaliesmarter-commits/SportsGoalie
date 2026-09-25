@@ -803,7 +803,9 @@ export class StudentAnalyticsService extends BaseDatabaseService {
           maxScore: attempt.maxScore,
           percentage: attempt.percentage,
           questionsAnswered: attempt.questionsAnswered?.length || 0,
-          totalQuestions: quiz.data?.questions?.length || 0,
+          // A freeze point that holds the frame but asks nothing is not a question
+          // and is never answered, so it is not counted here either.
+          totalQuestions: quiz.data?.questions?.filter((q: { holdOnly?: boolean }) => !q.holdOnly).length || 0,
           correctAnswers: attempt.questionsAnswered?.filter((q: { isCorrect?: boolean }) => q.isCorrect).length || 0,
           incorrectAnswers: attempt.questionsAnswered?.filter((q: { isCorrect?: boolean }) => !q.isCorrect).length || 0,
         });

@@ -55,7 +55,7 @@ const FACTORS: Factor[] = [
   },
   {
     key: 'belowLine',
-    label: 'Below the Line (6ZS)',
+    label: 'Below the Line (6Z-7PS)',
     getGoalie: p => p.sixZSRating,
     getParent:  null,
     getCoach:   p => p.belowLineRating,

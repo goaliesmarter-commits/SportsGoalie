@@ -327,6 +327,38 @@ export class UserService extends BaseDatabaseService {
     if (userId === requestingAdminId) {
       return { success: false, error: { code: 'FORBIDDEN', message: 'Cannot delete your own account' }, timestamp: new Date() };
     }
+
+    // Release any custom-workflow goalies assigned to this user before deleting,
+    // otherwise they keep a dangling coach link and stay locked out of all content
+    // (custom access is gated on a coach-managed curriculum, and a goalie with an
+    // assignedCoachId can't be picked up by another coach either).
+    const assignedResult = await this.query<User>(this.USERS_COLLECTION, {
+      where: [
+        { field: 'role', operator: '==', value: 'student' },
+        { field: 'assignedCoachId', operator: '==', value: userId },
+      ],
+    });
+    if (assignedResult.success && assignedResult.data) {
+      for (const student of assignedResult.data.items) {
+        const release = await this.update<User>(this.USERS_COLLECTION, student.id, {
+          assignedCoachId: null as unknown as string,
+          assignedCoachName: null as unknown as string,
+          workflowType: 'automated',
+        });
+        if (!release.success) {
+          logger.error('Failed to release student from deleted coach', 'UserService', {
+            studentId: student.id,
+            coachId: userId,
+          });
+          return {
+            success: false,
+            error: { code: 'CASCADE_FAILED', message: 'Could not release this user\'s assigned goalies. No accounts were deleted — try again.' },
+            timestamp: new Date(),
+          };
+        }
+      }
+    }
+
     return this.delete(this.USERS_COLLECTION, userId);
   }
 
@@ -1123,10 +1155,13 @@ export class UserService extends BaseDatabaseService {
       };
     }
 
-    // Remove the assignment by setting assignedCoachId to null
-    // Note: We use a direct Firestore update to set the field to null
+    // Remove the assignment and return the goalie to the self-paced workflow.
+    // Leaving workflowType='custom' with no coach would silently lock them out
+    // of all content, because custom access is gated on a coach-managed curriculum.
     const updateResult = await this.update<User>(this.USERS_COLLECTION, studentId, {
       assignedCoachId: null as unknown as string, // Clear the assignment
+      assignedCoachName: null as unknown as string,
+      workflowType: 'automated',
     });
 
     if (updateResult.success) {

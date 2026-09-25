@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth/context';
 import { PausedAccountScreen } from '@/components/auth/PausedAccountScreen';
+import { ApplicantHoldingScreen } from '@/components/auth/ApplicantHoldingScreen';
+import { isWalledApplicant } from '@/types/application';
 import { UserRole } from '@/types';
 import {
   SkeletonContentPage,
@@ -115,6 +117,21 @@ export function ProtectedRoute({
   // that controls the switch.
   if (user?.isPaused && user.role !== 'admin') {
     return <PausedAccountScreen />;
+  }
+
+  // The applicant content wall (item 2). Someone who applied through /apply
+  // sees nothing of the product — not one video — until Michael approves them.
+  // Checked here for the same reason as the pause switch: it covers every
+  // guarded page at once, so no page has to remember applicants exist.
+  //
+  // Note what this does NOT cover, deliberately: /onboarding is outside
+  // ProtectedRoute, which is how the applicant reaches the baseline
+  // questionnaire. That is the only thing they are meant to be able to do.
+  //
+  // Admins are exempt on the same principle as pause — an admin must never be
+  // lockable out of the screen that lifts the wall.
+  if (isWalledApplicant(user?.applicationStatus) && user?.role !== 'admin') {
+    return <ApplicantHoldingScreen />;
   }
 
   return <>{children}</>;

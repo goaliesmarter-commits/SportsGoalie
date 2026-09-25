@@ -131,6 +131,13 @@ export function VideoQuestionBuilder({
   // right for most videos and wrong for a fast drill where three cues land in
   // the same second. 0 turns the check off completely.
   const [minQuestionSpacing, setMinQuestionSpacing] = useState(5);
+  // Same raw-text treatment as the timestamp box, for the rewind target.
+  const [rewindDraft, setRewindDraft] = useState<string | null>(null);
+
+  // The step this freeze point will be, unless Michael sets it himself. One past
+  // the highest already placed, so steps stay unique without him counting.
+  const nextStepNumber =
+    questions.reduce((highest, q) => Math.max(highest, q.stepNumber ?? 0), 0) + 1;
 
   // Fill in the blank split inputs
   const [blankBefore, setBlankBefore] = useState('');
@@ -261,8 +268,20 @@ export function VideoQuestionBuilder({
   };
 
   const handleAddQuestion = () => {
-    if (!newQuestion.question || newQuestion.question.trim() === '') {
+    // A hold-only freeze point asks nothing, so there is no question text to
+    // demand. It still needs a line of its own for the list below to be
+    // readable, which is what holdText is.
+    const isHoldOnly = newQuestion.holdOnly === true;
+
+    if (!isHoldOnly && (!newQuestion.question || newQuestion.question.trim() === '')) {
       toast.error('Question text is required');
+      return;
+    }
+
+    if (isHoldOnly && (!newQuestion.holdText || newQuestion.holdText.trim() === '')) {
+      toast.error('Say what the goalie should look at', {
+        description: 'A hold with no question still needs a line on screen.',
+      });
       return;
     }
 
@@ -299,7 +318,9 @@ export function VideoQuestionBuilder({
     // Validate question based on type. Reflective questions are exempt from every
     // correct-answer rule — that is the entire point of them.
     const isReflective = newQuestion.reflective === true;
-    if (newQuestion.type === 'multiple_choice') {
+    if (isHoldOnly) {
+      // Nothing is asked, so nothing is graded. Fall straight through.
+    } else if (newQuestion.type === 'multiple_choice') {
       if (!newQuestion.options || newQuestion.options.length < 2) {
         toast.error('Multiple choice questions need at least 2 options');
         return;
@@ -325,7 +346,10 @@ export function VideoQuestionBuilder({
     const questionToAdd: VideoQuizQuestion = {
       id: `q_${Date.now()}`,
       type: newQuestion.type as QuestionType,
-      question: newQuestion.question,
+      // A hold-only freeze point has no question text, so its own on-screen line
+      // stands in - otherwise the list below shows a blank row with no way to
+      // tell which moment it is.
+      question: newQuestion.question?.trim() || newQuestion.holdText?.trim() || '',
       timestamp: newQuestion.timestamp!,
       // Reflective questions score nothing, so they can't drag a percentage down
       // and can't inflate it either.
@@ -341,8 +365,27 @@ export function VideoQuestionBuilder({
       correctAnswer: isReflective ? undefined : newQuestion.correctAnswer,
       correctAnswers: newQuestion.correctAnswers,
       caseSensitive: newQuestion.caseSensitive,
+
+      // The freeze point. Empty strings are turned back into undefined so an
+      // untouched field is absent on the record rather than stored blank.
+      holdOnly: isHoldOnly || undefined,
+      holdText: newQuestion.holdText?.trim() || undefined,
+      voiceClipId: newQuestion.voiceClipId?.trim() || undefined,
+      afterAnswer: newQuestion.afterAnswer === 'choose' ? 'choose' : undefined,
+      rewindTo:
+        newQuestion.afterAnswer === 'choose' && Number.isFinite(newQuestion.rewindTo)
+          ? newQuestion.rewindTo
+          : undefined,
+      stepNumber: Number.isFinite(newQuestion.stepNumber) ? newQuestion.stepNumber : nextStepNumber,
     };
 
+    // Sorting by timestamp here is the AUTHORING order - it is what Michael
+    // scrolls through while placing freeze points, and it should stay
+    // chronological.
+    //
+    // It is NOT the order the cumulative Knowledge Check asks in. That one runs
+    // newest step first, by design, because asking the freshest material while
+    // it is freshest is the teaching. Do not reuse this sort there.
     const updatedQuestions = [...questions, questionToAdd].sort(
       (a, b) => a.timestamp - b.timestamp
     );
@@ -355,8 +398,10 @@ export function VideoQuestionBuilder({
       points: 10,
       required: true,
       reflective: false,
+      holdOnly: false,
     });
     setTimestampDraft(null);
+    setRewindDraft(null);
     setBlankBefore('');
     setBlankAfter('');
 
@@ -1136,6 +1181,153 @@ export function VideoQuestionBuilder({
               />
             </div>
           )}
+
+          {/*
+            The freeze point. Everything here describes what happens while the
+            frame is held - what is on screen, what is heard, and what the goalie
+            is allowed to do next. Leaving it all untouched gives exactly the
+            behaviour the player had before these fields existed.
+          */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-4">
+            <div>
+              <Label className="text-sm font-semibold">The freeze point</Label>
+              <p className="text-xs text-gray-600 mt-1">
+                The frame holds here. Optional - leave it alone and this behaves like any
+                other question.
+              </p>
+            </div>
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label className="text-sm font-medium">Hold with no question</Label>
+                <p className="text-xs text-gray-600 mt-1">
+                  The frame holds and your voice plays, but nothing is asked. Nothing is
+                  recorded and nothing is scored.
+                </p>
+              </div>
+              <Switch
+                checked={newQuestion.holdOnly === true}
+                onCheckedChange={(checked) =>
+                  setNewQuestion({ ...newQuestion, holdOnly: checked })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="holdText">
+                What to look at{newQuestion.holdOnly ? ' *' : ' (optional)'}
+              </Label>
+              <Textarea
+                id="holdText"
+                value={newQuestion.holdText || ''}
+                onChange={(e) => setNewQuestion({ ...newQuestion, holdText: e.target.value })}
+                placeholder="Watch where his stick is, not where the puck is."
+                rows={2}
+                className="border-slate-300 focus-visible:ring-red-200 bg-white"
+              />
+              <p className="text-xs text-gray-500">
+                Shown underneath the held frame, in your words. Change the wording any time -
+                it costs nothing.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="voiceClipId">Voice clip (optional)</Label>
+                <Input
+                  id="voiceClipId"
+                  type="text"
+                  placeholder="V-A-14"
+                  value={newQuestion.voiceClipId || ''}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, voiceClipId: e.target.value })
+                  }
+                  className="w-full border-slate-300 focus-visible:ring-red-200 bg-white"
+                />
+                <p className="text-xs text-gray-500">
+                  A clip id from your catalogue. Plays once while the frame is held.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stepNumber">Step</Label>
+                <Input
+                  id="stepNumber"
+                  type="number"
+                  min="1"
+                  value={newQuestion.stepNumber ?? nextStepNumber}
+                  onChange={(e) => {
+                    const next = parseInt(e.target.value);
+                    setNewQuestion({
+                      ...newQuestion,
+                      stepNumber: Number.isNaN(next) ? undefined : Math.max(1, next),
+                    });
+                  }}
+                  className="w-full border-slate-300 focus-visible:ring-red-200 bg-white"
+                />
+                <p className="text-xs text-gray-500">
+                  Which step of this clip it is. The Knowledge Check asks the newest step
+                  first, then works back.
+                </p>
+              </div>
+            </div>
+
+            {!newQuestion.holdOnly && (
+              <>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Offer PLAY ON or REWIND</Label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Nothing moves until he chooses. Off means the clip carries on by
+                      itself once he has answered.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={newQuestion.afterAnswer === 'choose'}
+                    onCheckedChange={(checked) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        afterAnswer: checked ? 'choose' : 'resume',
+                      })
+                    }
+                  />
+                </div>
+
+                {newQuestion.afterAnswer === 'choose' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="rewindTo">REWIND goes back to (optional)</Label>
+                    <Input
+                      id="rewindTo"
+                      type="text"
+                      placeholder="1:12 or 72"
+                      // Raw text for the same reason the timestamp box uses it.
+                      value={
+                        rewindDraft ??
+                        (Number.isFinite(newQuestion.rewindTo)
+                          ? formatTimestamp(newQuestion.rewindTo!)
+                          : '')
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setRewindDraft(raw);
+                        const parsed = parseTimestampInput(raw);
+                        setNewQuestion({
+                          ...newQuestion,
+                          rewindTo: parsed === null ? undefined : parsed,
+                        });
+                      }}
+                      onBlur={() => setRewindDraft(null)}
+                      className="w-full border-slate-300 focus-visible:ring-red-200 bg-white"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Leave empty to go back to the previous freeze point, or the start of
+                      the clip if this is the first.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {renderQuestionTypeFields()}
 

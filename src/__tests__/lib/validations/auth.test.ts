@@ -106,6 +106,8 @@ describe('Authentication Validation Schemas', () => {
         confirmPassword: 'Password123',
         displayName: 'John Doe',
         role: 'student',
+        // A goalie is asked for a birthday from 6 September 2026 (item 6b).
+        dateOfBirth: '2005-07-14',
         workflowType: 'automated',
         agreeToTerms: true,
       };
@@ -124,6 +126,9 @@ describe('Authentication Validation Schemas', () => {
         password: 'Password123',
         confirmPassword: 'Password123',
         displayName: 'John Doe',
+        // Carried so this stays a test of the role default. Without a role the
+        // schema defaults to student, and a student is asked for a birthday.
+        dateOfBirth: '2005-07-14',
         agreeToTerms: true,
       };
 
@@ -297,6 +302,97 @@ describe('Authentication Validation Schemas', () => {
         expect(result.error.issues[0].message).toBe('You must agree to the terms and conditions');
       }
     });
+
+    // Date of birth (item 6b). Asked of goalies only, and only ever as a real
+    // calendar date — the age check downstream is only as good as this.
+    describe('Date of birth', () => {
+      const goalie = (dateOfBirth?: string) => ({
+        email: 'newuser@example.com',
+        password: 'Password123',
+        confirmPassword: 'Password123',
+        displayName: 'John Doe',
+        role: 'student' as const,
+        workflowType: 'automated' as const,
+        agreeToTerms: true,
+        ...(dateOfBirth !== undefined && { dateOfBirth }),
+      });
+
+      const dobIssue = (result: ReturnType<typeof registerSchema.safeParse>) =>
+        result.success
+          ? undefined
+          : result.error.issues.find((i) => i.path[0] === 'dateOfBirth')?.message;
+
+      it('should require a date of birth from a goalie', () => {
+        const result = registerSchema.safeParse(goalie());
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toBe('Date of birth is required');
+      });
+
+      it('should reject an empty date of birth from a goalie', () => {
+        const result = registerSchema.safeParse(goalie('   '));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toBe('Date of birth is required');
+      });
+
+      it('should not ask a parent for a date of birth', () => {
+        const result = registerSchema.safeParse({ ...goalie(), role: 'parent' });
+        expect(result.success).toBe(true);
+      });
+
+      it('should not ask a coach for a date of birth', () => {
+        const result = registerSchema.safeParse({ ...goalie(), role: 'coach' });
+        expect(result.success).toBe(true);
+      });
+
+      it('should accept a real date of birth', () => {
+        const result = registerSchema.safeParse(goalie('2005-07-14'));
+        expect(result.success).toBe(true);
+      });
+
+      it('should reject a date that does not exist', () => {
+        // 2011 was not a leap year. Left to the Date constructor this would
+        // quietly become 1 March.
+        const result = registerSchema.safeParse(goalie('2011-02-29'));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toBe('Please enter a real date of birth');
+      });
+
+      it('should reject a malformed date', () => {
+        const result = registerSchema.safeParse(goalie('14/07/2005'));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toBe('Please enter a real date of birth');
+      });
+
+      it('should reject a date of birth in the future', () => {
+        const nextYear = new Date().getFullYear() + 1;
+        const result = registerSchema.safeParse(goalie(`${nextYear}-01-01`));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toBe('Please enter a real date of birth');
+      });
+
+      it('should reject an age below the minimum', () => {
+        const thisYear = new Date().getFullYear();
+        const result = registerSchema.safeParse(goalie(`${thisYear - 2}-01-01`));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toContain('outside');
+      });
+
+      it('should reject an age above the maximum', () => {
+        const result = registerSchema.safeParse(goalie('1850-01-01'));
+        expect(result.success).toBe(false);
+        expect(dobIssue(result)).toContain('outside');
+      });
+
+      it('should report one error, not two, for a malformed date', () => {
+        const result = registerSchema.safeParse(goalie('not-a-date'));
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          const dobIssues = result.error.issues.filter((i) => i.path[0] === 'dateOfBirth');
+          expect(dobIssues).toHaveLength(1);
+        }
+      });
+    });
+
   });
 
   describe('Password Reset Schema', () => {

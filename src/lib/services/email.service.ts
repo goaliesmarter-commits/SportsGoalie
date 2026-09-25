@@ -32,6 +32,8 @@ interface EmailData {
   subject: string;
   html: string;
   text?: string;
+  /** Where a reply lands. Needed when the copy invites replying (e.g. the founding-member payment email) but the from-address is a noreply. */
+  replyTo?: string;
 }
 
 /**
@@ -426,6 +428,7 @@ Questions? Contact ${supportEmail}
           subject: data.subject,
           html: data.html,
           text: data.text,
+          ...(data.replyTo && { replyTo: data.replyTo }),
         });
 
         if (result.error) {

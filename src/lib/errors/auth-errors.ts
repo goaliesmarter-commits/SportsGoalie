@@ -31,6 +31,9 @@ export enum AuthErrorCode {
 
   // Coach Errors
   INVALID_COACH_CODE = 'invalid_coach_code',
+
+  // Sign-up eligibility
+  PARENT_ACCOUNT_REQUIRED = 'parent_account_required',
 }
 
 export enum ErrorSeverity {
@@ -262,6 +265,28 @@ export class InvalidCoachCodeError extends AuthError {
       AuthErrorCode.INVALID_COACH_CODE,
       'Invalid coach code provided',
       'Invalid coach code. Please check with your coach and try again.',
+      context,
+      ErrorSeverity.LOW,
+      false,
+      false
+    );
+  }
+}
+
+/**
+ * A goalie under the parent-held age tried to create an account for themselves.
+ *
+ * Not a failure and not the goalie's fault, so it is logged at LOW and not
+ * retryable: retrying the same form cannot succeed. The sign-up form catches
+ * this before registration is attempted and shows the parent path instead —
+ * this exists so that any other caller of register() cannot get past the rule.
+ */
+export class ParentAccountRequiredError extends AuthError {
+  constructor(context: ErrorContext) {
+    super(
+      AuthErrorCode.PARENT_ACCOUNT_REQUIRED,
+      'Goalie is under the age at which a parent holds the account',
+      'A parent or guardian needs to set this account up. Ask them to sign up as a parent, and the goalie gets their own login inside it.',
       context,
       ErrorSeverity.LOW,
       false,

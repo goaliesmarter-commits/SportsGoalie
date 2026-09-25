@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { parentLinkService } from '@/lib/database';
 import { LinkedChildSummary, ParentCrossReferenceView, PerceptionComparison } from '@/types';
-import { CrossReferenceDisplay } from '@/components/parent';
+import { CrossReferenceDisplay, GoalieLoginCard } from '@/components/parent';
 import { SkeletonDarkPage } from '@/components/ui/skeletons';
 import { GoalieChartingHistory } from '@/components/charting/GoalieChartingHistory';
 import {
@@ -333,6 +333,10 @@ export default function ChildDetailPage() {
             );
           })}
         </div>
+
+        {/* Login details — renders only for a goalie whose account this parent
+            holds (item 6c), and nothing at all for one they merely link to. */}
+        <GoalieLoginCard childId={childData.childId} childName={childData.displayName} />
 
         {/* Tabs */}
         <div style={{ background: cardBg, border, borderRadius: '16px', overflow: 'hidden' }}>

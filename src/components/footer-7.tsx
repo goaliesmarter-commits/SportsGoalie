@@ -28,10 +28,10 @@ interface Footer7Props {
 
 const defaultSections = [
   {
-    title: "Platform",
+    title: "The System",
     links: [
-      { name: "Goaltending: 7 Pillars", href: "#features" },
-      { name: "Test Your Knowledge", href: "#features" },
+      { name: "Goaltending: 8 Pillars", href: "#features" },
+      { name: "Knowledge Checks", href: "#features" },
       { name: "Performance Analytics", href: "#features" },
       { name: "Dashboard Command Center", href: "#" },
     ],
@@ -84,7 +84,7 @@ export const Footer7 = ({
   },
   sections = defaultSections,
   description =
-    "Train the Mind. Understand the mechanics. Think Smart - Play Smarter. Build 7 Pillars of Intelligent Goaltending through cognitive awareness, technical precision, and proven positional systems.",
+    "Train the Mind. Understand the mechanics. Think Smart - Play Smarter. Build 8 Pillars of Intelligent Goaltending through cognitive awareness, technical precision, and proven positional systems.",
   socialLinks = defaultSocialLinks,
   copyright = "© 2026 Smarter Goalie. All rights reserved.",
   legalLinks = defaultLegalLinks,

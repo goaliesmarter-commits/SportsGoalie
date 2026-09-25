@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Settings, Save, RefreshCw, Globe, Shield, Mail, Bell,
   Database, Server, Key, Clock, Users,
@@ -8,33 +8,17 @@ import {
 import { AdminRoute } from '@/components/auth/protected-route';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/lib/auth/context';
+import {
+  normalizePlatformSettings,
+  platformSettingsService,
+} from '@/lib/database/services/platform-settings.service';
+import type { PlatformSettings } from '@/types/platform-settings';
+
 const BLUE = '#37b5ff';
 const RED = '#f87171';
 const GREEN = '#22c55e';
 const card = { background: 'rgba(2,18,44,0.85)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '16px' } as const;
-
-interface PlatformSettings {
-  general: {
-    siteName: string; siteDescription: string; contactEmail: string; supportEmail: string;
-    defaultLanguage: string; defaultTimezone: string; maintenanceMode: boolean; registrationEnabled: boolean;
-  };
-  content: {
-    autoApproval: boolean; maxQuizQuestions: number; maxFileSize: number;
-    allowedFileTypes: string[]; contentRetentionDays: number;
-  };
-  security: {
-    sessionTimeout: number; maxLoginAttempts: number; requireEmailVerification: boolean;
-    enforceStrongPasswords: boolean; enableTwoFactor: boolean;
-  };
-  notifications: {
-    emailNotifications: boolean; pushNotifications: boolean; adminAlerts: boolean;
-    userRegistrationAlert: boolean; contentModerationAlert: boolean; systemHealthAlert: boolean;
-  };
-  performance: {
-    cacheDuration: number; rateLimitRequests: number; rateLimitWindow: number;
-    enableCompression: boolean; enableCDN: boolean;
-  };
-}
 
 const TABS = [
   { id: 'general', label: 'General', icon: Globe },
@@ -49,23 +33,45 @@ export default function AdminSettingsPage() {
 }
 
 function SettingsContent() {
-  const [settings, setSettings] = useState<PlatformSettings>({
-    general: { siteName: 'SmarterGoalie', siteDescription: 'A modern sports learning platform', contactEmail: 'contact@sportscoach.com', supportEmail: 'support@sportscoach.com', defaultLanguage: 'en', defaultTimezone: 'UTC', maintenanceMode: false, registrationEnabled: true },
-    content: { autoApproval: false, maxQuizQuestions: 50, maxFileSize: 10, allowedFileTypes: ['jpg', 'png', 'pdf', 'mp4'], contentRetentionDays: 365 },
-    security: { sessionTimeout: 24, maxLoginAttempts: 5, requireEmailVerification: true, enforceStrongPasswords: true, enableTwoFactor: false },
-    notifications: { emailNotifications: true, pushNotifications: false, adminAlerts: true, userRegistrationAlert: true, contentModerationAlert: true, systemHealthAlert: true },
-    performance: { cacheDuration: 300, rateLimitRequests: 100, rateLimitWindow: 900, enableCompression: true, enableCDN: false },
-  });
+  const { user } = useAuth();
+  // normalizePlatformSettings(null) hands back a fresh copy of the defaults, so the
+  // shared constant behind it is never edited in place.
+  const [settings, setSettings] = useState<PlatformSettings>(() => normalizePlatformSettings(null));
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
 
+  // Load whatever was saved last. Until this resolves the form is still showing
+  // defaults, so it stays behind a spinner rather than inviting an edit to a value
+  // that is about to be replaced by the stored one.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await platformSettingsService.getSettings();
+      if (cancelled) return;
+      if (result.success && result.data) {
+        setSettings(result.data);
+      } else {
+        toast.error('Failed to load settings');
+      }
+      setInitialLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const handleSave = async () => {
+    if (!user?.id) { toast.error('Failed to save settings'); return; }
     try {
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Settings saved successfully');
+      const result = await platformSettingsService.saveSettings(settings, user.id);
+      if (!result.success || !result.data) { throw new Error(result.error?.message); }
+      // Show what was stored rather than what was typed: a number outside its allowed
+      // range is clamped on the way in, and the form should not keep claiming the
+      // value that was rejected.
+      setSettings(result.data);
       setHasChanges(false);
+      toast.success('Settings saved successfully');
     } catch { toast.error('Failed to save settings'); }
     finally { setLoading(false); }
   };
@@ -94,7 +100,9 @@ function SettingsContent() {
         .st-save { display: flex; align-items: center; gap: 6px; padding: 9px 18px; background: linear-gradient(135deg, ${RED} 0%, #dc2626 100%); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
         .st-save:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
         .st-reset { display: flex; align-items: center; gap: 6px; padding: 9px 14px; background: transparent; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .st-reset:hover { background: rgba(255,255,255,0.06) !important; color: #fff !important; }
+        .st-reset:hover:not(:disabled) { background: rgba(255,255,255,0.06) !important; color: #fff !important; }
+        .st-reset:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 768px) { .st-2col { grid-template-columns: 1fr !important; } }
       `}</style>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -109,10 +117,12 @@ function SettingsContent() {
             {hasChanges && (
               <span style={{ background: 'rgba(248,113,113,0.12)', color: RED, border: '1px solid rgba(248,113,113,0.25)', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>Unsaved Changes</span>
             )}
-            <button className="st-reset" onClick={() => { setHasChanges(false); toast.info('Settings reset to defaults'); }}>
+            {/* Puts the defaults back in the form. Saving them is still a separate, deliberate step. */}
+            <button className="st-reset" disabled={loading || initialLoading}
+              onClick={() => { setSettings(normalizePlatformSettings(null)); setHasChanges(true); toast.info('Settings reset to defaults'); }}>
               <RefreshCw size={13} /> Reset
             </button>
-            <button className="st-save" onClick={handleSave} disabled={loading || !hasChanges}>
+            <button className="st-save" onClick={handleSave} disabled={loading || initialLoading || !hasChanges}>
               <Save size={13} /> {loading ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -137,8 +147,15 @@ function SettingsContent() {
 
           <div style={{ padding: '24px' }}>
 
+            {initialLoading && (
+              <div style={{ textAlign: 'center', padding: '60px' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid rgba(55,181,255,0.2)', borderTopColor: BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '15px' }}>Loading settings…</p>
+              </div>
+            )}
+
             {/* General */}
-            {activeTab === 'general' && (
+            {!initialLoading && activeTab === 'general' && (
               <div className="st-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '18px', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -211,7 +228,7 @@ function SettingsContent() {
             )}
 
             {/* Content */}
-            {activeTab === 'content' && (
+            {!initialLoading && activeTab === 'content' && (
               <div className="st-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '18px', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -262,7 +279,7 @@ function SettingsContent() {
             )}
 
             {/* Security */}
-            {activeTab === 'security' && (
+            {!initialLoading && activeTab === 'security' && (
               <div className="st-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '18px', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -331,7 +348,7 @@ function SettingsContent() {
             )}
 
             {/* Notifications */}
-            {activeTab === 'notifications' && (
+            {!initialLoading && activeTab === 'notifications' && (
               <div className="st-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 {[
                   {
@@ -377,7 +394,7 @@ function SettingsContent() {
             )}
 
             {/* Performance */}
-            {activeTab === 'performance' && (
+            {!initialLoading && activeTab === 'performance' && (
               <div className="st-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '18px', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>

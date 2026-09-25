@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { GrowthPointsToast } from '@/components/ui/GrowthPointsToast';
 import { GROWTH_POINTS } from '@/lib/config/growth-points';
 import { growthPointsService } from '@/lib/firebase/growth-points.service';
+import { getScoreBand } from '@/lib/config/score-bands';
 
 const BLUE = '#37b5ff';
 const RED = '#f87171';
@@ -38,8 +39,13 @@ function VideoQuizResultsContent() {
   const [gpToastPoints, setGpToastPoints] = useState(0);
 
   useEffect(() => {
-    if (quizId && user) { loadResults(); }
-  }, [quizId, user]);
+    if (quizId && user?.id) {
+      loadResults();
+    } else {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizId, user?.id]);
 
   const loadResults = async () => {
     try {
@@ -143,8 +149,10 @@ function VideoQuizResultsContent() {
     );
   }
 
-  const passed = progress.percentage >= 70;
-  const scoreColor = passed ? BLUE : RED;
+  // A score is a Grasp Level band, not a pass or a fail. The band carries its own
+  // colour so no result is ever painted red.
+  const band = getScoreBand(progress.percentage);
+  const scoreColor = band.color;
 
   const cardStyle = { background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '16px', padding: '24px', marginBottom: '0' };
 
@@ -159,7 +167,7 @@ function VideoQuizResultsContent() {
 
         {/* Header */}
         <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(55,181,255,0.2)', background: 'linear-gradient(135deg, #000f28 0%, #062344 50%, #0a1628 100%)', padding: '24px', boxShadow: '0 4px 32px rgba(0,0,0,0.4)' }}>
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: passed ? 'rgba(55,181,255,0.1)' : 'rgba(248,113,113,0.08)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: `${scoreColor}1a`, filter: 'blur(50px)', pointerEvents: 'none' }} />
           <Link href="/dashboard" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', marginBottom: '16px', fontWeight: 600 }}>
             <ArrowLeft size={14} /> Back to Dashboard
           </Link>
@@ -170,11 +178,11 @@ function VideoQuizResultsContent() {
         </div>
 
         {/* Score Card */}
-        <div style={{ ...cardStyle, background: passed ? 'rgba(2,18,44,0.9)' : 'rgba(20,5,5,0.9)', border: `1px solid ${passed ? 'rgba(55,181,255,0.2)' : 'rgba(248,113,113,0.2)'}` }}>
+        <div style={{ ...cardStyle, background: 'rgba(2,18,44,0.9)', border: `1px solid ${scoreColor}33` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <h2 style={{ color: '#fff', fontSize: '15px', fontWeight: 700 }}>Your Score</h2>
             <div style={{ color: scoreColor }}>
-              {passed ? <Trophy size={22} /> : <Target size={22} />}
+              {progress.percentage >= 70 ? <Trophy size={22} /> : <Target size={22} />}
             </div>
           </div>
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
@@ -183,7 +191,7 @@ function VideoQuizResultsContent() {
             </div>
             {/* Custom progress bar */}
             <div style={{ height: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '20px' }}>
-              <div style={{ height: '100%', width: `${Math.min(100, progress.percentage)}%`, background: passed ? `linear-gradient(90deg, ${BLUE}, #0ea5e9)` : 'linear-gradient(90deg, #dc2626, #f87171)', borderRadius: '99px', transition: 'width 0.8s ease', boxShadow: `0 0 12px ${scoreColor}60` }} />
+              <div style={{ height: '100%', width: `${Math.min(100, progress.percentage)}%`, background: `linear-gradient(90deg, ${scoreColor}, ${scoreColor}b3)`, borderRadius: '99px', transition: 'width 0.8s ease', boxShadow: `0 0 12px ${scoreColor}60` }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px' }}>
@@ -195,8 +203,8 @@ function VideoQuizResultsContent() {
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Points</div>
               </div>
             </div>
-            <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 16px', borderRadius: '20px', background: passed ? 'rgba(55,181,255,0.1)' : 'rgba(248,113,113,0.1)', border: `1px solid ${passed ? 'rgba(55,181,255,0.25)' : 'rgba(248,113,113,0.25)'}` }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: scoreColor }}>{passed ? '✓ Passed' : '✗ Not Passed'}</span>
+            <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 16px', borderRadius: '20px', background: `${scoreColor}1a`, border: `1px solid ${scoreColor}40` }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: scoreColor }}>{band.label}</span>
             </div>
           </div>
         </div>
@@ -208,7 +216,7 @@ function VideoQuizResultsContent() {
               <div>
                 <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Questions Answered</p>
                 <p style={{ fontSize: '26px', fontWeight: 900, color: '#fff' }}>
-                  {progress.questionsAnswered.length} <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>/ {quiz.questions?.length || 0}</span>
+                  {progress.questionsAnswered.length} <span style={{ fontSize: '16px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>/ {quiz.questions?.filter(q => !q.holdOnly).length || 0}</span>
                 </p>
               </div>
               <CheckCircle2 size={28} color={BLUE} style={{ opacity: 0.7 }} />

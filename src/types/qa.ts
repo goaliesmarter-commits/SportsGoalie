@@ -16,6 +16,32 @@
  *                    box can be capped before it can cost real money.
  */
 
+/**
+ * Michael's eight categories, in his order and his wording.
+ *
+ * These replace the pillar-keyed categories the library was originally seeded
+ * with rather than merging with them — his 8 September sheet is the single
+ * scheme now. The letter prefix is part of the name because it is how he
+ * refers to the rows ("A7", "G24"), and dropping it would break that shared
+ * reference.
+ */
+export const QA_CATEGORIES = [
+  'A cold questions',
+  'B page-triggered terms',
+  'C the parent',
+  'D on-ice problems',
+  'E practical and commercial',
+  'F mind body and situation',
+  "G the visitor's questions",
+  'H the pillar groups',
+] as const;
+
+export type QACategory = (typeof QA_CATEGORIES)[number];
+
+export function isQACategory(value: unknown): value is QACategory {
+  return typeof value === 'string' && (QA_CATEGORIES as readonly string[]).includes(value);
+}
+
 export type QAEntryStatus = 'published' | 'draft';
 
 /** One canonical question with Michael's verbatim answer. */
@@ -27,6 +53,15 @@ export interface QAEntry {
   answer: string;
   /** Only 'published' entries are matchable from the public box. */
   status: QAEntryStatus;
+  /**
+   * Null for the entries that predate the September import and for anything
+   * published out of the visitor queue, which arrives without one. The admin
+   * screen surfaces those as "Uncategorised" so they can be filed rather than
+   * quietly disappearing from a filtered view.
+   */
+  category: QACategory | null;
+  /** Michael's search terms for this row. Used to widen matching, never shown. */
+  keywords: string[];
   /**
    * Where the entry came from: written directly in the library, or published
    * out of the visitor-question queue.

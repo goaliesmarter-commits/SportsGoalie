@@ -56,6 +56,17 @@ export class VideoQuizService extends BaseDatabaseService {
   private readonly VIDEO_QUIZZES_COLLECTION = 'video_quizzes';
   private readonly VIDEO_QUIZ_PROGRESS_COLLECTION = 'video_quiz_progress';
 
+  /**
+   * How many attempt documents to read before sorting newest-first.
+   * Firestore applies a limit before we can sort in memory, so asking it for "the latest
+   * attempt" directly would hand back an arbitrary one. Every query here is already
+   * narrowed to a single goalie, so this is a safety ceiling rather than a page size.
+   */
+  private readonly ATTEMPT_SCAN_CEILING = 500;
+
+  /** Upper bound on attempts read when counting completions for the admin screen. */
+  private readonly COMPLETION_STATS_CEILING = 5000;
+
   // Video Quiz CRUD operations
 
   /**
@@ -625,69 +636,55 @@ export class VideoQuizService extends BaseDatabaseService {
   // Progress Management
 
   /**
-   * Gets or creates user progress for a video quiz.
+   * Reads a goalie's most recent attempt at a video quiz.
+   *
+   * Read-only on purpose. This used to create an empty in-progress document when none
+   * existed, which meant simply opening the results page wrote a row into the goalie's
+   * history. Attempts are written by the player on completion, nowhere else.
+   *
+   * A completed attempt always wins over an unfinished one, so a stale in-progress
+   * record left behind by the old behaviour can never hide a real result.
    */
   async getUserProgress(
     userId: string,
     quizId: string
   ): Promise<ApiResponse<VideoQuizProgress>> {
-    logger.database('read', this.VIDEO_QUIZ_PROGRESS_COLLECTION, `progress_${userId}_${quizId}`);
+    logger.database('query', this.VIDEO_QUIZ_PROGRESS_COLLECTION, undefined, { userId, quizId });
 
     try {
-      const progressId = `progress_${userId}_${quizId}`;
-      let progress = await this.getDocument<VideoQuizProgress>(
-        this.VIDEO_QUIZ_PROGRESS_COLLECTION,
-        progressId
-      );
+      const attemptsResult = await this.getUserVideoQuizAttempts(userId, {
+        videoQuizId: quizId,
+      });
 
-      if (!progress) {
-        // Get quiz to initialize progress
-        const quizResult = await this.getVideoQuiz(quizId);
-        if (!quizResult.success || !quizResult.data) {
-          return {
-            success: false,
-            error: {
-              code: 'VIDEO_QUIZ_NOT_FOUND',
-              message: 'Video quiz not found',
-            },
-            timestamp: new Date(),
-          };
-        }
-
-        const quiz = quizResult.data;
-
-        // Create initial progress
-        progress = {
-          id: progressId,
-          userId,
-          videoQuizId: quizId,
-          skillId: quiz.skillId,
-          sportId: quiz.sportId,
-          currentTime: 0,
-          questionsAnswered: [],
-          questionsRemaining: quiz.questions.length,
-          score: 0,
-          // Reflective questions are unscored, so they must not count toward the
-          // total available — see VideoQuizQuestion.reflective.
-          maxScore: quiz.questions.reduce((sum, q) => sum + (q.reflective ? 0 : q.points), 0),
-          percentage: 0,
-          isCompleted: false,
-          status: 'in-progress',
-          startedAt: Timestamp.now(),
-          watchTime: 0,
-          totalTimeSpent: 0,
+      if (!attemptsResult.success) {
+        return {
+          success: false,
+          error: attemptsResult.error ?? {
+            code: 'PROGRESS_FETCH_FAILED',
+            message: 'Failed to get user progress',
+          },
+          timestamp: new Date(),
         };
+      }
 
-        await this.setDocument(this.VIDEO_QUIZ_PROGRESS_COLLECTION, progressId, progress);
-        logger.info('Video quiz progress initialized', 'VideoQuizService', {
-          userId,
-          quizId,
-        });
+      // Already newest first, so the first completed entry is the latest completed attempt.
+      const attempts = attemptsResult.data?.items ?? [];
+      const latest = attempts.find(attempt => attempt.isCompleted) ?? attempts[0];
+
+      if (!latest) {
+        return {
+          success: false,
+          error: {
+            code: 'PROGRESS_NOT_FOUND',
+            message: 'No attempt found for this quiz',
+          },
+          timestamp: new Date(),
+        };
       }
 
       return {
         success: true,
-        data: progress,
+        data: latest,
         timestamp: new Date(),
       };
     } catch (error) {
@@ -784,6 +781,79 @@ export class VideoQuizService extends BaseDatabaseService {
   }
 
   /**
+   * Completions and average score for every Knowledge Check, counted from the
+   * attempts themselves.
+   *
+   * The counter on a quiz's own metadata cannot be used for this. Only admins and
+   * coaches may write to video_quizzes (see firestore.rules), so a goalie finishing a
+   * check has no way to increment it — and even if they could, every check completed
+   * before the counter existed would still read zero.
+   *
+   * One query for the whole screen, grouped in memory. Counting per quiz instead
+   * would be one query per quiz.
+   */
+  async getCompletionStatsByQuiz(): Promise<
+    ApiResponse<Record<string, { completions: number; averageScore: number }>>
+  > {
+    logger.database('query', this.VIDEO_QUIZ_PROGRESS_COLLECTION, undefined, { stats: 'byQuiz' });
+
+    try {
+      const result = await this.query<VideoQuizProgress>(
+        this.VIDEO_QUIZ_PROGRESS_COLLECTION,
+        {
+          where: [{ field: 'isCompleted', operator: '==', value: true }],
+          limit: this.COMPLETION_STATS_CEILING,
+        }
+      );
+
+      if (!result.success || !result.data) {
+        return {
+          success: false,
+          error: result.error ?? {
+            code: 'COMPLETION_STATS_FAILED',
+            message: 'Failed to count completions',
+          },
+          timestamp: new Date(),
+        };
+      }
+
+      const totals: Record<string, { completions: number; scoreSum: number }> = {};
+      for (const attempt of result.data.items) {
+        const quizId = attempt.videoQuizId;
+        if (!quizId) continue;
+        const entry = (totals[quizId] ??= { completions: 0, scoreSum: 0 });
+        entry.completions += 1;
+        entry.scoreSum += attempt.percentage || 0;
+      }
+
+      const stats: Record<string, { completions: number; averageScore: number }> = {};
+      for (const [quizId, { completions, scoreSum }] of Object.entries(totals)) {
+        stats[quizId] = {
+          completions,
+          averageScore: completions > 0 ? scoreSum / completions : 0,
+        };
+      }
+
+      return {
+        success: true,
+        data: stats,
+        timestamp: new Date(),
+      };
+    } catch (error) {
+      logger.error('Failed to count completions', 'VideoQuizService', { error: error instanceof Error ? error.message : String(error) });
+      return {
+        success: false,
+        error: {
+          code: 'COMPLETION_STATS_FAILED',
+          message: 'Failed to count completions',
+          details: error,
+        },
+        timestamp: new Date(),
+      };
+    }
+  }
+
+  /**
    * Gets user's video quiz attempts with filters.
    */
   async getUserVideoQuizAttempts(
@@ -822,9 +892,14 @@ export class VideoQuizService extends BaseDatabaseService {
         whereConditions.push({ field: 'isCompleted', operator: '==', value: filters.completed });
       }
 
+      const requestedLimit = filters?.limit || 10;
+
       const queryOptions: QueryOptions = {
         where: whereConditions,
-        limit: filters?.limit || 10,
+        // Read the window first, then sort, then trim. Slicing after the sort is what
+        // makes a small limit mean "the newest attempts" now that a retake adds a row
+        // instead of overwriting one.
+        limit: Math.max(requestedLimit, this.ATTEMPT_SCAN_CEILING),
       };
 
       const result = await this.query<VideoQuizProgress>(
@@ -832,15 +907,28 @@ export class VideoQuizService extends BaseDatabaseService {
         queryOptions
       );
 
-      if (result.success && result.data) {
-        result.data.items = [...result.data.items].sort((a, b) => {
-          const aMs = a.completedAt?.toMillis?.() ?? a.startedAt?.toMillis?.() ?? 0;
-          const bMs = b.completedAt?.toMillis?.() ?? b.startedAt?.toMillis?.() ?? 0;
-          return bMs - aMs;
-        });
+      if (!result.success || !result.data) {
+        return result;
       }
 
-      return result;
+      const sorted = [...result.data.items].sort((a, b) => {
+        const aMs = a.completedAt?.toMillis?.() ?? a.startedAt?.toMillis?.() ?? 0;
+        const bMs = b.completedAt?.toMillis?.() ?? b.startedAt?.toMillis?.() ?? 0;
+        return bMs - aMs;
+      });
+      const items = sorted.slice(0, requestedLimit);
+
+      // A new object every time: result.data is the cached query result, and writing the
+      // trimmed list back into it would shrink what the next caller sees.
+      return {
+        ...result,
+        data: {
+          ...result.data,
+          items,
+          limit: requestedLimit,
+          hasMore: sorted.length > items.length,
+        },
+      };
     } catch (error) {
       logger.error('Failed to fetch user video quiz attempts', 'VideoQuizService', { error: error instanceof Error ? error.message : String(error), userId, filters });
       return {

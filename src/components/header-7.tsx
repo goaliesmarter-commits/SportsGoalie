@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
-const navItems = ['Features', "Who It's For", 'Contact Us', 'Login'];
+const navItems = ['Features', "Who It's For", 'Pricing', 'Contact Us', 'Login'];
 
 function navAction(label: string, router: ReturnType<typeof useRouter>) {
   if (label === 'Contact Us') router.push('/contact');
   else if (label === 'Login') router.push('/auth/login');
   else if (label === "Who It's For") router.push('/bridge');
+  else if (label === 'Pricing') router.push('/pricing');
   else {
     const el = document.getElementById(label.toLowerCase());
     if (el) el.scrollIntoView({ behavior: 'smooth' });

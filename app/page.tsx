@@ -9,9 +9,24 @@ import { GalleryHoverCarousel, type GalleryCarouselItem } from '@/components/ui/
 import { ToolboxSection } from '@/components/landing/toolbox-section';
 import { Network, Lock, Filter, TrendingUp, Users, Trophy, Play, Pause, Menu, X } from 'lucide-react';
 
-/** Coach Mike clip — drop `7-pillars-video.mp4` into /public before go-live on THE 7 PILLARS card */
+/** Coach Mike clip — drop `7-pillars-video.mp4` into /public before go-live on THE 8 PILLARS card */
 const SEVEN_PILLARS_VIDEO_SRC = '/7-pillars-video.mp4';
 const SEVEN_PILLARS_VIDEO_POSTER = '/7-pillars.png';
+
+/** The eight pillars as they scroll in the marquee, in Michael's order and wording. */
+const PILLAR_MARQUEE = [
+  '1 MindSet',
+  '2 Skating Tech',
+  '3 7 Angle-Marker System (7AMS)',
+  '4 6 Zone – 7 Point System (6Z-7PS)',
+  '5 Form Tech',
+  '6 Game Performance Charting System',
+  '7 Practice System',
+  '8 Lifestyle & Hockey',
+];
+
+/** Listed twice so the marquee loops without a visible gap. Built once, not per render. */
+const PILLAR_MARQUEE_LOOP = [...PILLAR_MARQUEE, ...PILLAR_MARQUEE];
 
 function FeatureVideoPanel({
   src,
@@ -40,7 +55,7 @@ function FeatureVideoPanel({
 
   return (
     <div
-      className="relative h-44 md:h-full overflow-hidden"
+      className="relative h-44 md:h-72 xl:h-full overflow-hidden"
       style={{ background: '#020e2e' }}
       role="region"
       aria-label={label}
@@ -228,21 +243,14 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section
-        className="relative min-h-screen overflow-hidden flex flex-col"
+        className="relative min-h-dvh overflow-hidden flex flex-col"
         style={{ backgroundColor: '#020e2e' }}
       >
-        {/* Background image — mobile: cover centred on goalie */}
-        <div
-          className="absolute inset-0 md:hidden"
-          style={{
-            backgroundImage: 'url("/quality.png")',
-            backgroundSize: 'cover',
-            backgroundPosition: '72% center',
-            backgroundRepeat: 'no-repeat',
-            zIndex: 0,
-            filter: 'brightness(0.80) saturate(1.1)',
-          }}
-        />
+        {/* Mobile has no full-bleed background. At phone widths the photo crops to
+            a sliver and the headline, sub-head and both CTAs landed straight on
+            the goalie, hiding him completely — so on mobile he gets his own band
+            below the nav instead, and the copy sits on solid navy underneath it.
+            Desktop is unchanged: full-bleed photo with the copy over the gradient. */}
         {/* Background image — desktop: goalie fills right half */}
         <div
           className="absolute inset-0 hidden md:block"
@@ -264,12 +272,6 @@ export default function Home() {
             zIndex: 1,
           }}
         />
-        {/* Mobile overlay — lighter so the goalie shows through */}
-        <div
-          className="absolute inset-0 md:hidden"
-          style={{ background: 'linear-gradient(to bottom, rgba(2,18,60,0.55) 0%, rgba(2,18,60,0.45) 45%, rgba(2,10,38,0.75) 100%)', zIndex: 1 }}
-        />
-
         {/* Bottom fade into next section */}
         <div
           className="absolute inset-0"
@@ -295,6 +297,7 @@ export default function Home() {
             {[
               { label: 'Features', action: () => { const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
               { label: 'About', action: () => router.push('/who-we-are') },
+              { label: 'Pricing', action: () => router.push('/pricing') },
             ].map(({ label, action }) => (
               <button key={label} onClick={action} style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', letterSpacing: '0.5px', transition: 'color 0.15s', background: 'none', border: 'none' }}
                 onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = '#37b5ff')}
@@ -329,6 +332,7 @@ export default function Home() {
             {[
               { label: 'Features', action: () => { setMobileNavOpen(false); const el = document.getElementById('features'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } },
               { label: 'About', action: () => { router.push('/who-we-are'); setMobileNavOpen(false); } },
+              { label: 'Pricing', action: () => { router.push('/pricing'); setMobileNavOpen(false); } },
               { label: 'Contact', action: () => { router.push('/contact'); setMobileNavOpen(false); } },
             ].map(({ label, action }) => (
               <button key={label} onClick={action}
@@ -338,19 +342,46 @@ export default function Home() {
           </div>
         )}
 
+        {/* ── MOBILE HERO IMAGE ── phones only. Its own band, nothing drawn on
+            top, sized so the goalie reads head-to-pads; the copy starts below it.
+            `cover` on a band this shape leaves horizontal slack, so centring keeps
+            him in frame from 320px up. */}
+        <div
+          className="relative md:hidden w-full shrink-0 h-[30vh] min-h-[180px] max-h-[300px] [@media(max-height:700px)]:h-[24vh] [@media(max-height:700px)]:min-h-[140px]"
+          style={{ zIndex: 3 }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'url("/quality.png")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'saturate(1.1)',
+            }}
+          />
+          {/* melts the photo into the navy the copy sits on */}
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(to bottom, rgba(2,14,46,0.35) 0%, rgba(2,14,46,0.05) 30%, rgba(2,14,46,0.55) 78%, #020e2e 100%)' }}
+          />
+        </div>
+
         {/* ── HERO CONTENT ── */}
         <div className="relative flex-1 flex items-center" style={{ zIndex: 10 }}>
-          <div className="w-full max-w-7xl mx-auto pl-4 md:pl-6 pr-6 md:pr-16 py-8 md:py-12">
+          <div className="w-full max-w-7xl mx-auto pl-4 md:pl-6 pr-6 md:pr-16 py-5 md:py-12">
             <div className="w-full md:max-w-[600px]">
 
-              {/* Eyebrow */}
-              <p style={{ fontSize: '13px', fontWeight: 700, color: '#37b5ff', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              {/* Eyebrow. Mobile margins are tighter throughout this block so the
+                  photo band, the copy and both CTAs fit one phone screen; every
+                  md: value is the original desktop spacing. */}
+              <p className="mb-2 md:mb-3.5" style={{ fontSize: '13px', fontWeight: 700, color: '#37b5ff', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
                 WELCOME TO
               </p>
 
               {/* Brand name — italic, SMARTER=blue, GOALIE=white */}
               <h1
-                className="font-black uppercase italic leading-none mb-5"
+                className="font-black uppercase italic leading-none mb-3 md:mb-5"
                 style={{ fontSize: 'clamp(48px, 8vw, 96px)', letterSpacing: '-0.03em', lineHeight: 0.92, fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif' }}
               >
                 <span style={{ display: 'block', color: '#42a5f5' }}>SMARTER</span>
@@ -358,25 +389,25 @@ export default function Home() {
               </h1>
 
               {/* Full-width divider */}
-              <div style={{ width: '100%', maxWidth: '520px', height: '1px', background: 'rgba(255,255,255,0.2)', marginBottom: '24px' }} />
+              <div className="mb-3 md:mb-6" style={{ width: '100%', maxWidth: '520px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
 
               {/* Sub-headline — large bold */}
               <h2
-                className="font-black uppercase leading-tight mb-3"
+                className="font-black uppercase leading-tight mb-2 md:mb-3"
                 style={{ fontSize: 'clamp(18px, 2.6vw, 32px)', lineHeight: 1.15, color: '#ffffff', letterSpacing: '-0.01em' }}
               >
                 THE COMPLETE DEVELOPMENT SUPPORT SYSTEM GOALTENDING NEVER HAD.
               </h2>
 
               <p
-                className="uppercase font-semibold mb-8"
+                className="uppercase font-semibold mb-5 md:mb-8"
                 style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', fontSize: '11px' }}
               >
                 It meets you where you are — and takes you where you&rsquo;re going.
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 {/* Video button */}
                 <button
                   className="flex items-center gap-3 cursor-pointer transition-all"
@@ -427,25 +458,25 @@ export default function Home() {
               </p>
             </div>
             <ScrollStack useWindowScroll={true} itemDistance={200} itemScale={0.02} itemStackDistance={30} stackPosition="calc(50vh - 280px)" scaleEndPosition="15%" baseScale={0.95}>
-              {/* 1 — The 7 Pillars of Intelligent Goaltending */}
+              {/* 1 — The 8 Pillars of Intelligent Goaltending */}
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
-                    <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
+                    <div className="grid xl:grid-cols-2 gap-0 items-center xl:h-[560px]">
                       <FeatureVideoPanel
                         src={SEVEN_PILLARS_VIDEO_SRC}
                         poster={SEVEN_PILLARS_VIDEO_POSTER}
-                        label="The 7 Pillars introduction video"
+                        label="The 8 Pillars introduction video"
                       />
-                      <div className="p-5 md:p-12 flex flex-col justify-center">
+                      <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>1/5</span></div>
-                        <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">THE 7 PILLARS</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">THE 8 PILLARS</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>
                           Raw talent is one thing. Building it into a SMARTER goaltender is another.
                         </p>
-                        <p className="text-zinc-400 text-base leading-relaxed mb-5">Through 7 Pillars, we lay the foundation.</p>
+                        <p className="text-zinc-400 text-base leading-relaxed mb-5">Through 8 Pillars, we lay the foundation.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
-                          We build INTELLIGENT ATHLETIC GOALTENDERS through 7 Pillars — anchored by two UNIQUE, PROVEN positional systems: the Seven Angle-Mark System (7AMS) above the icing line and the 6 Zone – 7 Point System™ below it. From MINDSET to Skating, Form, Game, Practice, and LIFESTYLE — mastering each pillar builds lasting consistency.
+                          We build INTELLIGENT ATHLETIC GOALTENDERS through 8 Pillars — anchored by two UNIQUE, PROVEN positional systems: the 7 Angle-Marker System (7AMS) above the icing line and the 6 Zone – 7 Point System™ below it. From MindSet and Skating Tech to the 7 Angle-Marker System and 6Z-7PS, Form Tech, Game, Practice, and Lifestyle — mastering each pillar builds lasting consistency.
                         </p>
                       </div>
                     </div>
@@ -456,11 +487,11 @@ export default function Home() {
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
-                    <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
-                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_2.png")' }}></div>
-                      <div className="p-5 md:p-12 flex flex-col justify-center">
+                    <div className="grid xl:grid-cols-2 gap-0 items-center xl:h-[560px]">
+                      <div className="h-44 md:h-72 xl:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_2.png")' }}></div>
+                      <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>2/5</span></div>
-                        <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">VIDEO NEVER LIES</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">VIDEO NEVER LIES</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>Seeing Is Believing</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
                           But the real value isn&rsquo;t just in watching; it&rsquo;s understanding what you&rsquo;re seeing. It&rsquo;s analyzing your technique, your mobility, your reactions, your decision making process. To truly understand your game. How much can you improve? Raising your evaluation ability is the key to immediate development. We don&rsquo;t know where your ceiling is, but we know exactly how to use video to analyze your game with you. Your success and your growth are in your hands, and you&rsquo;ll have all the support you need to maintain your level or reach the heights you dream of.
@@ -474,11 +505,11 @@ export default function Home() {
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
-                    <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
-                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_3.png")' }}></div>
-                      <div className="p-5 md:p-12 flex flex-col justify-center">
+                    <div className="grid xl:grid-cols-2 gap-0 items-center xl:h-[560px]">
+                      <div className="h-44 md:h-72 xl:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_3.png")' }}></div>
+                      <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>3/5</span></div>
-                        <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">ANALYTICS & GAP MANAGEMENT</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">ANALYTICS & GAP MANAGEMENT</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>Gaps are not failures — gaps are the roadmap to building your consistency in performance.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
                           The charting systems build your personal Baseline Profile. Your knowledge and skill base is now alive. Smarter Goalie&rsquo;s intuitive system is designed to grow your knowledge base and your tech game with methods built to accelerate your development.
@@ -492,11 +523,11 @@ export default function Home() {
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
-                    <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
-                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/card3-5.png")' }}></div>
-                      <div className="p-5 md:p-12 flex flex-col justify-center">
+                    <div className="grid xl:grid-cols-2 gap-0 items-center xl:h-[560px]">
+                      <div className="h-44 md:h-72 xl:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/card3-5.png")' }}></div>
+                      <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>4/5</span></div>
-                        <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">THE CHESS GAME</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">THE CHESS GAME</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>Think Smart. Play Smarter.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
                           Knowledge is power, and Smarter Goalie is knowledge-driven. Most goalies are playing a 1000-piece puzzle with a fragmented picture and no border pieces. They&rsquo;ve got talent scattered everywhere and no frame to build it on. We hand you the borders first, then fill in the picture until the whole game comes into focus.
@@ -513,11 +544,11 @@ export default function Home() {
               <ScrollStackItem>
                 <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
                   <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgb(6,30,70)', border: '1px solid rgba(55,181,255,0.45)', boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(55,181,255,0.08)' }}>
-                    <div className="grid md:grid-cols-2 gap-0 items-center md:h-[560px]">
-                      <div className="h-44 md:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_5.png")' }}></div>
-                      <div className="p-5 md:p-12 flex flex-col justify-center">
+                    <div className="grid xl:grid-cols-2 gap-0 items-center xl:h-[560px]">
+                      <div className="h-44 md:h-72 xl:h-full bg-cover bg-center" style={{ backgroundImage: 'url("/feature_5.png")' }}></div>
+                      <div className="p-5 md:p-8 xl:p-12 flex flex-col justify-center">
                         <div className="text-right mb-4"><span className="text-lg font-semibold" style={{ color: '#37b5ff' }}>5/5</span></div>
-                        <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">THE MIRROR NEVER LIES</h3>
+                        <h3 className="text-3xl md:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight">THE MIRROR NEVER LIES</h3>
                         <p className="text-lg md:text-xl font-semibold mb-4" style={{ color: '#37b5ff' }}>Discover. Understand. Know. Own. Maintain.</p>
                         <p className="text-zinc-300 leading-relaxed mb-6">
                           This is where it all comes together. After the layers, the principles, the systems, the reads, Smarter Goalie hands it back simplified in a single living chart. You log your game period by period and rate the factors that decide goaltending. The number isn&rsquo;t a grade. It&rsquo;s a mirror that shows exactly where you stand.
@@ -537,7 +568,7 @@ export default function Home() {
           <section className="py-6 overflow-hidden" style={{ background: '#041530', borderTop: '1px solid rgba(55,181,255,0.12)', borderBottom: '1px solid rgba(55,181,255,0.12)' }}>
             <div className="relative flex" style={{ '--duration': '30s', '--gap': '2rem' } as React.CSSProperties}>
               <div className="flex shrink-0 animate-marquee items-center gap-8">
-                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {PILLAR_MARQUEE_LOOP.map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>
@@ -545,7 +576,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="flex shrink-0 animate-marquee items-center gap-8" aria-hidden="true">
-                {['MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ', 'MINDSET', 'MIND-VAULT', 'SKATING', '7AMS', '6 ZONE – 7 POINT SYSTEM™', 'FORM', 'PERFORMANCE CHARTING', 'GAME IQ'].map((text, i) => (
+                {PILLAR_MARQUEE_LOOP.map((text, i) => (
                   <span key={i} className="flex items-center gap-8 whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 cursor-default" style={{ color: 'rgba(255,255,255,0.55)' }}>{text}</span>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#37b5ff' }}></span>

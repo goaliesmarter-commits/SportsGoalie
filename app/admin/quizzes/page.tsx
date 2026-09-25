@@ -34,6 +34,12 @@ function AdminQuizzesPageContent() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<VideoTagFilter>({});
   const [tagFacets, setTagFacets] = useState<TagFacetCounts | undefined>();
+  // Counted from the attempts, because a quiz's own metadata counter is never written:
+  // only admins and coaches can write to video_quizzes, so a goalie completing a check
+  // cannot increment it.
+  const [completionStats, setCompletionStats] = useState<
+    Record<string, { completions: number; averageScore: number }>
+  >({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => { loadQuizzes(); loadTagFacets(); }, []);
@@ -41,7 +47,15 @@ function AdminQuizzesPageContent() {
   const loadQuizzes = async () => {
     try {
       setLoading(true);
-      const result = await videoQuizService.getVideoQuizzes({ limit: 100 });
+      const [result, statsResult] = await Promise.all([
+        videoQuizService.getVideoQuizzes({ limit: 100 }),
+        videoQuizService.getCompletionStatsByQuiz(),
+      ]);
+
+      if (statsResult.success && statsResult.data) {
+        setCompletionStats(statsResult.data);
+      }
+
       if (result.success && result.data) {
         setQuizzes(result.data.items);
       } else {
@@ -105,7 +119,10 @@ function AdminQuizzesPageContent() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const totalCompletions = quizzes.reduce((sum, q) => sum + (q.metadata?.totalCompletions || 0), 0);
+  const totalCompletions = quizzes.reduce(
+    (sum, q) => sum + (completionStats[q.id]?.completions || 0),
+    0
+  );
   const activeCount = quizzes.filter(q => q.isActive && q.isPublished).length;
   const avgDuration = Math.round(quizzes.reduce((sum, q) => sum + q.videoDuration, 0) / (quizzes.length || 1) / 60);
 
@@ -249,8 +266,8 @@ function AdminQuizzesPageContent() {
                       {[
                         { icon: Video, label: formatDuration(quiz.videoDuration) },
                         { icon: Target, label: `${quiz.questions.length} questions` },
-                        { icon: Users, label: `${quiz.metadata?.totalCompletions || 0} completions` },
-                        { icon: Clock, label: `${quiz.metadata?.averageScore?.toFixed(0) || 0}% avg` },
+                        { icon: Users, label: `${completionStats[quiz.id]?.completions || 0} completions` },
+                        { icon: Clock, label: `${(completionStats[quiz.id]?.averageScore || 0).toFixed(0)}% avg` },
                       ].map(({ icon: Icon, label }) => (
                         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
                           <Icon size={12} color="rgba(255,255,255,0.25)" /> {label}

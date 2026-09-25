@@ -230,15 +230,19 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} data-testid="login-form">
 
-            {/* Email */}
+            {/* Email, or a goalie handle for an account a parent holds (item 6c).
+                Deliberately type="text" rather than type="email": the browser's
+                own validation would reject a handle before the form ever sees
+                it. */}
             <div>
-              <label htmlFor="email" style={labelStyle}>Email</label>
+              <label htmlFor="email" style={labelStyle}>Email or goalie username</label>
               <input
                 id="email"
-                type="email"
+                type="text"
+                inputMode="email"
                 placeholder="your@email.com"
                 {...register('email')}
-                autoComplete="email"
+                autoComplete="username"
                 data-testid="email-input"
                 className="auth-input"
                 style={inputStyle}

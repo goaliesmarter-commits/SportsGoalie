@@ -50,6 +50,11 @@ export async function POST(request: NextRequest) {
       id: doc.id,
       question: (doc.data().question as string) ?? '',
       answer: (doc.data().answer as string) ?? '',
+      // Entries written before the import have no keywords field, and one
+      // written by hand may hold anything; only strings are passed on.
+      keywords: Array.isArray(doc.data().keywords)
+        ? (doc.data().keywords as unknown[]).filter((k): k is string => typeof k === 'string')
+        : [],
     }));
 
     if (candidates.length === 0) {

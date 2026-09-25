@@ -1021,8 +1021,11 @@ export class ProgressService extends BaseDatabaseService {
 
       const user = userResult.data;
 
-      // If automated workflow or no workflow type set (default to automated)
-      if (!user.workflowType || user.workflowType === 'automated') {
+      // If automated workflow or no workflow type set (default to automated).
+      // A custom-workflow goalie with no assigned coach is treated as automated
+      // too: nobody can manage their curriculum, so gating them on it would
+      // silently lock them out of all content.
+      if (!user.workflowType || user.workflowType === 'automated' || !user.assignedCoachId) {
         // TODO: Implement standard level unlock check when Phase 2.1 (6 Pillars) is complete
         // For now, allow access (backward compatible with current system)
         return {

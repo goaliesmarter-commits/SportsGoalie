@@ -556,19 +556,19 @@ export default function ParentRolePage() {
           </p>
           <ApplicationSteps
             steps={[
-              // Registering as a Parent is what opens the parent questionnaire —
-              // the account has to exist first, so say so rather than implying the
-              // questionnaire is the first thing they meet. The "5 minutes" claim
-              // was removed on 26 August: the baseline profile is far longer than
-              // that and the promise was not one the page could keep.
-              { num: '01', text: 'Create your parent account, then complete the parent questionnaire', href: '/auth/register', action: 'Start' },
+              // /auth/register until 8 September. It works, but it makes an
+              // ordinary member account — the parent would be inside the content
+              // before Michael had read a word. /apply makes the same account
+              // walled, which is the point of the whole flow.
+              { num: '01', text: 'Do the questionnaire — about 20 minutes, and it becomes your goalie’s baseline', href: '/apply', action: 'Apply now' },
               { num: '02', text: 'Coach Mike personally reviews your application — no automation, no filter' },
-              // Live as of 26 August: 'Parent' is now in the /contact role list.
-              { num: '03', text: 'Coach Mike calls you personally', href: '/contact', action: 'Set up the call' },
+              // The booking link is carried by the approval email and nowhere
+              // else, so there is nothing to click here.
+              { num: '03', text: 'If he says yes, he emails you a link to book the call — and your account opens' },
             ]}
           />
           <button
-            onClick={() => router.push('/auth/register')}
+            onClick={() => router.push('/apply')}
             style={{ background: RED, color: '#fff', border: 'none', padding: 'clamp(16px,2vw,22px) clamp(32px,4vw,56px)', borderRadius: '12px', fontSize: 'clamp(13px,1.5vw,16px)', fontWeight: 900, letterSpacing: '2px', cursor: 'pointer', textTransform: 'uppercase', boxShadow: '0 8px 32px rgba(192,0,0,0.35)', transition: 'all 0.2s', display: 'inline-block', marginBottom: '36px' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 14px 44px rgba(192,0,0,0.5)'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 32px rgba(192,0,0,0.35)'; }}

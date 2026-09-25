@@ -47,6 +47,48 @@ export class EnrollmentService extends BaseDatabaseService {
   }
 
   /**
+   * Works out which pillars a goalie is active in from their own attempts.
+   *
+   * A goalie invited straight into the product never runs the enrolment step, so no
+   * sport_progress record is ever written for them — which is how a dashboard could
+   * read "0 active courses" on the same screen that listed their results. These
+   * records are for display only and are never saved.
+   */
+  private deriveProgressFromAttempts(
+    userId: string,
+    attempts: VideoQuizProgress[]
+  ): SportProgress[] {
+    // Attempts arrive newest first, so the first sighting of a pillar is its most
+    // recent activity and the resulting order matches the lastAccessedAt sort above.
+    const lastActiveBySport = new Map<string, Timestamp>();
+
+    for (const attempt of attempts) {
+      if (!attempt.sportId || lastActiveBySport.has(attempt.sportId)) {
+        continue;
+      }
+      lastActiveBySport.set(
+        attempt.sportId,
+        attempt.completedAt ?? attempt.startedAt ?? Timestamp.now()
+      );
+    }
+
+    return [...lastActiveBySport.entries()].map(([sportId, lastActive]) => ({
+      // Marked derived so it is never mistaken for a stored record.
+      id: `derived_${userId}_${sportId}`,
+      userId,
+      sportId,
+      status: 'in_progress' as const,
+      completedSkills: [],
+      totalSkills: 0,
+      progressPercentage: 0,
+      timeSpent: 0,
+      streak: { current: 0, longest: 0, lastActiveDate: lastActive },
+      startedAt: lastActive,
+      lastAccessedAt: lastActive,
+    }));
+  }
+
+  /**
    * Enroll a user in a sport by creating SportProgress record
    */
   async enrollInSport(
@@ -150,14 +192,6 @@ export class EnrollmentService extends BaseDatabaseService {
       };
     }
 
-    if (progressResult.data.items.length === 0) {
-      return {
-        success: true,
-        data: [],
-        timestamp: new Date(),
-      };
-    }
-
     const attemptsResult = await videoQuizService.getUserVideoQuizAttempts(userId, {
       completed: true,
       limit: this.DASHBOARD_ATTEMPTS_LIMIT,
@@ -165,8 +199,22 @@ export class EnrollmentService extends BaseDatabaseService {
     const attempts = attemptsResult.success ? attemptsResult.data?.items || [] : [];
     const latestAttemptBySkill = this.buildLatestAttemptBySkill(attempts);
 
+    const progressRecords =
+      progressResult.data.items.length > 0
+        ? progressResult.data.items
+        : this.deriveProgressFromAttempts(userId, attempts);
+
+    // A goalie with neither an enrolment nor a completed check really has nothing yet.
+    if (progressRecords.length === 0) {
+      return {
+        success: true,
+        data: [],
+        timestamp: new Date(),
+      };
+    }
+
     const sportDetails = await Promise.all(
-      progressResult.data.items.map(async (progress) => {
+      progressRecords.map(async (progress) => {
         const sportResult = await sportsService.getSport(progress.sportId);
         if (!sportResult.success || !sportResult.data) {
           return null;

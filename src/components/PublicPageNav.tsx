@@ -7,6 +7,7 @@ import { Menu, X } from 'lucide-react';
 const NAV_LINKS = [
   { label: 'Who We Are', path: '/who-we-are' },
   { label: 'The System', path: '/the-system' },
+  { label: 'Pricing', path: '/pricing' },
   { label: 'Contact Us', path: '/contact' },
 ];
 

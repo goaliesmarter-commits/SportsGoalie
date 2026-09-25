@@ -460,7 +460,7 @@ export class OnboardingService extends BaseDatabaseService {
         initialAssessmentLevel: pacingLevelToAssessmentLevel(intelligenceProfile.pacingLevel),
       });
 
-      // Auto-enroll student in all 7 pillars
+      // Auto-enroll student in all 8 pillars
       const pillarIds = getAllPillarIds();
       logger.info('Auto-enrolling student in pillars', 'OnboardingService', {
         userId,

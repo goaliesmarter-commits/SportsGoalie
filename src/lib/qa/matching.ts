@@ -21,6 +21,13 @@ export interface MatchCandidate {
   id: string;
   question: string;
   answer: string;
+  /**
+   * Michael's trigger terms for this entry, where he supplied them. They are
+   * used by the lexical fallback only. The AI matcher is not shown them: it
+   * already matches on meaning, and a list of loose terms is more likely to
+   * pull it toward a topic area than to sharpen it.
+   */
+  keywords?: string[];
 }
 
 export interface MatchResult {
@@ -142,6 +149,11 @@ function significantTokens(text: string): Set<string> {
  * words must appear in a stored question, with a minimum of two words in
  * common. Catches rephrasings like "how much does it cost" → "what does it
  * cost", and deliberately misses anything looser.
+ *
+ * Keywords widen what counts as "appears in the stored question" — they are
+ * the coach's own words for the same entry, so "netminder" can reach a question
+ * that only ever says "goalie". They cannot loosen the threshold, because the
+ * denominator stays the number of words the visitor actually used.
  */
 function matchLexically(visitorQuestion: string, pool: MatchCandidate[]): MatchCandidate | null {
   const asked = significantTokens(visitorQuestion);
@@ -150,7 +162,9 @@ function matchLexically(visitorQuestion: string, pool: MatchCandidate[]): MatchC
   let best: { candidate: MatchCandidate; score: number } | null = null;
 
   for (const candidate of pool) {
-    const stored = significantTokens(candidate.question);
+    const stored = significantTokens(
+      [candidate.question, ...(candidate.keywords ?? [])].join(' ')
+    );
     let overlap = 0;
     for (const token of asked) if (stored.has(token)) overlap++;
     const score = overlap / asked.size;

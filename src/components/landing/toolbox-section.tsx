@@ -23,7 +23,7 @@ const TOOLBOX_ITEMS: ToolboxItem[] = [
     id: 'positional',
     number: '01',
     title: 'Goalies Positional System',
-    tag: 'GPS · 7AMS · 6ZS',
+    tag: 'GPS · 7AMS · 6Z-7PS',
     description:
       'Your most critical relationship isn\'t with a coach or your teammates or even your parents — it\'s with the net - the seven angles above the icing line and the 6 zones below the icing line... When you are aware-sensitive to the net, the crease, and the white ice, you stop guessing and start USING YOUR SPIDY SENSES.',
     accent: '#37b5ff',
