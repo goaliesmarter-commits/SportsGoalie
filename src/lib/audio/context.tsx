@@ -38,6 +38,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { clipIdsForSlot, displayText, type AudioSettingsMap } from '@/lib/audio/library';
 import { primeElement, startClip } from '@/lib/audio/playback';
 import { coachAudioService } from '@/lib/database/services/coach-audio.service';
 import { playableClips, type CoachAudioClip } from '@/types/coach-audio';
@@ -45,8 +46,14 @@ import { playableClips, type CoachAudioClip } from '@/types/coach-audio';
 const ENABLED_STORAGE_KEY = 'sg.coachAudio.enabled';
 
 interface CoachAudioContextValue {
-  /** Clips that may play, by id: uploaded and not held. Empty until the first load resolves. */
+  /** Clips that may play, by id: uploaded, not held, not hidden. Empty until the first load resolves. */
   clips: Record<string, CoachAudioClip>;
+  /** What admin has set on each recording: text, label, places, hidden. */
+  settings: AudioSettingsMap;
+  /** The recordings admin has placed in a slot that can play now, in library order. */
+  clipsForSlot: (slot: string) => string[];
+  /** The words to show with a recording, or undefined when there are none to trust. */
+  textFor: (id: string) => string | undefined;
   /**
    * True until the clip list is in and the viewer's voice preference has been
    * read, so nothing starts on the strength of a default the preference is
@@ -92,6 +99,7 @@ const CoachAudioContext = createContext<CoachAudioContextValue | null>(null);
 
 export function CoachAudioProvider({ children }: { children: ReactNode }) {
   const [clips, setClips] = useState<Record<string, CoachAudioClip>>({});
+  const [settings, setSettings] = useState<AudioSettingsMap>({});
   const [clipsLoading, setIsLoading] = useState(true);
   const [preferenceRead, setPreferenceRead] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -112,8 +120,11 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
   const advanceRef = useRef<() => void>(() => {});
 
   const refresh = useCallback(async () => {
-    const result = await coachAudioService.getAllClips();
-    if (result.success && result.data) setClips(playableClips(result.data));
+    const result = await coachAudioService.getLibrary();
+    if (result.success && result.data) {
+      setClips(playableClips(result.data.clips, result.data.settings));
+      setSettings(result.data.settings);
+    }
     setIsLoading(false);
   }, []);
 
@@ -124,9 +135,12 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    void coachAudioService.getAllClips().then(result => {
+    void coachAudioService.getLibrary().then(result => {
       if (cancelled) return;
-      if (result.success && result.data) setClips(playableClips(result.data));
+      if (result.success && result.data) {
+        setClips(playableClips(result.data.clips, result.data.settings));
+        setSettings(result.data.settings);
+      }
       setIsLoading(false);
     });
 
@@ -320,11 +334,20 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
     [pause]
   );
 
+  const clipsForSlot = useCallback(
+    (slot: string) => clipIdsForSlot(slot, settings, clips),
+    [settings, clips]
+  );
+  const textFor = useCallback((id: string) => displayText(id, settings), [settings]);
+
   const isLoading = clipsLoading || !preferenceRead;
 
   const value = useMemo<CoachAudioContextValue>(
     () => ({
       clips,
+      settings,
+      clipsForSlot,
+      textFor,
       isLoading,
       playingId,
       blockedId,
@@ -341,6 +364,9 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
     }),
     [
       clips,
+      settings,
+      clipsForSlot,
+      textFor,
       isLoading,
       playingId,
       blockedId,

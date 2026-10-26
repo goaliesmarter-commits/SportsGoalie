@@ -11,7 +11,15 @@ import type { CoachAudioClip } from '@/types/coach-audio';
 const { getAllClips } = vi.hoisted(() => ({ getAllClips: vi.fn() }));
 
 vi.mock('@/lib/database/services/coach-audio.service', () => ({
-  coachAudioService: { getAllClips },
+  coachAudioService: {
+    getAllClips,
+    // The provider reads uploads and admin settings in one call; these tests
+    // only care about uploads, so the library is built from the same mock.
+    getLibrary: async () => {
+      const result = await getAllClips();
+      return result?.success ? { ...result, data: { clips: result.data, settings: {} } } : result;
+    },
+  },
 }));
 
 const FIRST_FOLDER_UPLOAD = new Date('2026-09-13T15:00:00Z');

@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ClipboardList, Shield, Users, Target, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { GemVoiceButton } from '@/components/audio/GemVoiceButton';
+import { AudioSlotButtons } from '@/components/audio/AudioSlotButtons';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
 import { TiltCard } from '@/components/ui/tilt-card';
@@ -870,6 +871,9 @@ function PillarPageContent() {
       {pillar.facts.map((fact, i) => (
         <FactSection key={i} fact={fact} accent={accent} index={i} />
       ))}
+
+      {/* ── Buttons added from admin (Coach Audio) ── */}
+      <AudioSlotButtons className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-12" />
 
       {/* ── LIFESTYLE CLOSE (last page of the public set) ── */}
       {id === '7' && pillar.close && (

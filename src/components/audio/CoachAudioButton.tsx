@@ -17,7 +17,6 @@
 import { Pause, Play } from 'lucide-react';
 
 import { useCoachAudioClip, useCoachAudio } from '@/lib/audio/context';
-import { getCoachAudioEntry } from '@/types/coach-audio';
 
 const BLUE = '#37b5ff';
 const BLUE2 = '#60cdff';
@@ -52,10 +51,11 @@ export function CoachAudioButton({
 }: CoachAudioButtonProps) {
   const isChip = chipLabel !== undefined;
   const { clip, available, isLoading, isPlaying, enabled, toggle } = useCoachAudioClip(clipId);
-  const { setEnabled } = useCoachAudio();
+  const { setEnabled, textFor, settings } = useCoachAudio();
 
-  const transcript = transcriptFor(clipId);
-  const displayLabel = label ?? transcript ?? 'HEAR COACH MIKE';
+  const transcript = textFor(clipId);
+  // A label set in admin wins over the one the page was built with (2.4).
+  const displayLabel = settings[clipId]?.label ?? label ?? transcript ?? 'HEAR COACH MIKE';
 
   // While the first load is in flight, keep the button in place rather than
   // popping it in — the marketing pages lay out around it.
@@ -161,19 +161,6 @@ export function CoachAudioButton({
 }
 
 /**
- * The words to show for a clip, or undefined when there are none to trust.
- *
- * A clip Michael is re-recording still carries the old wording in the
- * catalogue. Once the new take is uploaded it plays straight away, but the
- * words on file are not the ones being spoken, so none are shown until the
- * catalogue is updated.
- */
-function transcriptFor(clipId: string): string | undefined {
-  const entry = getCoachAudioEntry(clipId);
-  return entry && (!entry.reRecord || entry.reRecord.wordingFinal) ? entry.scriptLine : undefined;
-}
-
-/**
  * Small circular variant for use inline — beside a chart confirmation, a
  * milestone card, or a trigger message. No label, no on/off control.
  */
@@ -185,6 +172,7 @@ export function CoachAudioInlineButton({
   whenMissing?: 'disable' | 'hide';
 }) {
   const { available, isLoading, isPlaying, enabled, toggle } = useCoachAudioClip(clipId);
+  const { textFor } = useCoachAudio();
 
   if (!available && !isLoading && whenMissing === 'hide') return null;
 
@@ -198,7 +186,7 @@ export function CoachAudioInlineButton({
       aria-label={
         available ? `${isPlaying ? 'Pause' : 'Play'} Coach Mike` : 'Recording not added yet'
       }
-      title={transcriptFor(clipId)}
+      title={textFor(clipId)}
       style={{
         width: '30px',
         height: '30px',

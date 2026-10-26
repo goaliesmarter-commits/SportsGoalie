@@ -7,21 +7,30 @@
  * copies played anything. Michael's rule (17 October): a button stays hidden
  * until its gem is recorded.
  *
- * A button with no `clipId` has nothing to play, so it draws nothing. When a gem
- * is recorded, add its id from the Coach Audio list to the button's `clipId`;
- * it then appears once that clip is uploaded and stays hidden before that.
+ * Which recording a button plays is set in admin, not here (Audio Part 2, item
+ * 2.2): the button's slot is its page address plus its label, and admin attaches
+ * a recording to that slot from /admin/coach-audio. A `clipId` passed in code
+ * still works and wins, for a button whose recording never changes.
  */
 
+import { usePathname } from 'next/navigation';
+
 import { CoachAudioButton } from '@/components/audio/CoachAudioButton';
+import { useCoachAudio } from '@/lib/audio/context';
+import { slotKey } from '@/lib/audio/slots';
 
 interface GemVoiceButtonProps {
-  /** The words on the button on a wider screen. */
+  /** The words on the button on a wider screen. Also names its slot. */
   label: string;
-  /** The Coach Audio id of the recorded gem. Leave out until it is recorded. */
+  /** A recording fixed in code. Leave out to let admin choose it. */
   clipId?: string;
 }
 
 export function GemVoiceButton({ label, clipId }: GemVoiceButtonProps) {
-  if (!clipId) return null;
-  return <CoachAudioButton clipId={clipId} label={label} whenMissing="hide" />;
+  const pathname = usePathname() ?? '';
+  const { clipsForSlot } = useCoachAudio();
+
+  const placed = clipId ?? clipsForSlot(slotKey(pathname, label))[0];
+  if (!placed) return null;
+  return <CoachAudioButton clipId={placed} label={label} whenMissing="hide" />;
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pause, Shield, Check, ChevronLeft } from 'lucide-react';
 import { GemVoiceButton } from '@/components/audio/GemVoiceButton';
+import { AudioSlotButtons } from '@/components/audio/AudioSlotButtons';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
 import { TiltCard } from '@/components/ui/tilt-card';
@@ -226,6 +227,7 @@ export default function GoaliePage() {
             </div>
             <div style={{ flex: '1 1 0', maxWidth: '400px', width: '100%' }}>
               <AutoVoicePlayer autoPlay={true} />
+              <AudioSlotButtons className="mt-6" />
             </div>
           </div>
         </div>
