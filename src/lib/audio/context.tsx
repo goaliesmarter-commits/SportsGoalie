@@ -39,7 +39,7 @@ import {
 } from 'react';
 
 import { clipIdsForSlot, displayText, type AudioSettingsMap } from '@/lib/audio/library';
-import { primeElement, startClip } from '@/lib/audio/playback';
+import { primeElement, resumeClip, startClip } from '@/lib/audio/playback';
 import { coachAudioService } from '@/lib/database/services/coach-audio.service';
 import { playableClips, type CoachAudioClip } from '@/types/coach-audio';
 
@@ -93,6 +93,16 @@ interface CoachAudioContextValue {
   prime: () => void;
   /** Re-reads the collection. Called by the admin screen after an upload. */
   refresh: () => Promise<void>;
+  /**
+   * Plays `id` from where it was paused, or from the start if it was not the
+   * clip last playing or had finished. For long recordings with a progress bar.
+   */
+  resume: (id: string) => void;
+  /** Moves the clip that is loaded to `seconds`. */
+  seek: (seconds: number) => void;
+  /** The shared element and the clip it was last asked to play, for progress bars. */
+  getElement: () => HTMLAudioElement | null;
+  getLoadedId: () => string | null;
 }
 
 const CoachAudioContext = createContext<CoachAudioContextValue | null>(null);
@@ -313,6 +323,39 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
     [pause]
   );
 
+  const resume = useCallback(
+    (id: string) => {
+      const element = audioRef.current;
+      const canResume =
+        element && requestedIdRef.current === id && element.paused && !element.ended && element.currentTime > 0;
+      if (!element || !canResume) {
+        play(id);
+        return;
+      }
+      queueRef.current = [];
+      void resumeClip(element).then(outcome => {
+        if (outcome === 'playing') {
+          unlockedRef.current = true;
+          setBlockedId(null);
+          setPlayingId(id);
+        } else if (outcome === 'blocked') {
+          unlockedRef.current = false;
+          setBlockedId(id);
+        }
+      });
+    },
+    [play]
+  );
+
+  const seek = useCallback((seconds: number) => {
+    const element = audioRef.current;
+    if (!element || !Number.isFinite(seconds)) return;
+    element.currentTime = Math.max(0, seconds);
+  }, []);
+
+  const getElement = useCallback(() => audioRef.current, []);
+  const getLoadedId = useCallback(() => requestedIdRef.current, []);
+
   const toggle = useCallback(
     (id: string) => {
       if (playingId === id) pause();
@@ -361,6 +404,10 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
       toggle,
       prime,
       refresh,
+      resume,
+      seek,
+      getElement,
+      getLoadedId,
     }),
     [
       clips,
@@ -380,6 +427,10 @@ export function CoachAudioProvider({ children }: { children: ReactNode }) {
       toggle,
       prime,
       refresh,
+      resume,
+      seek,
+      getElement,
+      getLoadedId,
     ]
   );
 
@@ -418,4 +469,39 @@ export function useCoachAudioClip(id: string) {
     enabled,
     toggle: useCallback(() => toggle(id), [toggle, id]),
   };
+}
+
+/**
+ * Where the shared element is in clip `id`, for a progress bar. Zero, with no
+ * duration, while some other clip is loaded. Reads the element's own events, so
+ * it follows a seek or a pause made anywhere.
+ */
+export function usePlaybackPosition(id: string | null): { currentTime: number; duration: number | null } {
+  const { getElement, getLoadedId, playingId } = useCoachAudio();
+  const [position, setPosition] = useState<{ currentTime: number; duration: number | null }>({
+    currentTime: 0,
+    duration: null,
+  });
+
+  useEffect(() => {
+    const element = getElement();
+    if (!element || !id) return;
+
+    const read = () => {
+      if (getLoadedId() !== id) {
+        setPosition({ currentTime: 0, duration: null });
+        return;
+      }
+      const duration = Number.isFinite(element.duration) && element.duration > 0 ? element.duration : null;
+      setPosition({ currentTime: element.currentTime, duration });
+    };
+
+    const events = ['timeupdate', 'loadedmetadata', 'durationchange', 'seeked', 'ended', 'pause', 'play'];
+    events.forEach(name => element.addEventListener(name, read));
+    read();
+    return () => events.forEach(name => element.removeEventListener(name, read));
+    // playingId re-reads when a different clip takes over the element.
+  }, [getElement, getLoadedId, id, playingId]);
+
+  return position;
 }

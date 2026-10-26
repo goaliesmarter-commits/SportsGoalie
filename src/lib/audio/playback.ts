@@ -117,6 +117,16 @@ export function primeElement(element: HTMLAudioElement): Promise<boolean> {
 }
 
 /**
+ * Carries on from where the element was paused, for a long recording such as a
+ * role-page welcome. Same tap rule as `startClip`.
+ */
+export function resumeClip(element: HTMLAudioElement): Promise<ClipStart> {
+  return attemptPlay(element).then(result =>
+    result === 'played' ? 'playing' : result === 'refused' ? 'blocked' : 'failed'
+  );
+}
+
+/**
  * Plays `url` from the start on the element. `play()` is called before this
  * returns, so calling it inside a tap handler counts as the tap.
  */
