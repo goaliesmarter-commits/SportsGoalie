@@ -17,6 +17,7 @@ import {
   getDocs,
   setDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -25,12 +26,13 @@ import { z } from 'zod';
 
 import { db, storage } from '@/lib/firebase/config';
 import { logger } from '@/lib/utils/logger';
+import { fullCatalogue, isKnownAudioId, newAudioIdProblem, type AudioSettingsMap } from '@/lib/audio/library';
+import { isKnownSlot } from '@/lib/audio/slots';
 import {
-  COACH_AUDIO_CATALOGUE,
   COACH_AUDIO_ACCEPTED_TYPES,
   COACH_AUDIO_MAX_BYTES,
-  isCoachAudioId,
   type CoachAudioClip,
+  type CoachAudioSettings,
   type CoachAudioStatus,
 } from '@/types/coach-audio';
 import type { ApiResponse } from '@/types';
@@ -51,6 +53,39 @@ const clipDocSchema = z.object({
   durationSeconds: z.number().positive().nullable(),
   originalFilename: z.string().min(1),
 });
+
+/** Admin's settings on a recording. Anything malformed is dropped, not trusted. */
+const settingsSchema = z.object({
+  hidden: z.boolean().optional(),
+  text: z.string().max(5000).optional(),
+  label: z.string().max(200).optional(),
+  slots: z.array(z.string()).optional(),
+  added: z.object({ title: z.string().min(1).max(200) }).optional(),
+});
+
+/** The file fields an upload writes; removing a recording clears only these. */
+const FILE_FIELDS = [
+  'url',
+  'storagePath',
+  'contentType',
+  'sizeBytes',
+  'durationSeconds',
+  'originalFilename',
+  'uploadedAt',
+] as const;
+
+export interface CoachAudioLibrary {
+  clips: Record<string, CoachAudioClip>;
+  settings: AudioSettingsMap;
+}
+
+/** What admin may change on a recording. `null` clears a field. */
+export type CoachAudioSettingsUpdate = {
+  hidden?: boolean;
+  text?: string | null;
+  label?: string | null;
+  slots?: string[];
+};
 
 function toDate(value: unknown): Date {
   if (value instanceof Timestamp) return value.toDate();
@@ -107,28 +142,67 @@ export class CoachAudioService {
     };
   }
 
+  private parseSettings(id: string, raw: Record<string, unknown>): CoachAudioSettings {
+    const picked = {
+      hidden: raw.hidden,
+      text: raw.text,
+      label: raw.label,
+      slots: raw.slots,
+      added: raw.added,
+    };
+    const parsed = settingsSchema.safeParse(
+      Object.fromEntries(Object.entries(picked).filter(([, value]) => value !== undefined))
+    );
+    if (!parsed.success) {
+      logger.warn('Ignoring malformed coach audio settings', 'CoachAudioService', {
+        id,
+        issues: parsed.error.issues,
+      });
+      return {};
+    }
+    return parsed.data;
+  }
+
   /**
-   * Every uploaded clip, keyed by id.
+   * Every uploaded clip and every recording's admin settings, keyed by id.
    *
-   * The whole collection is at most 59 small documents, so this reads all of
+   * The whole collection is a hundred-odd small documents, so this reads all of
    * them in one go and the caller caches the result. That is what keeps the
-   * ~100 audio buttons across the site from firing a read each.
+   * ~100 audio buttons across the site from firing a read each. A document can
+   * carry settings with no upload yet (a recording added from admin, or one
+   * placed before its file arrives); that is a recording with no clip, not a
+   * malformed one.
    */
-  async getAllClips(): Promise<ApiResponse<Record<string, CoachAudioClip>>> {
+  async getLibrary(): Promise<ApiResponse<CoachAudioLibrary>> {
     try {
       const snapshot = await getDocs(collection(db, COLLECTION));
       const clips: Record<string, CoachAudioClip> = {};
+      const settings: AudioSettingsMap = {};
 
       snapshot.forEach(snap => {
-        const clip = this.parseClip(snap.id, snap.data());
-        if (clip) clips[snap.id] = clip;
+        const raw = snap.data();
+        if (raw.url !== undefined) {
+          const clip = this.parseClip(snap.id, raw);
+          if (clip) clips[snap.id] = clip;
+        }
+        const parsed = this.parseSettings(snap.id, raw);
+        if (Object.keys(parsed).length > 0) settings[snap.id] = parsed;
       });
 
-      return ok(clips);
+      return ok({ clips, settings });
     } catch (error) {
       logger.error('Failed to load coach audio clips', 'CoachAudioService', { ...describeError(error) });
       return fail('coach-audio/list-failed', 'Could not load the audio clips.', error);
     }
+  }
+
+  /** Every uploaded clip, keyed by id. */
+  async getAllClips(): Promise<ApiResponse<Record<string, CoachAudioClip>>> {
+    const result = await this.getLibrary();
+    if (!result.success || !result.data) {
+      return fail('coach-audio/list-failed', 'Could not load the audio clips.');
+    }
+    return ok(result.data.clips);
   }
 
   async getClip(id: string): Promise<ApiResponse<CoachAudioClip | null>> {
@@ -147,18 +221,89 @@ export class CoachAudioService {
    * view of the world, including the entries that are still missing.
    */
   async getStatuses(): Promise<ApiResponse<CoachAudioStatus[]>> {
-    const result = await this.getAllClips();
+    const result = await this.getLibrary();
     if (!result.success || !result.data) {
       return fail('coach-audio/status-failed', 'Could not load the audio catalogue.');
     }
 
-    const clips = result.data;
+    const { clips, settings } = result.data;
     return ok(
-      COACH_AUDIO_CATALOGUE.map(entry => ({
+      fullCatalogue(settings).map(entry => ({
         entry,
         clip: clips[entry.id] ?? null,
+        settings: settings[entry.id] ?? {},
       }))
     );
+  }
+
+  /** Every recording's admin settings, for the checks the writes below make. */
+  private async currentSettings(): Promise<AudioSettingsMap> {
+    const result = await this.getLibrary();
+    return result.success && result.data ? result.data.settings : {};
+  }
+
+  /**
+   * Adds a recording that is not in the catalogue (2.1), so Michael can bring
+   * in a new gem or answer without a developer. It has no file until one is
+   * uploaded against its id.
+   */
+  async addRecording(id: string, title: string, text?: string): Promise<ApiResponse<null>> {
+    const cleanId = id.trim().toUpperCase();
+    const cleanTitle = title.trim();
+    if (!cleanTitle) return fail('coach-audio/no-title', 'Give the recording a title.');
+
+    const problem = newAudioIdProblem(cleanId, await this.currentSettings());
+    if (problem) return fail('coach-audio/bad-id', problem);
+
+    try {
+      await setDoc(doc(db, COLLECTION, cleanId), {
+        added: { title: cleanTitle },
+        ...(text?.trim() ? { text: text.trim() } : {}),
+        updatedAt: serverTimestamp(),
+      });
+      logger.info('Coach audio recording added', 'CoachAudioService', { id: cleanId });
+      return ok(null);
+    } catch (error) {
+      logger.error('Adding coach audio recording failed', 'CoachAudioService', {
+        id: cleanId,
+        ...describeError(error),
+      });
+      return fail('coach-audio/add-failed', `Could not add ${cleanId}.`, error);
+    }
+  }
+
+  /**
+   * Saves what admin changed on a recording: hide (2.1), text (2.4), label, and
+   * the slots it plays in (2.2). Merged into the same document as the upload,
+   * so replacing the file never loses them.
+   */
+  async saveSettings(id: string, update: CoachAudioSettingsUpdate): Promise<ApiResponse<null>> {
+    if (!isKnownAudioId(id, await this.currentSettings())) {
+      return fail('coach-audio/unknown-id', `"${id}" is not in the library.`);
+    }
+    if (update.slots && !update.slots.every(isKnownSlot)) {
+      return fail('coach-audio/unknown-slot', 'One of those places is not on the site.');
+    }
+
+    const clearable = (value: string | null | undefined) =>
+      value === undefined ? undefined : value === null || value.trim() === '' ? deleteField() : value.trim();
+
+    const patch = Object.fromEntries(
+      Object.entries({
+        hidden: update.hidden,
+        text: clearable(update.text),
+        label: clearable(update.label),
+        slots: update.slots ? [...new Set(update.slots)] : undefined,
+      }).filter(([, value]) => value !== undefined)
+    );
+
+    try {
+      await setDoc(doc(db, COLLECTION, id), { ...patch, updatedAt: serverTimestamp() }, { merge: true });
+      return ok(null);
+    } catch (error) {
+      logger.error('Saving coach audio settings failed', 'CoachAudioService', { id, ...describeError(error) });
+      return fail('coach-audio/save-failed', `Could not save ${id}.`, error);
+    }
   }
 
   /**
@@ -173,8 +318,8 @@ export class CoachAudioService {
     file: File,
     durationSeconds: number | null
   ): Promise<ApiResponse<CoachAudioClip>> {
-    if (!isCoachAudioId(id)) {
-      return fail('coach-audio/unknown-id', `"${id}" is not a clip id in the catalogue.`);
+    if (!isKnownAudioId(id, await this.currentSettings())) {
+      return fail('coach-audio/unknown-id', `"${id}" is not a recording in the library.`);
     }
     if (file.size > COACH_AUDIO_MAX_BYTES) {
       return fail(
@@ -256,11 +401,17 @@ export class CoachAudioService {
     }
   }
 
-  /** Removes both the stored object and the document. */
+  /**
+   * Removes the stored file. Admin's settings on the recording (its text, its
+   * places, a recording added from admin) stay, so uploading a new file puts it
+   * straight back where it was. `removeRecording` takes an added one out whole.
+   */
   async deleteClip(id: string): Promise<ApiResponse<null>> {
     try {
-      const existing = await this.getClip(id);
-      const storagePath = existing.success ? existing.data?.storagePath ?? null : null;
+      const snap = await getDoc(doc(db, COLLECTION, id));
+      if (!snap.exists()) return ok(null);
+      const raw = snap.data();
+      const storagePath = typeof raw.storagePath === 'string' ? raw.storagePath : null;
 
       if (storagePath) {
         await deleteObject(ref(storage, storagePath)).catch(error => {
@@ -268,13 +419,42 @@ export class CoachAudioService {
           logger.warn('Audio object already gone', 'CoachAudioService', { id, error });
         });
       }
-      await deleteDoc(doc(db, COLLECTION, id));
+
+      if (Object.keys(this.parseSettings(id, raw)).length > 0) {
+        await setDoc(
+          doc(db, COLLECTION, id),
+          {
+            ...Object.fromEntries(FILE_FIELDS.map(field => [field, deleteField()])),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } else {
+        await deleteDoc(doc(db, COLLECTION, id));
+      }
 
       logger.info('Coach audio clip deleted', 'CoachAudioService', { id });
       return ok(null);
     } catch (error) {
       logger.error('Coach audio delete failed', 'CoachAudioService', { id, ...describeError(error) });
       return fail('coach-audio/delete-failed', 'Could not delete that clip.', error);
+    }
+  }
+
+  /** Takes a recording added from admin out of the library, file and all. */
+  async removeRecording(id: string): Promise<ApiResponse<null>> {
+    const settings = await this.currentSettings();
+    if (!settings[id]?.added) {
+      return fail('coach-audio/not-added', `${id} is part of the catalogue and cannot be removed.`);
+    }
+    const cleared = await this.deleteClip(id);
+    if (!cleared.success) return cleared;
+    try {
+      await deleteDoc(doc(db, COLLECTION, id));
+      return ok(null);
+    } catch (error) {
+      logger.error('Removing coach audio recording failed', 'CoachAudioService', { id, ...describeError(error) });
+      return fail('coach-audio/remove-failed', `Could not remove ${id}.`, error);
     }
   }
 }

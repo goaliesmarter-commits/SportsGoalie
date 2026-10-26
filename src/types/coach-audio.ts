@@ -32,7 +32,8 @@ export type CoachAudioPart =
   | 'utility' // Part 4 · V-A-27 to V-A-37
   | 'triggers' // Part 5 · V-B-01 to V-B-22
   | 'assessment' // Driver-or-Passenger · DOP-INTRO, DOP-A to DOP-D
-  | 'guardian'; // Parent/coach onboarding · PARENT-WELCOME, PARENT-P2 to P8, COACH-WELCOME
+  | 'guardian' // Parent/coach onboarding · PARENT-WELCOME, PARENT-P2 to P8, COACH-WELCOME
+  | 'added'; // Recordings added from the admin screen, not in the catalogue below
 
 export const COACH_AUDIO_PART_LABELS: Record<CoachAudioPart, string> = {
   orientation: 'Part 1 — Orientation',
@@ -42,6 +43,7 @@ export const COACH_AUDIO_PART_LABELS: Record<CoachAudioPart, string> = {
   triggers: 'Part 5 — Trigger messages',
   assessment: 'Driver or Passenger',
   guardian: 'Parent & Coach Onboarding',
+  added: 'Added from admin',
 };
 
 export const COACH_AUDIO_PART_ORDER: CoachAudioPart[] = [
@@ -52,6 +54,7 @@ export const COACH_AUDIO_PART_ORDER: CoachAudioPart[] = [
   'triggers',
   'assessment',
   'guardian',
+  'added',
 ];
 
 /**
@@ -118,10 +121,30 @@ export interface CoachAudioClip {
   updatedAt: Date;
 }
 
+/**
+ * What admin controls about one recording without a developer (Audio Part 2).
+ * Stored on the same document as the upload, `coach_audio_clips/{id}`, so the
+ * whole library is still one read and the existing rules already cover it.
+ * Every field is optional: a recording nobody has touched in admin has none.
+ */
+export interface CoachAudioSettings {
+  /** Hidden from the site (2.1). The recording stays on file and in admin. */
+  hidden?: boolean;
+  /** The words shown with the recording, replacing the catalogue's (2.4). */
+  text?: string;
+  /** The button's words, replacing the label the page was built with. */
+  label?: string;
+  /** The slots it plays in, by `slotKey` (2.2). See src/lib/audio/slots.ts. */
+  slots?: string[];
+  /** Set on a recording added from admin, which has no catalogue entry. */
+  added?: { title: string };
+}
+
 /** A catalogue entry joined to its clip, if one has been uploaded. */
 export interface CoachAudioStatus {
   entry: CoachAudioCatalogueEntry;
   clip: CoachAudioClip | null;
+  settings: CoachAudioSettings;
 }
 
 /* ─── The catalogue ──────────────────────────────────────────────────────────
@@ -722,15 +745,25 @@ export function isParked(id: string): boolean {
 
 /**
  * The clips that may play on the site: everything uploaded, less the held old
- * takes and the parked clips.
+ * takes, the parked clips, and anything admin has hidden.
  */
 export function playableClips(
-  clips: Record<string, CoachAudioClip>
+  clips: Record<string, CoachAudioClip>,
+  settings: Record<string, CoachAudioSettings> = {}
 ): Record<string, CoachAudioClip> {
   return Object.fromEntries(
-    Object.entries(clips).filter(([, clip]) => !isHeldForReRecord(clip) && !isParked(clip.id))
+    Object.entries(clips).filter(
+      ([id, clip]) => !isHeldForReRecord(clip) && !isParked(clip.id) && settings[id]?.hidden !== true
+    )
   );
 }
+
+/**
+ * The id rule for a recording added from admin: capitals, digits and hyphens,
+ * 2 to 32 long, starting with a letter or digit — the shape of G-01, QA-045 and
+ * V-B-22, which is how Michael names his files.
+ */
+export const ADDED_AUDIO_ID = /^[A-Z0-9][A-Z0-9-]{1,31}$/;
 
 /** Audio formats accepted on upload. mp3 is preferred for delivery; wav is the master. */
 export const COACH_AUDIO_ACCEPTED_TYPES = [
