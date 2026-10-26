@@ -17,8 +17,11 @@ import {
   AudioLines,
   Check,
   CircleAlert,
+  Eye,
+  EyeOff,
   Loader2,
   Pause,
+  Pencil,
   Play,
   Trash2,
   Upload,
@@ -29,15 +32,19 @@ import { AdminRoute } from '@/components/auth/protected-route';
 import { CoachAudioButton } from '@/components/audio/CoachAudioButton';
 import { useCoachAudio } from '@/lib/audio/context';
 import { SkeletonDarkPage } from '@/components/ui/skeletons';
-import { coachAudioService } from '@/lib/database/services/coach-audio.service';
+import {
+  coachAudioService,
+  type CoachAudioSettingsUpdate,
+} from '@/lib/database/services/coach-audio.service';
+import { audioIdFromFilename, type AudioSettingsMap } from '@/lib/audio/library';
 import {
   COACH_AUDIO_PART_LABELS,
   COACH_AUDIO_PART_ORDER,
-  coachAudioIdFromFilename,
   isHeldForReRecord,
   type CoachAudioPart,
   type CoachAudioStatus,
 } from '@/types/coach-audio';
+import { AddRecordingForm, ClipSettingsPanel } from '@/components/admin/CoachAudioSettings';
 
 /* ─── Style constants, matching the other admin screens ────────────────────── */
 
@@ -146,6 +153,12 @@ function CoachAudioAdminPage() {
     };
   }, []);
 
+  // Admin's settings by id, so a dropped file can match a recording added here.
+  const settingsMap = useMemo<AudioSettingsMap>(
+    () => Object.fromEntries(statuses.map(row => [row.entry.id, row.settings])),
+    [statuses]
+  );
+
   const markBusy = (id: string, busy: boolean) =>
     setBusyIds(current => {
       const next = new Set(current);
@@ -186,7 +199,7 @@ function CoachAudioAdminPage() {
       const unmatched: string[] = [];
 
       for (const file of list) {
-        const id = coachAudioIdFromFilename(file.name);
+        const id = audioIdFromFilename(file.name, settingsMap);
         if (id) matched.push({ id, file });
         else unmatched.push(file.name);
       }
@@ -213,7 +226,7 @@ function CoachAudioAdminPage() {
       toast.success(`${uploaded} of ${matched.length} uploaded`, { id: toastId });
       await load();
     },
-    [uploadOne, load]
+    [uploadOne, load, settingsMap]
   );
 
   const handleSingle = useCallback(
@@ -237,6 +250,51 @@ function CoachAudioAdminPage() {
         await load();
       } else {
         toast.error(result.error?.message ?? 'Could not remove that clip.');
+      }
+    },
+    [load]
+  );
+
+  const handleSaveSettings = useCallback(
+    async (id: string, update: CoachAudioSettingsUpdate): Promise<boolean> => {
+      markBusy(id, true);
+      const result = await coachAudioService.saveSettings(id, update);
+      markBusy(id, false);
+      if (!result.success) {
+        toast.error(result.error?.message ?? `Could not save ${id}.`);
+        return false;
+      }
+      toast.success(`${id} saved`);
+      await load();
+      return true;
+    },
+    [load]
+  );
+
+  const handleAdd = useCallback(
+    async (id: string, title: string, text: string): Promise<boolean> => {
+      const result = await coachAudioService.addRecording(id, title, text);
+      if (!result.success) {
+        toast.error(result.error?.message ?? 'Could not add that recording.');
+        return false;
+      }
+      toast.success(`${id.trim().toUpperCase()} added. Upload its file on its row below.`);
+      await load();
+      return true;
+    },
+    [load]
+  );
+
+  const handleRemove = useCallback(
+    async (id: string) => {
+      markBusy(id, true);
+      const result = await coachAudioService.removeRecording(id);
+      markBusy(id, false);
+      if (result.success) {
+        toast.success(`${id} removed from the library`);
+        await load();
+      } else {
+        toast.error(result.error?.message ?? `Could not remove ${id}.`);
       }
     },
     [load]
@@ -282,6 +340,7 @@ function CoachAudioAdminPage() {
     const uploaded = statuses.filter(s => s.clip !== null).length;
     const held = statuses.filter(isHeld).length;
     const parked = statuses.filter(s => s.entry.parked).length;
+    const hidden = statuses.filter(s => s.settings.hidden).length;
     // A parked clip Michael has set aside is not "missing": nobody owes a take.
     const missing = statuses.filter(s => s.clip === null && !s.entry.parked).length;
     const byPart = COACH_AUDIO_PART_ORDER.map(part => {
@@ -292,7 +351,7 @@ function CoachAudioAdminPage() {
         uploaded: rows.filter(s => s.clip !== null).length,
       };
     });
-    return { total, uploaded, held, parked, missing, byPart };
+    return { total, uploaded, held, parked, hidden, missing, byPart };
   }, [statuses]);
 
   if (isLoading) return <SkeletonDarkPage />;
@@ -328,7 +387,7 @@ function CoachAudioAdminPage() {
             {summary.uploaded}
           </span>
           <span style={{ fontSize: '15px', color: MUTED }}>of {summary.total} recordings in</span>
-          {(summary.missing > 0 || summary.held > 0 || summary.parked > 0) && (
+          {(summary.missing > 0 || summary.held > 0 || summary.parked > 0 || summary.hidden > 0) && (
             <span
               style={{
                 marginLeft: 'auto',
@@ -345,6 +404,7 @@ function CoachAudioAdminPage() {
                 summary.missing > 0 ? `${summary.missing} still missing` : null,
                 summary.held > 0 ? `${summary.held} held for re-recording` : null,
                 summary.parked > 0 ? `${summary.parked} parked` : null,
+                summary.hidden > 0 ? `${summary.hidden} hidden` : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -362,7 +422,7 @@ function CoachAudioAdminPage() {
             borderTop: '1px solid rgba(255,255,255,0.07)',
           }}
         >
-          {summary.byPart.map(row => (
+          {summary.byPart.filter(row => row.total > 0).map(row => (
             <div key={row.part}>
               <div style={{ fontSize: '11px', color: FAINT, letterSpacing: '0.8px' }}>
                 {COACH_AUDIO_PART_LABELS[row.part].toUpperCase()}
@@ -459,19 +519,28 @@ function CoachAudioAdminPage() {
         />
       </div>
 
+      {/* ─── Add a recording that is not in the catalogue ───────────────── */}
+      <AddRecordingForm onAdd={handleAdd} />
+
       {/* ─── The catalogue, grouped ─────────────────────────────────────── */}
-      {COACH_AUDIO_PART_ORDER.map(part => (
-        <PartSection
-          key={part}
-          part={part}
-          rows={statuses.filter(s => s.entry.part === part)}
-          busyIds={busyIds}
-          previewId={previewId}
-          onPreview={togglePreview}
-          onUpload={handleSingle}
-          onDelete={handleDelete}
-        />
-      ))}
+      {COACH_AUDIO_PART_ORDER.map(part => {
+        const rows = statuses.filter(s => s.entry.part === part);
+        if (rows.length === 0) return null;
+        return (
+          <PartSection
+            key={part}
+            part={part}
+            rows={rows}
+            busyIds={busyIds}
+            previewId={previewId}
+            onPreview={togglePreview}
+            onUpload={handleSingle}
+            onDelete={handleDelete}
+            onSaveSettings={handleSaveSettings}
+            onRemove={handleRemove}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -486,6 +555,8 @@ function PartSection({
   onPreview,
   onUpload,
   onDelete,
+  onSaveSettings,
+  onRemove,
 }: {
   part: CoachAudioPart;
   rows: CoachAudioStatus[];
@@ -494,6 +565,8 @@ function PartSection({
   onPreview: (id: string, url: string) => void;
   onUpload: (id: string, file: File | undefined) => void;
   onDelete: (id: string) => void;
+  onSaveSettings: (id: string, update: CoachAudioSettingsUpdate) => Promise<boolean>;
+  onRemove: (id: string) => void;
 }) {
   const uploaded = rows.filter(r => r.clip !== null).length;
 
@@ -526,6 +599,8 @@ function PartSection({
             onPreview={onPreview}
             onUpload={onUpload}
             onDelete={onDelete}
+            onSaveSettings={onSaveSettings}
+            onRemove={onRemove}
           />
         ))}
       </div>
@@ -543,6 +618,8 @@ function ClipRow({
   onPreview,
   onUpload,
   onDelete,
+  onSaveSettings,
+  onRemove,
 }: {
   status: CoachAudioStatus;
   isBusy: boolean;
@@ -551,182 +628,262 @@ function ClipRow({
   onPreview: (id: string, url: string) => void;
   onUpload: (id: string, file: File | undefined) => void;
   onDelete: (id: string) => void;
+  onSaveSettings: (id: string, update: CoachAudioSettingsUpdate) => Promise<boolean>;
+  onRemove: (id: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { entry, clip } = status;
+  const [editing, setEditing] = useState(false);
+  const { entry, clip, settings } = status;
   const held = isHeld(status);
+  const places = settings.slots?.length ?? 0;
+  const shownText = settings.text?.trim() || entry.scriptLine;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '11px 14px',
-        borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
-      }}
-    >
-      {/* Play / status dot */}
-      <div style={{ width: '30px', flexShrink: 0 }}>
-        {isBusy ? (
-          <Loader2 size={16} color={BLUE} className="animate-spin" />
-        ) : clip ? (
+    <div style={{ borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '11px 14px',
+          opacity: settings.hidden ? 0.55 : 1,
+        }}
+      >
+        {/* Play / status dot */}
+        <div style={{ width: '30px', flexShrink: 0 }}>
+          {isBusy ? (
+            <Loader2 size={16} color={BLUE} className="animate-spin" />
+          ) : clip ? (
+            <button
+              type="button"
+              onClick={() => onPreview(entry.id, clip.url)}
+              aria-label={`${isPlaying ? 'Pause' : 'Play'} ${entry.id}`}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: 'none',
+                background: `linear-gradient(135deg, ${BLUE}, #0ea5e9)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              {isPlaying ? (
+                <Pause size={11} color="#fff" fill="#fff" />
+              ) : (
+                <Play size={11} color="#fff" fill="#fff" />
+              )}
+            </button>
+          ) : (
+            <div
+              title="Not uploaded"
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: '1px dashed rgba(255,255,255,0.2)',
+              }}
+            />
+          )}
+        </div>
+
+        {/* Id + script line */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <code style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>{entry.id}</code>
+            {entry.readsMessageId && (
+              <span style={{ fontSize: '10px', color: FAINT, letterSpacing: '0.6px' }}>
+                reads {entry.readsMessageId}
+              </span>
+            )}
+            {settings.hidden && (
+              <span style={{ fontSize: '10px', color: AMBER, fontWeight: 700 }}>HIDDEN ON THE SITE</span>
+            )}
+            {places > 0 && (
+              <span style={{ fontSize: '10px', color: BLUE, fontWeight: 700 }}>
+                {places} PLACE{places === 1 ? '' : 'S'}
+              </span>
+            )}
+            {entry.parked ? (
+              <span style={{ fontSize: '10px', color: FAINT, fontWeight: 700 }}>
+                PARKED · PLAYS NOWHERE
+              </span>
+            ) : held ? (
+              <span style={{ fontSize: '10px', color: AMBER, fontWeight: 700 }}>
+                HELD · SILENT ON THE SITE
+              </span>
+            ) : clip ? (
+              <Check size={13} color={GREEN} />
+            ) : (
+              <span style={{ fontSize: '10px', color: AMBER, fontWeight: 700 }}>MISSING</span>
+            )}
+          </div>
+          <div
+            style={{
+              color: MUTED,
+              fontSize: '12.5px',
+              marginTop: '2px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={shownText}
+          >
+            {shownText}
+          </div>
+          {!clip && entry.notYetRecorded && (
+            <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
+              {entry.notYetRecorded}
+            </div>
+          )}
+          {entry.parked && (
+            <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
+              {entry.parked}
+            </div>
+          )}
+          {entry.reRecord && (
+            <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
+              {held
+                ? `${entry.reRecord.reason} Upload the new take here and it plays straight away.`
+                : clip
+                  ? entry.reRecord.wordingFinal
+                    ? 'New take in and playing.'
+                    : 'New take in and playing. The line above is still the old wording; its words are kept off the site until the new wording is added.'
+                  : entry.reRecord.reason}
+            </div>
+          )}
+        </div>
+
+        {/* Metadata */}
+        {clip && (
+          <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '90px' }}>
+            <div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>
+              {formatSeconds(clip.durationSeconds)}
+            </div>
+            <div style={{ color: FAINT, fontSize: '11px' }}>{formatSize(clip.sizeBytes)}</div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
           <button
             type="button"
-            onClick={() => onPreview(entry.id, clip.url)}
-            aria-label={`${isPlaying ? 'Pause' : 'Play'} ${entry.id}`}
+            onClick={() => setEditing(open => !open)}
+            aria-expanded={editing}
+            aria-label={`Edit ${entry.id}`}
+            title="Text, button words and where it plays"
+            style={iconButton(BLUE)}
+          >
+            <Pencil size={13} color={BLUE} />
+          </button>
+          <button
+            type="button"
+            onClick={() => void onSaveSettings(entry.id, { hidden: !settings.hidden })}
+            disabled={isBusy}
+            aria-label={settings.hidden ? `Show ${entry.id} on the site` : `Hide ${entry.id} from the site`}
+            title={settings.hidden ? 'Hidden from the site. Click to show it.' : 'Showing on the site. Click to hide it.'}
+            style={iconButton(settings.hidden ? AMBER : BLUE)}
+          >
+            {settings.hidden ? <EyeOff size={13} color={AMBER} /> : <Eye size={13} color={BLUE} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={isBusy}
             style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              border: 'none',
-              background: `linear-gradient(135deg, ${BLUE}, #0ea5e9)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.8px',
+              color: BLUE,
+              background: 'rgba(55,181,255,0.1)',
+              border: '1px solid rgba(55,181,255,0.25)',
+              borderRadius: '7px',
+              padding: '6px 11px',
+              cursor: isBusy ? 'not-allowed' : 'pointer',
             }}
           >
-            {isPlaying ? (
-              <Pause size={11} color="#fff" fill="#fff" />
-            ) : (
-              <Play size={11} color="#fff" fill="#fff" />
-            )}
+            {clip ? 'REPLACE' : 'UPLOAD'}
           </button>
-        ) : (
-          <div
-            title="Not uploaded"
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              border: '1px dashed rgba(255,255,255,0.2)',
+          {clip && (
+            <button
+              type="button"
+              onClick={() => onDelete(entry.id)}
+              disabled={isBusy}
+              aria-label={`Remove ${entry.id}`}
+              style={{
+                background: 'rgba(248,113,113,0.1)',
+                border: '1px solid rgba(248,113,113,0.25)',
+                borderRadius: '7px',
+                padding: '6px 9px',
+                cursor: isBusy ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <Trash2 size={13} color="#f87171" />
+            </button>
+          )}
+          {settings.added && (
+            <button
+              type="button"
+              onClick={() => onRemove(entry.id)}
+              disabled={isBusy}
+              title="Take this recording out of the library"
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.8px',
+                color: '#f87171',
+                background: 'rgba(248,113,113,0.1)',
+                border: '1px solid rgba(248,113,113,0.25)',
+                borderRadius: '7px',
+                padding: '6px 11px',
+                cursor: isBusy ? 'not-allowed' : 'pointer',
+              }}
+            >
+              REMOVE
+            </button>
+          )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="audio/*,.wav,.mp3,.m4a"
+            hidden
+            onChange={event => {
+              onUpload(entry.id, event.target.files?.[0]);
+              event.target.value = '';
             }}
           />
-        )}
+        </div>
       </div>
-
-      {/* Id + script line */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <code style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>{entry.id}</code>
-          {entry.readsMessageId && (
-            <span style={{ fontSize: '10px', color: FAINT, letterSpacing: '0.6px' }}>
-              reads {entry.readsMessageId}
-            </span>
-          )}
-          {entry.parked ? (
-            <span style={{ fontSize: '10px', color: FAINT, fontWeight: 700 }}>
-              PARKED · PLAYS NOWHERE
-            </span>
-          ) : held ? (
-            <span style={{ fontSize: '10px', color: AMBER, fontWeight: 700 }}>
-              HELD · SILENT ON THE SITE
-            </span>
-          ) : clip ? (
-            <Check size={13} color={GREEN} />
-          ) : (
-            <span style={{ fontSize: '10px', color: AMBER, fontWeight: 700 }}>MISSING</span>
-          )}
-        </div>
-        <div
-          style={{
-            color: MUTED,
-            fontSize: '12.5px',
-            marginTop: '2px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+      {editing && (
+        <ClipSettingsPanel
+          id={entry.id}
+          catalogueText={entry.scriptLine}
+          settings={settings}
+          isBusy={isBusy}
+          onSave={async update => {
+            if (await onSaveSettings(entry.id, update)) setEditing(false);
           }}
-          title={entry.scriptLine}
-        >
-          {entry.scriptLine}
-        </div>
-        {!clip && entry.notYetRecorded && (
-          <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
-            {entry.notYetRecorded}
-          </div>
-        )}
-        {entry.parked && (
-          <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
-            {entry.parked}
-          </div>
-        )}
-        {entry.reRecord && (
-          <div style={{ color: FAINT, fontSize: '11px', marginTop: '3px', fontStyle: 'italic' }}>
-            {held
-              ? `${entry.reRecord.reason} Upload the new take here and it plays straight away.`
-              : clip
-                ? entry.reRecord.wordingFinal
-                  ? 'New take in and playing.'
-                  : 'New take in and playing. The line above is still the old wording; its words are kept off the site until the new wording is added.'
-                : entry.reRecord.reason}
-          </div>
-        )}
-      </div>
-
-      {/* Metadata */}
-      {clip && (
-        <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '90px' }}>
-          <div style={{ color: '#fff', fontSize: '12px', fontWeight: 600 }}>
-            {formatSeconds(clip.durationSeconds)}
-          </div>
-          <div style={{ color: FAINT, fontSize: '11px' }}>{formatSize(clip.sizeBytes)}</div>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={isBusy}
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            color: BLUE,
-            background: 'rgba(55,181,255,0.1)',
-            border: '1px solid rgba(55,181,255,0.25)',
-            borderRadius: '7px',
-            padding: '6px 11px',
-            cursor: isBusy ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {clip ? 'REPLACE' : 'UPLOAD'}
-        </button>
-        {clip && (
-          <button
-            type="button"
-            onClick={() => onDelete(entry.id)}
-            disabled={isBusy}
-            aria-label={`Remove ${entry.id}`}
-            style={{
-              background: 'rgba(248,113,113,0.1)',
-              border: '1px solid rgba(248,113,113,0.25)',
-              borderRadius: '7px',
-              padding: '6px 9px',
-              cursor: isBusy ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <Trash2 size={13} color="#f87171" />
-          </button>
-        )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="audio/*,.wav,.mp3,.m4a"
-          hidden
-          onChange={event => {
-            onUpload(entry.id, event.target.files?.[0]);
-            event.target.value = '';
-          }}
+          onCancel={() => setEditing(false)}
         />
-      </div>
+      )}
     </div>
   );
+}
+
+function iconButton(color: string) {
+  return {
+    background: `${color}1a`,
+    border: `1px solid ${color}40`,
+    borderRadius: '7px',
+    padding: '6px 9px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+  } as const;
 }
 
 export default function Page() {
