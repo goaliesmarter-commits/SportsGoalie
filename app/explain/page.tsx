@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Shield, Users, ClipboardList, Target, Building2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Header7 } from '@/components/header-7';
+import { useCoachAudio } from '@/lib/audio/context';
+import { markRoleArrival } from '@/lib/audio/arrival';
 
 interface Role {
   id: string;
@@ -23,6 +25,16 @@ const ROLES: Role[] = [
 
 export default function ExplainPage() {
   const router = useRouter();
+  const { prime } = useCoachAudio();
+
+  // Choosing a role is the tap that lets Coach Mike's welcome start by itself
+  // on the next page: it unlocks sound on a phone, and notes where the visitor
+  // is going so only that page starts on its own (Audio Part 1, item 1.2).
+  const chooseRole = (href: string) => {
+    prime();
+    markRoleArrival(href);
+    router.push(href);
+  };
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
@@ -135,7 +147,7 @@ export default function ExplainPage() {
               <div
                 key={role.id}
                 className="min-w-0 grow-0 basis-[calc((100%_-_var(--role-gap))/2)] sm:basis-[calc((100%_-_2*var(--role-gap))/3)] lg:grow lg:basis-0"
-                onClick={() => router.push(role.href)}
+                onClick={() => chooseRole(role.href)}
                 onMouseEnter={() => setHoveredId(role.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 style={{

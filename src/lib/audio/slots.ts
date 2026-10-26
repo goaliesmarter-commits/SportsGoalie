@@ -124,8 +124,24 @@ export const EXTRA_SLOT_PAGES: readonly { page: string; pageName: string }[] = [
   { page: '/pillar/7', pageName: 'Pillar 7 · Lifestyle' },
 ];
 
-/** Every slot admin can attach a recording to: the buttons, then the extra areas. */
+/**
+ * The label of each role page's welcome player (Audio Part 1, item 1.2). Admin
+ * places the role's welcome recording here; the player stays hidden until one is.
+ */
+export const ROLE_WELCOME_LABEL = 'WELCOME';
+
+/** The five role pages a visitor reaches from "Let us explain". */
+export const ROLE_WELCOME_PAGES: readonly { page: string; pageName: string }[] = [
+  { page: '/goalie', pageName: 'Goalie' },
+  { page: '/parent-role', pageName: 'Parent' },
+  { page: '/team-programs', pageName: 'Coach / Manager' },
+  { page: '/goalie-coach', pageName: 'Goalie Coach' },
+  { page: '/organization', pageName: 'Organization' },
+];
+
+/** Every slot admin can attach a recording to: welcomes, buttons, then the extra areas. */
 export const ALL_SLOTS: readonly AudioSlot[] = [
+  ...ROLE_WELCOME_PAGES.map(p => ({ page: p.page, pageName: p.pageName, label: ROLE_WELCOME_LABEL })),
   ...BUTTON_SLOTS,
   ...EXTRA_SLOT_PAGES.map(p => ({ page: p.page, pageName: p.pageName, label: EXTRA_SLOT_LABEL })),
 ];
