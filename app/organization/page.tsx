@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pause, Building2, ChevronLeft } from 'lucide-react';
+import { Building2, ChevronLeft } from 'lucide-react';
 import { GemVoiceButton } from '@/components/audio/GemVoiceButton';
 import { AudioSlotButtons } from '@/components/audio/AudioSlotButtons';
+import { RoleWelcomePlayer } from '@/components/audio/RoleWelcomePlayer';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
 import { TiltCard } from '@/components/ui/tilt-card';
@@ -16,63 +16,6 @@ import { ApplicationSteps } from '@/components/ApplicationSteps';
 const BLUE = '#37b5ff';
 const BLUE2 = '#60cdff';
 const BLUE3 = '#0ea5e9';
-
-function AutoVoicePlayer() {
-  const [playing, setPlaying] = useState(false);
-  const [on, setOn] = useState(true);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => { const t = setTimeout(() => setPlaying(true), 900); return () => clearTimeout(t); }, []);
-  useEffect(() => {
-    if (!playing || progress >= 100) return;
-    const iv = setInterval(() => setProgress(p => Math.min(100, p + 0.222)), 450);
-    return () => clearInterval(iv);
-  }, [playing, progress]);
-  useEffect(() => { if (progress >= 100) setPlaying(false); }, [progress]);
-
-  const fmt = (pct: number) => { const s = Math.round((pct / 100) * 225); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-  const waveform = [0.3,0.5,0.8,0.4,0.95,0.6,0.35,0.75,1,0.55,0.4,0.85,0.65,0.3,0.9,0.7,0.45,0.5,0.8,0.35,0.6,1,0.4,0.7,0.5,0.9,0.3,0.65,0.85,0.4,0.75,0.5,1,0.35,0.8,0.6,0.45,0.9,0.5,0.3,0.7,0.55,0.8,0.35,0.65,0.95,0.4,0.7,0.5,0.85];
-
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.45)', animation: 'player-float 6s ease-in-out infinite' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ width: '46px', height: '46px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,240,255,0.18), rgba(0,240,255,0.06))', border: '1.5px solid rgba(0,240,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 14px rgba(0,240,255,0.2)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(0,240,255,0.65)', letterSpacing: '2.5px', textTransform: 'uppercase', margin: '0 0 3px' }}>VOICE MESSAGE</p>
-          <p style={{ fontSize: '15px', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>Coach Mike</p>
-        </div>
-        <div style={{ background: playing ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.06)', border: `1px solid ${playing ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '20px', padding: '4px 10px', transition: 'all 0.3s', flexShrink: 0 }}>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: playing ? '#4ade80' : 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>{playing ? 'LIVE' : '3:45'}</span>
-        </div>
-      </div>
-      <p style={{ fontSize: '13px', color: 'rgba(148,163,184,0.65)', margin: '0 0 18px', fontStyle: 'italic', lineHeight: 1.55 }}>
-        &ldquo;Building a system that works across every level&rdquo;
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2.5px', height: '52px', marginBottom: '8px', cursor: 'pointer' }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setProgress(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100))); }}>
-        {waveform.map((h, i) => { const isPast = (i / waveform.length) * 100 < progress; return (<div key={i} style={{ flex: 1, height: `${h * 100}%`, background: isPast ? '#00f0ff' : 'rgba(255,255,255,0.14)', borderRadius: '2px', transition: 'background 0.08s', boxShadow: isPast ? '0 0 4px rgba(0,240,255,0.4)' : 'none' }} />); })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(100,116,139,0.8)' }}>{fmt(progress)}</span>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(100,116,139,0.8)' }}>3:45</span>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '20px' }}>
-        <button onClick={() => setProgress(p => Math.max(0, p - 8))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(148,163,184,0.7)', display: 'flex', padding: '10px' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
-        <button onClick={() => setPlaying(p => !p)} style={{ width: '60px', height: '60px', borderRadius: '50%', background: playing ? 'rgba(0,240,255,0.12)' : '#00f0ff', border: playing ? '2px solid #00f0ff' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: playing ? '0 0 0 8px rgba(0,240,255,0.1), 0 0 24px rgba(0,240,255,0.3)' : '0 0 20px rgba(0,240,255,0.4)', transition: 'all 0.25s' }}>
-          {playing ? <Pause size={24} color="#00f0ff" /> : <svg width="24" height="24" viewBox="0 0 24 24" fill="#051125"><path d="M8 5v14l11-7z"/></svg>}
-        </button>
-        <button onClick={() => setProgress(p => Math.min(100, p + 8))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(148,163,184,0.7)', display: 'flex', padding: '10px' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-      </div>
-      <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={() => { setOn(v => !v); if (on) setPlaying(false); }} style={{ padding: '10px 8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 700, color: on ? '#00f0ff' : 'rgba(148,163,184,0.7)', letterSpacing: '3px', textTransform: 'uppercase' }}>VOICE {on ? 'ON' : 'OFF'}</button>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px' }}>
-          {[12, 20, 8, 16, 10].map((h, i) => (<div key={i} style={{ width: '3px', height: `${playing ? h : Math.round(h * 0.45)}px`, background: i === 1 ? '#00f0ff' : `rgba(0,240,255,${0.35 + i * 0.1})`, borderRadius: '1.5px', transition: `height ${0.2 + i * 0.05}s ease` }} />))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 export default function OrganizationPage() {
@@ -134,7 +77,7 @@ export default function OrganizationPage() {
                 Coach Mike recorded this specifically for organizations who made it to this page.
               </p>
             </div>
-            <div style={{ flex: '1 1 0', maxWidth: '520px', width: '100%' }}><AutoVoicePlayer /><AudioSlotButtons className="mt-6" /></div>
+            <div style={{ flex: '1 1 0', maxWidth: '520px', width: '100%' }}><RoleWelcomePlayer quote={'Building a system that works across every level'} /><AudioSlotButtons className="mt-6" /></div>
           </div>
         </div>
       </section>
