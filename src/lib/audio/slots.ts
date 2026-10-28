@@ -14,6 +14,8 @@
  * admin adds new buttons without a developer (the Parent clips, new gems).
  */
 
+import { MOMENT_LABELS, type VoiceEventKey } from '@/lib/audio/events';
+
 export interface AudioSlot {
   /** The page address the button sits on, e.g. '/parent-role'. */
   page: string;
@@ -139,8 +141,24 @@ export const ROLE_WELCOME_PAGES: readonly { page: string; pageName: string }[] =
   { page: '/organization', pageName: 'Organization' },
 ];
 
-/** Every slot admin can attach a recording to: welcomes, buttons, then the extra areas. */
+/**
+ * Moments are slots too, on a page of their own: what admin places on a moment
+ * plays by itself when a goalie reaches it (Audio Part 3). Several recordings
+ * on one moment take turns.
+ */
+export const MOMENT_PAGE = '@moments';
+
+export function momentSlotKey(event: VoiceEventKey): string {
+  return slotKey(MOMENT_PAGE, MOMENT_LABELS[event]);
+}
+
+/** Every slot admin can attach a recording to: moments, welcomes, buttons, then the extra areas. */
 export const ALL_SLOTS: readonly AudioSlot[] = [
+  ...(Object.keys(MOMENT_LABELS) as VoiceEventKey[]).map(event => ({
+    page: MOMENT_PAGE,
+    pageName: 'Moments — play by themselves',
+    label: MOMENT_LABELS[event],
+  })),
   ...ROLE_WELCOME_PAGES.map(p => ({ page: p.page, pageName: p.pageName, label: ROLE_WELCOME_LABEL })),
   ...BUTTON_SLOTS,
   ...EXTRA_SLOT_PAGES.map(p => ({ page: p.page, pageName: p.pageName, label: EXTRA_SLOT_LABEL })),

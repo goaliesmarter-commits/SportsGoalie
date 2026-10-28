@@ -32,7 +32,43 @@ export const EVENT_LINES = {
   nextStep: 'V-A-37',
 } as const;
 
-export type VoiceEventKey = keyof typeof EVENT_LINES;
+/**
+ * Learning moments (Audio Part 3): a message for a step in the goalie's
+ * learning. They have no line built in. Coach Mike places a recording on each
+ * one from the Coach Audio screen, once, and from then on it plays for every
+ * goalie who reaches that moment; until he does, the moment stays silent.
+ */
+export const LEARNING_MOMENTS = [
+  'knowledgeCheckDone',
+  'knowledgeCheckPerfect',
+  'knowledgeCheckOwned',
+  'masteryMilestone',
+  'streakReached',
+] as const;
+
+export type LearningMomentKey = (typeof LEARNING_MOMENTS)[number];
+
+export type VoiceEventKey = keyof typeof EVENT_LINES | LearningMomentKey;
+
+/** Every moment as admin sees it, in the order the Coach Audio screen lists them. */
+export const MOMENT_LABELS: Record<VoiceEventKey, string> = {
+  knowledgeCheckDone: 'KNOWLEDGE CHECK FINISHED',
+  knowledgeCheckPerfect: 'KNOWLEDGE CHECK: EVERY ANSWER RIGHT',
+  knowledgeCheckOwned: 'KNOWLEDGE CHECK OWNED (EVERY QUESTION NOW RIGHT)',
+  masteryMilestone: 'MASTERY MILESTONE REACHED (25, 50, 75, 100%)',
+  streakReached: 'LEARNING STREAK REACHED (3, 7, 14, 30 DAYS…)',
+  chartSaved: 'A CHART IS SAVED',
+  answerSaved: 'AN ANSWER IS SAVED',
+  vaultSaved: 'A MIND-VAULT ENTRY IS SAVED',
+  longFormOpen: 'A LONG FORM OPENS',
+  emptyScreen: 'AN EMPTY SCREEN ON A NEW ACCOUNT',
+  nextStep: 'THE GOALIE MOVES ON TO THE NEXT STEP',
+};
+
+/** The line built into the code for an event, or null for a learning moment. */
+export function builtInLine(event: VoiceEventKey): string | null {
+  return event in EVENT_LINES ? EVENT_LINES[event as keyof typeof EVENT_LINES] : null;
+}
 
 /**
  * How long one event stays quiet at one place after it has spoken. Saving five

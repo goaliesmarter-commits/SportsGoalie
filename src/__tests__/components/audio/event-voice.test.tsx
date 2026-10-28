@@ -116,7 +116,8 @@ describe('useEventVoice', () => {
   it('says the right clip for each event', async () => {
     signIn(GOALIE);
     await mount();
-    const expected: Record<VoiceEventKey, string> = {
+    // The built-in lines; learning moments have none until admin places one.
+    const expected: Partial<Record<VoiceEventKey, string>> = {
       chartSaved: 'V-A-27',
       answerSaved: 'V-A-28',
       vaultSaved: 'V-A-29',
