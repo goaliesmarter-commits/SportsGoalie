@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "learning_record",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "answeredAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "growth_points_transactions",
       "queryScope": "COLLECTION",
       "fields": [

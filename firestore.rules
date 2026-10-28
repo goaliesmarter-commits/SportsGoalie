@@ -1262,6 +1262,28 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Knowledge Check Layers - the rules Michael sets (speeds, attempts, owned rule).
+    // One document, 'layers'. Every signed-in goalie's player reads it to run the loop.
+    match /knowledge_check_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Knowledge Check Layers - the learning record. One line per answer, per layer.
+    // Lines are only ever added: nobody, admin included, rewrites or erases how a
+    // goalie learned.
+    match /learning_record/{entryId} {
+      allow read: if isOwnerOrAdmin(resource.data.userId);
+
+      allow create: if isAuthenticated() &&
+                       isOwner(request.resource.data.userId) &&
+                       hasRequiredFields(['userId', 'videoQuizId', 'questionId', 'attemptId', 'layer', 'outcome', 'answeredAt']) &&
+                       request.resource.data.layer in [1, 2, 3, 4] &&
+                       request.resource.data.outcome in ['correct', 'incorrect', 'reflective'];
+
+      allow update, delete: if false;
+    }
+
     // Catch-all rule for any other collections
     match /{document=**} {
       // Deny all access to undefined collections
