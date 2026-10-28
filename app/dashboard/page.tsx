@@ -15,6 +15,7 @@ import { db } from '@/lib/firebase/config';
 import { SkeletonDashboard } from '@/components/ui/skeletons';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { ScreenVoice } from '@/components/audio/ScreenVoice';
+import { StreakMoment } from '@/components/audio/StreakMoment';
 import { useCoachAudio } from '@/lib/audio/context';
 import { useAuth } from '@/lib/auth/context';
 import { useProgress } from '@/hooks/useProgress';
@@ -171,6 +172,7 @@ function StandardDashboard() {
 
           {/* Left text block */}
           <div style={{ flex: 1, minWidth: '260px' }}>
+            <StreakMoment days={stats?.currentStreak ?? 0} />
             {stats?.currentStreak != null && stats.currentStreak > 0 && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',

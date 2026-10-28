@@ -15,6 +15,8 @@ import { VMPSelector } from '@/components/training/VMPSelector';
 import { StarRating } from '@/components/charting/inputs/StarRating';
 import { computeTrainingAnalytics } from '@/lib/training/analytics';
 import { triggerMilestoneNotifications } from '@/lib/training/milestones';
+import { useEventVoice } from '@/hooks/useEventVoice';
+import { masteryMilestoneCrossed } from '@/lib/audio/learning-moments';
 import { ArrowLeft, CheckCircle2, Plus, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -210,6 +212,7 @@ function SuggestModal({ defaultCategory, goalieId, goalieDisplayName, onClose }:
 
 export default function TrainingLogPage() {
   const router = useRouter();
+  const say = useEventVoice();
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
@@ -292,6 +295,11 @@ export default function TrainingLogPage() {
       const updatedLog = { id: existingLogId ?? 'new', goalieId: user.id, date: targetDate, items: itemsToSave } as unknown as TrainingLogEntry;
       const nextLogs = [...prevLogs.filter(l => l.date !== targetDate), updatedLog];
       const nextAnalytics = computeTrainingAnalytics(nextLogs);
+
+      // Coach Mike marks a mastery milestone out loud (Audio Part 3).
+      if (masteryMilestoneCrossed(prevAnalytics.masteryPercent, nextAnalytics.masteryPercent) !== null) {
+        say('masteryMilestone');
+      }
 
       triggerMilestoneNotifications({
         goalieId: user.id,

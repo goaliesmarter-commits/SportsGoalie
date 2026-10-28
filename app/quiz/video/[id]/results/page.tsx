@@ -20,6 +20,8 @@ import { growthPointsService } from '@/lib/firebase/growth-points.service';
 import { getScoreBand } from '@/lib/config/score-bands';
 import { skillPagePath } from '@/lib/training/skill-path';
 import { reviewMarker } from '@/lib/training/review-marker';
+import { useEventVoice } from '@/hooks/useEventVoice';
+import { knowledgeCheckMoment } from '@/lib/audio/learning-moments';
 
 const BLUE = '#37b5ff';
 // Reflective answers are neither right nor wrong, so they get their own neutral
@@ -32,6 +34,7 @@ function VideoQuizResultsContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const say = useEventVoice();
   const quizId = params.id as string;
 
   const [quiz, setQuiz] = useState<VideoQuiz | null>(null);
@@ -83,6 +86,17 @@ function VideoQuizResultsContent() {
 
       setQuiz(quizResult.data);
       setProgress(progressData);
+
+      // Coach Mike's learning moment for a take just finished (Audio Part 3).
+      // Best-effort: a failed lookup only means no message, never a broken page.
+      videoQuizService
+        .getUserVideoQuizAttempts(user!.id, { videoQuizId: actualQuizId, completed: true })
+        .then(takes => {
+          if (!takes.success || !takes.data) return;
+          const moment = knowledgeCheckMoment(takes.data.items, progressData.id);
+          if (moment) say(moment, progressData.id);
+        })
+        .catch(() => {});
 
       const pct = progressData.percentage;
       let totalPoints = GROWTH_POINTS.KNOWLEDGE_CHECK_COMPLETE;
