@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { cleanLayerMedia, SupportLayerFields } from '@/components/admin/SupportLayerFields';
 import {
   Select,
   SelectContent,
@@ -307,6 +308,14 @@ export function VideoQuestionBuilder({
       return;
     }
 
+    // A replay has to end at the question, so it has to start before it.
+    if (Number.isFinite(newQuestion.segmentStart) && newQuestion.segmentStart! >= newQuestion.timestamp!) {
+      toast.error('The replay has to start before the question', {
+        description: 'Set "Replay starts at" earlier, or leave it empty.',
+      });
+      return;
+    }
+
     // Check if timestamp conflicts with existing question. The gap is the coach's
     // to widen; it never goes below one second, because the player skips a
     // question that shares a second with the one before it.
@@ -385,6 +394,14 @@ export function VideoQuestionBuilder({
           ? newQuestion.rewindTo
           : undefined,
       stepNumber: Number.isFinite(newQuestion.stepNumber) ? newQuestion.stepNumber : nextStepNumber,
+
+      // Support layers. A hold asks nothing and a reflective question has no
+      // right answer, so neither can be missed and neither has layers.
+      segmentStart:
+        !isHoldOnly && !isReflective && Number.isFinite(newQuestion.segmentStart)
+          ? newQuestion.segmentStart
+          : undefined,
+      layerMedia: !isHoldOnly && !isReflective ? cleanLayerMedia(newQuestion.layerMedia) : undefined,
     };
 
     // Sorting by timestamp here is the AUTHORING order - it is what Michael
@@ -1351,6 +1368,20 @@ export function VideoQuestionBuilder({
               className="border-slate-300 focus-visible:ring-red-200"
             />
           </div>
+
+          {!newQuestion.holdOnly && !newQuestion.reflective && (
+            <SupportLayerFields
+              // A new key per added question clears the half-typed times with the form.
+              key={questions.length}
+              segmentStart={newQuestion.segmentStart}
+              layerMedia={newQuestion.layerMedia}
+              onChange={({ segmentStart, layerMedia }) =>
+                setNewQuestion({ ...newQuestion, segmentStart, layerMedia })
+              }
+              formatTimestamp={formatTimestamp}
+              parseTimestampInput={parseTimestampInput}
+            />
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch

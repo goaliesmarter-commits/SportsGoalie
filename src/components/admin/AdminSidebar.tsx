@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, UserPlus, BarChart3, BookOpen, Trophy,
   Video, FileText, MessageSquare, Shield, Settings, LogOut,
   ChevronLeft, Menu, X, User, BarChart2, Dumbbell, HelpCircle,
-  BadgeDollarSign, ClipboardCheck, AudioLines,
+  BadgeDollarSign, ClipboardCheck, AudioLines, Layers,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/context';
 
@@ -45,6 +45,7 @@ const navSections: NavSection[] = [
       { label: 'Video Reviews', href: '/admin/video-reviews', icon: Video },
       { label: 'Form Templates', href: '/admin/form-templates', icon: FileText },
       { label: 'Coach Audio', href: '/admin/coach-audio', icon: AudioLines },
+      { label: 'Knowledge Layers', href: '/admin/knowledge-layers', icon: Layers },
     ],
   },
   {
