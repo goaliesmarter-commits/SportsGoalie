@@ -6,6 +6,7 @@ import { GeistMono } from 'geist/font/mono';
 import { AuthProvider } from '@/lib/auth/context';
 import { CoachAudioProvider } from '@/lib/audio/context';
 import { VoiceMomentTrigger } from '@/components/audio/VoiceMomentTrigger';
+import { MomentMessageChip } from '@/components/audio/MomentMessageChip';
 import { Toaster } from '@/components/ui/sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 
@@ -61,6 +62,7 @@ export default function RootLayout({
             </Suspense>
             <Toaster />
             <VoiceMomentTrigger moment="firstLogin" />
+            <MomentMessageChip />
           </CoachAudioProvider>
         </AuthProvider>
       </body>
