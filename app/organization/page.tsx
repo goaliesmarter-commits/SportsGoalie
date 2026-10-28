@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Building2, ChevronLeft } from 'lucide-react';
 import { GemVoiceButton } from '@/components/audio/GemVoiceButton';
 import { AudioSlotButtons } from '@/components/audio/AudioSlotButtons';
+import { RoleVoiceSection } from '@/components/audio/RoleVoiceSection';
 import { RoleWelcomePlayer } from '@/components/audio/RoleWelcomePlayer';
 import { Footer7 } from '@/components/footer-7';
 import { PublicPageNav } from '@/components/PublicPageNav';
@@ -59,28 +60,30 @@ export default function OrganizationPage() {
       </div>
 
       {/* ── C: Voice Player ── */}
-      <section style={{ ...sec, background: 'linear-gradient(145deg, #1e5ec4 0%, #1850b4 58%, #0f3d9e 100%)' }}>
-        <style dangerouslySetInnerHTML={{ __html: `@keyframes player-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }` }} />
-        <div style={{ position: 'absolute', top: '-10%', right: '-8%', width: '55vw', height: '55vw', maxWidth: '680px', maxHeight: '680px', background: 'radial-gradient(ellipse, rgba(96,205,255,0.14) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <FloatingPaths position={1} color="rgba(96,205,255,1)" />
-        <FloatingPaths position={-1} color="rgba(96,205,255,1)" />
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 w-full" style={{ position: 'relative', zIndex: 1 }}>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-14 lg:gap-20">
-            <div style={{ flex: '1 1 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
-                <div style={{ width: '48px', height: '2px', background: `linear-gradient(90deg, ${BLUE2}, rgba(96,205,255,0.2))`, flexShrink: 0 }} />
-                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '4px', color: BLUE2, margin: 0, textTransform: 'uppercase' }}>COACH MIKE IS WAITING FOR YOU</p>
+      <RoleVoiceSection>
+        <section style={{ ...sec, background: 'linear-gradient(145deg, #1e5ec4 0%, #1850b4 58%, #0f3d9e 100%)' }}>
+          <style dangerouslySetInnerHTML={{ __html: `@keyframes player-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }` }} />
+          <div style={{ position: 'absolute', top: '-10%', right: '-8%', width: '55vw', height: '55vw', maxWidth: '680px', maxHeight: '680px', background: 'radial-gradient(ellipse, rgba(96,205,255,0.14) 0%, transparent 65%)', pointerEvents: 'none' }} />
+          <FloatingPaths position={1} color="rgba(96,205,255,1)" />
+          <FloatingPaths position={-1} color="rgba(96,205,255,1)" />
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 w-full" style={{ position: 'relative', zIndex: 1 }}>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-14 lg:gap-20">
+              <div style={{ flex: '1 1 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
+                  <div style={{ width: '48px', height: '2px', background: `linear-gradient(90deg, ${BLUE2}, rgba(96,205,255,0.2))`, flexShrink: 0 }} />
+                  <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '4px', color: BLUE2, margin: 0, textTransform: 'uppercase' }}>COACH MIKE IS WAITING FOR YOU</p>
+                </div>
+                <h1 style={{ fontSize: 'clamp(40px, 6.5vw, 80px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: '-0.03em', margin: '0 0 16px', color: '#fff' }}>A personal<br />message.</h1>
+                <p style={{ fontSize: 'clamp(22px, 3.2vw, 38px)', fontWeight: 800, color: BLUE2, margin: '0 0 28px', letterSpacing: '-0.01em' }}>Built for your scale.</p>
+                <p style={{ fontSize: 'clamp(15px, 1.6vw, 18px)', color: 'rgba(255,255,255,0.42)', lineHeight: 1.75, margin: 0, maxWidth: '400px' }}>
+                  Coach Mike recorded this specifically for organizations who made it to this page.
+                </p>
               </div>
-              <h1 style={{ fontSize: 'clamp(40px, 6.5vw, 80px)', fontWeight: 900, lineHeight: 1.0, letterSpacing: '-0.03em', margin: '0 0 16px', color: '#fff' }}>A personal<br />message.</h1>
-              <p style={{ fontSize: 'clamp(22px, 3.2vw, 38px)', fontWeight: 800, color: BLUE2, margin: '0 0 28px', letterSpacing: '-0.01em' }}>Built for your scale.</p>
-              <p style={{ fontSize: 'clamp(15px, 1.6vw, 18px)', color: 'rgba(255,255,255,0.42)', lineHeight: 1.75, margin: 0, maxWidth: '400px' }}>
-                Coach Mike recorded this specifically for organizations who made it to this page.
-              </p>
+              <div style={{ flex: '1 1 0', maxWidth: '520px', width: '100%' }}><RoleWelcomePlayer quote={'Building a system that works across every level'} /><AudioSlotButtons className="mt-6" /></div>
             </div>
-            <div style={{ flex: '1 1 0', maxWidth: '520px', width: '100%' }}><RoleWelcomePlayer quote={'Building a system that works across every level'} /><AudioSlotButtons className="mt-6" /></div>
           </div>
-        </div>
-      </section>
+        </section>
+      </RoleVoiceSection>
 
       {/* ── D: Opening Statement ── */}
       <section style={{ ...sec, background: 'linear-gradient(155deg, #0d2848 0%, #133050 65%, #0b2242 100%)' }}>
