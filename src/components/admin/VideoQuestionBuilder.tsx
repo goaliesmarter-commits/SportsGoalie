@@ -15,7 +15,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { cleanLayerMedia, SupportLayerFields } from '@/components/admin/SupportLayerFields';
+import {
+  cleanLayerMedia,
+  QuestionLayerEditor,
+  SupportLayerFields,
+  supportLayerProblem,
+} from '@/components/admin/SupportLayerFields';
 import {
   Select,
   SelectContent,
@@ -308,12 +313,14 @@ export function VideoQuestionBuilder({
       return;
     }
 
-    // A replay has to end at the question, so it has to start before it.
-    if (Number.isFinite(newQuestion.segmentStart) && newQuestion.segmentStart! >= newQuestion.timestamp!) {
-      toast.error('The replay has to start before the question', {
-        description: 'Set "Replay starts at" earlier, or leave it empty.',
-      });
-      return;
+    // The support layers replay up to the question, so their times have to sit
+    // before it. Holds and reflective questions have no layers to check.
+    if (!isHoldOnly && newQuestion.reflective !== true) {
+      const problem = supportLayerProblem(newQuestion.timestamp!, newQuestion.segmentStart, newQuestion.layerMedia);
+      if (problem) {
+        toast.error(problem.title, { description: problem.description });
+        return;
+      }
     }
 
     // Check if timestamp conflicts with existing question. The gap is the coach's
@@ -431,6 +438,15 @@ export function VideoQuestionBuilder({
     setBlankAfter('');
 
     toast.success('Question added successfully');
+  };
+
+  // Adds or changes the support layers on a question already in the list.
+  const handleApplyLayers = (
+    index: number,
+    next: Pick<VideoQuizQuestion, 'segmentStart' | 'layerMedia'>
+  ) => {
+    onChange(questions.map((q, i) => (i === index ? { ...q, ...next } : q)));
+    toast.success('Support layers updated', { description: 'Save the Knowledge Check to keep them.' });
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -1025,6 +1041,24 @@ export function VideoQuestionBuilder({
                                   </li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                          {/* Holds ask nothing and reflective questions have no
+                              right answer, so neither can be missed into a layer. */}
+                          {!question.holdOnly && !question.reflective && (
+                            <div className="pt-2">
+                              <QuestionLayerEditor
+                                timestamp={question.timestamp}
+                                segmentStart={question.segmentStart}
+                                layerMedia={question.layerMedia}
+                                onApply={(next) => handleApplyLayers(index, next)}
+                                onProblem={(problem) =>
+                                  toast.error(problem.title, { description: problem.description })
+                                }
+                                formatTimestamp={formatTimestamp}
+                                parseTimestampInput={parseTimestampInput}
+                                idPrefix={`q-${question.id}-`}
+                              />
                             </div>
                           )}
                         </div>

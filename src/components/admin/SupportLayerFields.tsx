@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +25,54 @@ interface SupportLayerFieldsProps {
   onChange: (next: { segmentStart: number | undefined; layerMedia: QuestionLayerMedia | undefined }) => void;
   formatTimestamp: (seconds: number) => string;
   parseTimestampInput: (raw: string) => number | null;
+  /** Keeps the field ids unique when more than one copy is on the page. */
+  idPrefix?: string;
+}
+
+function isWebLink(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What is wrong with a question's support-layer fields, in words for the admin,
+ * or null when nothing is. `timestamp` is the question's freeze point.
+ */
+export function supportLayerProblem(
+  timestamp: number,
+  segmentStart: number | undefined,
+  media: QuestionLayerMedia | undefined
+): { title: string; description: string } | null {
+  const hasStart = typeof segmentStart === 'number' && Number.isFinite(segmentStart);
+  if (hasStart && segmentStart >= timestamp) {
+    return {
+      title: 'The replay has to start before the question',
+      description: 'Set "Replay starts at" earlier, or leave it empty.',
+    };
+  }
+  const freezeAt = media?.freezeAt;
+  if (typeof freezeAt === 'number' && Number.isFinite(freezeAt)) {
+    const start = hasStart ? segmentStart : 0;
+    if (freezeAt > timestamp || freezeAt < start) {
+      return {
+        title: 'Layer 3 has to hold the frame inside the replay',
+        description: 'Pick a time between where the replay starts and the question, or leave it empty.',
+      };
+    }
+  }
+  for (const [label, link] of [
+    ['Layer 3 photo', media?.freezeImageUrl],
+    ['Layer 4 photo', media?.answerImageUrl],
+  ] as const) {
+    if (link?.trim() && !isWebLink(link.trim())) {
+      return { title: `The ${label} link is not a web address`, description: 'It should start with https://' };
+    }
+  }
+  return null;
 }
 
 /** Drops empty fields, so an untouched question stores no `layerMedia` at all. */
@@ -43,7 +92,9 @@ export function SupportLayerFields({
   onChange,
   formatTimestamp,
   parseTimestampInput,
+  idPrefix = '',
 }: SupportLayerFieldsProps) {
+  const id = (name: string) => `${idPrefix}${name}`;
   // Raw text while a time is being typed, as in the builder's other time boxes,
   // so a half-typed "1:" does not wipe the field.
   const [segmentDraft, setSegmentDraft] = useState<string | null>(null);
@@ -67,9 +118,9 @@ export function SupportLayerFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="segmentStart">Replay starts at</Label>
+        <Label htmlFor={id('segmentStart')}>Replay starts at</Label>
         <Input
-          id="segmentStart"
+          id={id('segmentStart')}
           type="text"
           placeholder="1:05 or 65"
           value={shownTime(segmentDraft, segmentStart)}
@@ -89,9 +140,9 @@ export function SupportLayerFields({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="layer3FreezeAt">Layer 3 holds the frame at</Label>
+          <Label htmlFor={id('layer3FreezeAt')}>Layer 3 holds the frame at</Label>
           <Input
-            id="layer3FreezeAt"
+            id={id('layer3FreezeAt')}
             type="text"
             placeholder="This question's time"
             value={shownTime(freezeDraft, media.freezeAt)}
@@ -105,9 +156,9 @@ export function SupportLayerFields({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="layer3Photo">Layer 3 photo instead (link)</Label>
+          <Label htmlFor={id('layer3Photo')}>Layer 3 photo instead (link)</Label>
           <Input
-            id="layer3Photo"
+            id={id('layer3Photo')}
             type="url"
             placeholder="https://..."
             value={media.freezeImageUrl ?? ''}
@@ -118,9 +169,9 @@ export function SupportLayerFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="layer4Answer">Layer 4: the answer, in your words</Label>
+        <Label htmlFor={id('layer4Answer')}>Layer 4: the answer, in your words</Label>
         <Textarea
-          id="layer4Answer"
+          id={id('layer4Answer')}
           value={media.answerText ?? ''}
           onChange={(e) => setMedia({ answerText: e.target.value })}
           placeholder="Leave empty to show the explanation above"
@@ -130,15 +181,78 @@ export function SupportLayerFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="layer4Photo">Layer 4 photo (link, optional)</Label>
+        <Label htmlFor={id('layer4Photo')}>Layer 4 photo (link, optional)</Label>
         <Input
-          id="layer4Photo"
+          id={id('layer4Photo')}
           type="url"
           placeholder="https://..."
           value={media.answerImageUrl ?? ''}
           onChange={(e) => setMedia({ answerImageUrl: e.target.value })}
           className="w-full border-slate-300 focus-visible:ring-red-200 bg-white"
         />
+      </div>
+    </div>
+  );
+}
+
+interface QuestionLayerEditorProps {
+  /** The question's freeze point, in seconds. */
+  timestamp: number;
+  segmentStart: number | undefined;
+  layerMedia: QuestionLayerMedia | undefined;
+  /** Called with the checked, tidied values when the admin applies them. */
+  onApply: (next: { segmentStart: number | undefined; layerMedia: QuestionLayerMedia | undefined }) => void;
+  /** Says what is wrong when the values cannot be applied. */
+  onProblem: (problem: { title: string; description: string }) => void;
+  formatTimestamp: (seconds: number) => string;
+  parseTimestampInput: (raw: string) => number | null;
+  idPrefix: string;
+}
+
+/**
+ * The support-layer fields for a question that is already in the list, so
+ * layers can be added to questions made before they existed. Edits stay in a
+ * draft until applied, then go through the same check as a new question.
+ */
+export function QuestionLayerEditor({
+  timestamp,
+  segmentStart,
+  layerMedia,
+  onApply,
+  onProblem,
+  formatTimestamp,
+  parseTimestampInput,
+  idPrefix,
+}: QuestionLayerEditorProps) {
+  const [draft, setDraft] = useState({ segmentStart, layerMedia });
+
+  const apply = () => {
+    const problem = supportLayerProblem(timestamp, draft.segmentStart, draft.layerMedia);
+    if (problem) {
+      onProblem(problem);
+      return;
+    }
+    onApply({
+      segmentStart: Number.isFinite(draft.segmentStart) ? draft.segmentStart : undefined,
+      layerMedia: cleanLayerMedia(draft.layerMedia),
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <SupportLayerFields
+        segmentStart={draft.segmentStart}
+        layerMedia={draft.layerMedia}
+        onChange={setDraft}
+        formatTimestamp={formatTimestamp}
+        parseTimestampInput={parseTimestampInput}
+        idPrefix={idPrefix}
+      />
+      <div className="flex items-center justify-end gap-3">
+        <p className="text-xs text-gray-500">Then save the Knowledge Check to keep it.</p>
+        <Button type="button" size="sm" onClick={apply}>
+          Apply support layers
+        </Button>
       </div>
     </div>
   );
