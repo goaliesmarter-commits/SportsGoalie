@@ -414,7 +414,7 @@ function UserDetailsContent() {
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
                 {/* Basic Information */}
                 <div style={{ ...card, padding: '20px' }}>
                   <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '17px', marginBottom: '4px' }}>Basic Information</h3>
@@ -542,7 +542,7 @@ function UserDetailsContent() {
 
             {/* Progress Tab */}
             {activeTab === 'progress' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
                 {/* Overall Statistics */}
                 <div style={{ ...card, padding: '20px' }}>
                   <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '17px', marginBottom: '4px' }}>Overall Statistics</h3>
@@ -626,7 +626,7 @@ function UserDetailsContent() {
                 <div style={{ ...card, padding: '20px' }}>
                   <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '17px', marginBottom: '4px' }}>Living Index</h3>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginBottom: '20px' }}>
-                    Toggle which L-index training items are <strong style={{ color: BLUE }}>active</strong> for this goalie&apos;s daily training chart. Only active items appear in their log.
+                    Toggle which L-index training items are <strong style={{ color: BLUE }}>active</strong>{' '}for this goalie&apos;s daily training chart. Only active items appear in their log.
                   </p>
                   {lIndexItems.length === 0 ? (
                     <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px' }}>No L-index items found. Add items in L-Index Admin first.</p>

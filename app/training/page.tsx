@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { TrainingLogEntry, TrainingCategory } from '@/types/charting';
 import { computeTrainingAnalytics, TrainingAnalytics } from '@/lib/training/analytics';
 import { TrainingAnalyticsDashboard } from '@/components/training/TrainingAnalyticsDashboard';
@@ -89,14 +89,14 @@ export default function TrainingHubPage() {
     if (!user?.id) return;
     (async () => {
       try {
-        const q = query(
-          collection(db, 'training_logs'),
-          where('goalieId', '==', user.id),
-          orderBy('date', 'desc'),
-          limit(60)
-        );
-        const snap = await getDocs(q);
-        const logs = snap.docs.map(d => ({ id: d.id, ...d.data() } as TrainingLogEntry));
+        // Newest 60 days, sorted here: asking Firestore to filter on goalieId and
+        // order by date needs a composite index, and without it the query fails and
+        // the catch below leaves My Logs reading "No saved logs yet".
+        const snap = await getDocs(query(collection(db, 'training_logs'), where('goalieId', '==', user.id)));
+        const logs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as TrainingLogEntry))
+          .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+          .slice(0, 60);
         setRecentLogs(logs);
         const today = todayStr();
         setTodayLog(logs.find(l => l.date === today) || null);
@@ -110,7 +110,9 @@ export default function TrainingHubPage() {
   }, [user?.id]);
 
   const today = todayStr();
-  const pastLogs = recentLogs.filter(l => l.date !== today);
+  // Every saved log, today's included. Today's used to be left out, so a log saved
+  // today left My Logs saying "No saved logs yet" until the next day.
+  const savedLogs = recentLogs;
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'today', label: 'Today' },
@@ -238,7 +240,7 @@ export default function TrainingHubPage() {
                 }}
               >
                 {tab.label}
-                {tab.id === 'logs' && pastLogs.length > 0 && (
+                {tab.id === 'logs' && savedLogs.length > 0 && (
                   <span style={{
                     marginLeft: '7px',
                     fontSize: '10px',
@@ -248,7 +250,7 @@ export default function TrainingHubPage() {
                     background: active ? 'rgba(55,181,255,0.25)' : 'rgba(255,255,255,0.08)',
                     color: active ? CYAN : 'rgba(255,255,255,0.3)',
                   }}>
-                    {pastLogs.length}
+                    {savedLogs.length}
                   </span>
                 )}
               </button>
@@ -310,7 +312,7 @@ export default function TrainingHubPage() {
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: '24px' }}>
                 CATEGORIES
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
                 {CATEGORIES.map(cat => {
                   const Icon = cat.Icon;
                   return (
@@ -366,7 +368,7 @@ export default function TrainingHubPage() {
 
             {loading ? (
               <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '14px', padding: '60px 0' }}>Loading…</p>
-            ) : pastLogs.length === 0 ? (
+            ) : savedLogs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <CalendarDays size={40} style={{ color: 'rgba(255,255,255,0.1)' }} />
                 <EventVoice event="emptyScreen" />
@@ -386,7 +388,7 @@ export default function TrainingHubPage() {
                     border: '1px solid rgba(55,181,255,0.15)',
                   }}>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>Total Sessions</p>
-                    <p style={{ color: '#fff', fontSize: '26px', fontWeight: 700 }}>{pastLogs.length}</p>
+                    <p style={{ color: '#fff', fontSize: '26px', fontWeight: 700 }}>{savedLogs.length}</p>
                   </div>
                   <div style={{
                     flex: 1, minWidth: '140px',
@@ -396,7 +398,7 @@ export default function TrainingHubPage() {
                   }}>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>Items Completed</p>
                     <p style={{ color: '#fff', fontSize: '26px', fontWeight: 700 }}>
-                      {pastLogs.reduce((acc, l) => acc + l.items.filter(i => i.done).length, 0)}
+                      {savedLogs.reduce((acc, l) => acc + l.items.filter(i => i.done).length, 0)}
                     </p>
                   </div>
                   <div style={{
@@ -410,12 +412,12 @@ export default function TrainingHubPage() {
                       <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Avg Completion</p>
                     </div>
                     <p style={{ color: '#fff', fontSize: '26px', fontWeight: 700 }}>
-                      {pastLogs.length > 0
-                        ? Math.round(pastLogs.reduce((acc, l) => {
+                      {savedLogs.length > 0
+                        ? Math.round(savedLogs.reduce((acc, l) => {
                             const total = l.items.length;
                             const done = l.items.filter(i => i.done).length;
                             return acc + (total > 0 ? done / total : 0);
-                          }, 0) / pastLogs.length * 100)
+                          }, 0) / savedLogs.length * 100)
                         : 0}%
                     </p>
                   </div>
@@ -423,7 +425,7 @@ export default function TrainingHubPage() {
 
                 {/* Log list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {pastLogs.map(log => {
+                  {savedLogs.map(log => {
                     const totalItems = log.items.length;
                     const doneItems = log.items.filter(i => i.done).length;
                     const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0;

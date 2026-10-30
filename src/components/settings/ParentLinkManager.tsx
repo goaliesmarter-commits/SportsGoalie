@@ -201,7 +201,7 @@ export function ParentLinkManager({ user }: ParentLinkManagerProps) {
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: '12px', border: '1px solid rgba(55,181,255,0.12)', background: 'rgba(55,181,255,0.04)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                       {parent.profileImage ? (
-                        <Image src={parent.profileImage} alt={parent.displayName} width={38} height={38} style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(55,181,255,0.2)', flexShrink: 0 }} />
+                        <Image src={parent.profileImage} alt={parent.displayName} width={38} height={38} unoptimized style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(55,181,255,0.2)', flexShrink: 0 }} />
                       ) : (
                         <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(55,181,255,0.1)', border: '2px solid rgba(55,181,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: BLUE, fontSize: '13px', fontWeight: 700 }}>
                           {getInitials(parent.displayName)}

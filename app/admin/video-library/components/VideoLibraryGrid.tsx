@@ -66,7 +66,7 @@ export function VideoLibraryGrid({ videos, loading, onDelete }: Props) {
   }
 
   return (
-    <div className="vlg-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+    <div className="vlg-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '14px' }}>
       {videos.map(video => {
         const busy = actionId === video.id;
         const isConfirmingDelete = confirmDeleteId === video.id;

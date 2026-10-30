@@ -12,6 +12,7 @@ import {
   Zap, Layers, Crosshair,
 } from 'lucide-react';
 import { FIVE_STAR_SCALE, stageForScore, starsFromScore } from '@/lib/scale/five-star';
+import { isPeriodFilled } from '@/lib/charting/v2-periods';
 
 const BLUE = '#37b5ff';
 const PURPLE = '#7dd3fc';
@@ -150,7 +151,9 @@ function PillarRating({
   );
 }
 
-function YesNoLine({ label, value, voice }: { label: string; value: boolean; voice?: string }) {
+function YesNoLine({ label, value, voice }: { label: string; value?: boolean; voice?: string }) {
+  // A question the goalie skipped is left out, not shown as a "No".
+  if (typeof value !== 'boolean') return null;
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,17 +232,23 @@ function PreGameSection({ data, flat }: { data: V2PreGameData; flat?: boolean })
   return (
     <Section flat={flat}>
       <SectionHeader icon={Timer} title="Pre-Game · Mind Management" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-        <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px' }}>Personal Start Time</p>
-          <p style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{START_TIME_LABELS[data.personalStartTime] ?? data.personalStartTime}</p>
+      {(data.personalStartTime || typeof data.mentalStateRating === 'number') && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+          {data.personalStartTime && (
+            <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
+              <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px' }}>Personal Start Time</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{START_TIME_LABELS[data.personalStartTime] ?? data.personalStartTime}</p>
+            </div>
+          )}
+          {typeof data.mentalStateRating === 'number' && (
+            <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
+              <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Mental State</p>
+              <RatingBar value={data.mentalStateRating} />
+              {data.mentalStateVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.mentalStateVoiceNote}&rdquo;</p>}
+            </div>
+          )}
         </div>
-        <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Mental State</p>
-          <RatingBar value={data.mentalStateRating} />
-          {data.mentalStateVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.mentalStateVoiceNote}&rdquo;</p>}
-        </div>
-      </div>
+      )}
       <div style={{ borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', padding: '4px 12px' }}>
         <YesNoLine label="Routine completed" value={data.routineCompleted} voice={data.routineVoiceNote} />
         <YesNoLine label="Pre-Game Stress" value={data.anxietyPresent} voice={data.anxietyVoiceNote} />
@@ -253,13 +262,13 @@ function PreGameSection({ data, flat }: { data: V2PreGameData; flat?: boolean })
 
 function PeriodsSection({ periods, flat }: { periods: NonNullable<V2Fields['v2Periods']>; flat?: boolean }) {
   const labels: Array<[keyof typeof periods, string]> = [['period1', 'P1'], ['period2', 'P2'], ['period3', 'P3'], ['overtime', 'OT']];
-  const filled = labels.filter(([key]) => !!periods[key]);
+  const filled = labels.filter(([key]) => isPeriodFilled(periods[key]));
   if (filled.length === 0) return null;
 
   return (
     <Section flat={flat}>
       <SectionHeader icon={BarChart3} title="Periods" subtitle="Post-game, charted from memory" />
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${filled.length}, 1fr)`, gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '8px' }}>
         {filled.map(([key, label]) => {
           const p = periods[key]!;
           const goalsAgainst = p.goalsAgainst ?? 0;
@@ -292,6 +301,7 @@ function PeriodsSection({ periods, flat }: { periods: NonNullable<V2Fields['v2Pe
               </div>
 
               {/* Ratings */}
+              {(typeof p.mindControlRating === 'number' || p.mindControlVoiceNote || p.mindControlChallengeLevel) && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
                   <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)' }}>Emotional Balance</p>
@@ -310,9 +320,10 @@ function PeriodsSection({ periods, flat }: { periods: NonNullable<V2Fields['v2Pe
                   })()}
                 </div>
                 {/* Set with the star row on the period screen — read back the same way. */}
-                <RatingBar value={p.mindControlRating} stars />
+                {typeof p.mindControlRating === 'number' && <RatingBar value={p.mindControlRating} stars />}
                 {p.mindControlVoiceNote && <VoiceNote text={p.mindControlVoiceNote} />}
               </div>
+              )}
 
               {/*
                 The other four Pillars, kept next to Emotional Balance because
@@ -378,19 +389,27 @@ function PostGameSection({ data, flat }: { data: V2PostGameData; flat?: boolean 
         <Stat label="Weak Goals" value={data.badGoalCount} />
         <Stat label="Good Decision Factor" value={`${(data.goodDecisionRate ?? 0).toFixed(0)}`} suffix="%" />
         <Stat label="Weak Decision Factor" value={`${(100 - (data.goodDecisionRate ?? 0)).toFixed(0)}`} suffix="%" />
-        <Stat label="Emotional Balance Avg" value={(data.mindControlAverage ?? 0).toFixed(1)} suffix="/ 5" />
+        <Stat
+          label="Emotional Balance Avg"
+          value={data.mindControlAverage ? data.mindControlAverage.toFixed(1) : '—'}
+          suffix={data.mindControlAverage ? '/ 5' : undefined}
+        />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Overall Game Factor</p>
-          <RatingBar value={data.overallGameFactorRating} />
-          {data.overallGameFactorVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.overallGameFactorVoiceNote}&rdquo;</p>}
-        </div>
-        <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Game Retention</p>
-          <RatingBar value={data.gameRetentionRating} />
-          {data.gameRetentionVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.gameRetentionVoiceNote}&rdquo;</p>}
-        </div>
+        {typeof data.overallGameFactorRating === 'number' && (
+          <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
+            <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Overall Game Factor</p>
+            <RatingBar value={data.overallGameFactorRating} />
+            {data.overallGameFactorVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.overallGameFactorVoiceNote}&rdquo;</p>}
+          </div>
+        )}
+        {typeof data.gameRetentionRating === 'number' && (
+          <div style={{ borderRadius: '10px', background: 'rgba(55,181,255,0.05)', border: '1px solid rgba(55,181,255,0.12)', padding: '12px' }}>
+            <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>Game Retention</p>
+            <RatingBar value={data.gameRetentionRating} />
+            {data.gameRetentionVoiceNote && <p style={{ marginTop: '6px', fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }}>&ldquo;{data.gameRetentionVoiceNote}&rdquo;</p>}
+          </div>
+        )}
         {data.overallFeeling && (
           <div style={{ gridColumn: '1 / -1', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', padding: '12px' }}>
             <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(255,255,255,0.35)', marginBottom: '6px' }}>Overall Feeling</p>

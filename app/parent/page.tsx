@@ -13,6 +13,7 @@ import { parentLinkService, voiceSubmissionService } from '@/lib/database';
 import type { VoiceSubmission, VoiceCategory } from '@/lib/database';
 import { LinkedChildSummary } from '@/types';
 import { SkeletonDarkPage } from '@/components/ui/skeletons';
+import { calendarDaysAgo } from '@/lib/utils/local-date';
 
 const GREEN  = '#1D9E75';
 const TEAL   = '#0ea5e9';
@@ -621,7 +622,7 @@ function VoiceStatusBadge({ status }: { status: string }) {
 
 function formatDate(date: Date | undefined): string {
   if (!date) return 'Never';
-  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  const days = calendarDaysAgo(date);
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days}d ago`;

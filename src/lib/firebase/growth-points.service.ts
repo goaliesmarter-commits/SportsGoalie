@@ -45,6 +45,9 @@ export interface GrowthPointsBalance {
 const BALANCES_COL = 'growth_points_balance';
 const TRANSACTIONS_COL = 'growth_points_transactions';
 
+/** Awards being written right now, keyed by goalie + event + reference. */
+const awardsInFlight = new Map<string, Promise<boolean>>();
+
 export const growthPointsService = {
   /**
    * Award points, writing a transaction log entry and updating the balance atomically.
@@ -93,8 +96,36 @@ export const growthPointsService = {
   /**
    * Award points only once per referenceId + eventType combination.
    * Returns true if points were awarded, false if already awarded.
+   *
+   * The check below is a query followed by a write, so two calls that overlap both
+   * see an empty ledger and both write: a Knowledge Check was paying 125 twice, in the
+   * same second. Overlapping calls for the same award now share one run; only the call
+   * that actually wrote reports `true`.
    */
   async awardPointsOnce(
+    userId: string,
+    eventType: GrowthPointsEventType,
+    points: number,
+    description: string,
+    referenceId: string
+  ): Promise<boolean> {
+    const key = `${userId}|${eventType}|${referenceId}`;
+    const running = awardsInFlight.get(key);
+    if (running) {
+      await running.catch(() => {});
+      return false;
+    }
+
+    const run = this.writeAwardIfNew(userId, eventType, points, description, referenceId);
+    awardsInFlight.set(key, run);
+    try {
+      return await run;
+    } finally {
+      awardsInFlight.delete(key);
+    }
+  },
+
+  async writeAwardIfNew(
     userId: string,
     eventType: GrowthPointsEventType,
     points: number,

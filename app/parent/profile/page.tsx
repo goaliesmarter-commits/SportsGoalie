@@ -11,7 +11,10 @@ import {
   Users, Check, ChevronRight, Trophy, Flame,
 } from 'lucide-react';
 
+import { toast } from 'sonner';
+
 import { useAuth } from '@/lib/auth/context';
+import { toProfileUpdate } from '@/lib/auth/profile-update';
 import { profileUpdateSchema, type ProfileUpdateFormData } from '@/lib/validation/auth';
 import { parentLinkService } from '@/lib/database';
 import { LinkedChildSummary } from '@/types';
@@ -43,7 +46,10 @@ export default function ParentProfilePage() {
 
   const { register, handleSubmit, formState: { errors }, setError, reset } = useForm<ProfileUpdateFormData>({
     resolver: zodResolver(profileUpdateSchema),
-    defaultValues: { displayName: user?.displayName || '', photoURL: user?.profileImage || '' },
+    // `values`, not `defaultValues`: on a refresh the user is not loaded yet when this runs, and
+    // defaults are read only once - the name field stayed blank until the goalie retyped it.
+    values: { displayName: user?.displayName || '', photoURL: user?.profileImage || '' },
+    resetOptions: { keepDirtyValues: true },
   });
 
   useEffect(() => {
@@ -66,8 +72,9 @@ export default function ParentProfilePage() {
   const onSubmit = async (data: ProfileUpdateFormData) => {
     try {
       setIsLoading(true);
-      await updateUserProfile(data);
+      await updateUserProfile(toProfileUpdate(data));
       reset(data);
+      toast.success('Profile updated');
     } catch (error) {
       setError('root', { message: error instanceof Error ? error.message : 'Failed to update profile' });
     } finally {
@@ -164,7 +171,7 @@ export default function ParentProfilePage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
                       {user.profileImage ? (
-                        <Image src={user.profileImage} alt="Profile" width={72} height={72} style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(55,181,255,0.3)' }} />
+                        <Image src={user.profileImage} alt="Profile" width={72} height={72} unoptimized style={{ borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(55,181,255,0.3)' }} />
                       ) : (
                         <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(55,181,255,0.1)', border: '2px solid rgba(55,181,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <User size={28} color="rgba(255,255,255,0.3)" />

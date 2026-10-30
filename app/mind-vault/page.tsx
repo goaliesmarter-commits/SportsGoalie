@@ -101,7 +101,9 @@ export default function MindVaultPage() {
               <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
                 <div style={{ height: '100%', background: BLUE, borderRadius: '99px', width: `${safeMomentum}%`, transition: 'width 0.5s' }} />
               </div>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'center', fontWeight: 600 }}>Keep your streak alive!</p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', textAlign: 'center', fontWeight: 600 }}>
+                {loading ? ' ' : `${activeCategories} of ${MIND_VAULT_CATEGORIES.length} sections started`}
+              </p>
             </div>
           </div>
         </div>
@@ -115,7 +117,7 @@ export default function MindVaultPage() {
           <>
             <section style={{ marginBottom: '28px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '14px' }}>Core Lists</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '14px' }}>
                 {MIND_VAULT_CATEGORIES.filter(c => c.slug === 'acceptance' || c.slug === 'cannot_accept').map(cat => (
                   <MindVaultCategoryCard key={cat.slug} category={cat} summary={getSummary(cat.slug)} />
                 ))}
@@ -124,7 +126,7 @@ export default function MindVaultPage() {
 
             <section>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '14px' }}>All Categories</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '14px' }}>
                 {MIND_VAULT_CATEGORIES.filter(c => c.slug !== 'acceptance' && c.slug !== 'cannot_accept').map(cat => (
                   <MindVaultCategoryCard key={cat.slug} category={cat} summary={getSummary(cat.slug)} />
                 ))}

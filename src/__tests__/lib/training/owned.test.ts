@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   attemptedSkillIds,
   ownedSkillIds,
+  pillarIsComplete,
   quizIsOwned,
   skillOwnedDates,
   type OwnableAttempt,
@@ -111,5 +112,21 @@ describe('skillOwnedDates', () => {
 
   it('has no date for a skill that is still open', () => {
     expect(skillOwnedDates([take([['q1', false]], { completedAt: at(3) })]).has('skill-1')).toBe(false);
+  });
+});
+
+describe('pillarIsComplete', () => {
+  const owned = new Set(['a', 'b']);
+
+  it('is complete when every skill in the pillar is owned', () => {
+    expect(pillarIsComplete(['a', 'b'], owned)).toBe(true);
+  });
+
+  it('is not complete while one skill is still open', () => {
+    expect(pillarIsComplete(['a', 'b', 'c'], owned)).toBe(false);
+  });
+
+  it('is never complete without skills', () => {
+    expect(pillarIsComplete([], owned)).toBe(false);
   });
 });

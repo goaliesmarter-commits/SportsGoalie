@@ -411,7 +411,7 @@ function FactSection({ fact, accent, index }: { fact: PillarFact; accent: string
 
         {/* Extra: four scenarios or similar */}
         {fact.extra && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', maxWidth: '960px', marginBottom: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '14px', maxWidth: '960px', marginBottom: '32px' }}>
             {fact.extra.items.map((item, ii) => (
               <TiltCard
                 key={ii}
@@ -710,7 +710,7 @@ function PillarPageContent() {
               {/* 3 Live Inputs */}
               <div style={{ marginBottom: '48px' }}>
                 <p style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '3.5px', color: BLUE2, textTransform: 'uppercase', marginBottom: '20px' }}>THE 3 LIVE INPUTS</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', maxWidth: '960px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '14px', maxWidth: '960px' }}>
                   {[
                     { num: '01', label: 'READING THE PLAY', desc: 'Goaltending is a chess game. Always a couple of moves ahead.' },
                     { num: '02', label: 'READING THE STICK', desc: 'Is the player in shooting position or passing position? The player\'s tells...' },

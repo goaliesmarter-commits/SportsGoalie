@@ -97,16 +97,16 @@ export default function MessagesPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <style>{`
-        .msg-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (min-width: 768px) { .msg-stats { grid-template-columns: repeat(4, 1fr); } }
-        .msg-filters { display: grid; grid-template-columns: 1fr; gap: 12px; }
-        @media (min-width: 640px) { .msg-filters { grid-template-columns: 1fr 1fr; } }
+        .msg-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        @media (min-width: 768px) { .msg-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; } }
+        .msg-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+        @media (min-width: 640px) { .msg-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       `}</style>
 
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 24px 48px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(16px,3vw,28px) clamp(14px,4vw,24px) 48px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
         {/* Banner */}
-        <div style={{ ...card, padding: '24px 28px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ ...card, padding: 'clamp(16px,4vw,24px) clamp(16px,4vw,28px)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '50%', height: '1px', background: `linear-gradient(90deg, transparent, ${BLUE}, transparent)` }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(55,181,255,0.12)', border: '1px solid rgba(55,181,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -127,10 +127,10 @@ export default function MessagesPage() {
             { label: 'Video Reviews', value: stats.videoReview, icon: <Video size={16} color={BLUE} /> },
             { label: 'Instructions', value: stats.instruction, icon: <FileText size={16} color={BLUE} /> },
           ].map(s => (
-            <div key={s.label} style={{ ...card, padding: '18px 20px', borderColor: s.alert ? 'rgba(248,113,113,0.35)' : 'rgba(55,181,255,0.18)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
-                {s.icon}
+            <div key={s.label} style={{ ...card, padding: 'clamp(12px,3.5vw,18px) clamp(12px,3.5vw,20px)', minWidth: 0, borderColor: s.alert ? 'rgba(248,113,113,0.35)' : 'rgba(55,181,255,0.18)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', marginBottom: '8px' }}>
+                <p style={{ fontSize: 'clamp(9px, 2.6vw, 10px)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 'clamp(0.2px, 0.3vw, 1.5px)', color: 'rgba(255,255,255,0.4)', minWidth: 0 }}>{s.label}</p>
+                <span style={{ display: 'flex', flexShrink: 0 }}>{s.icon}</span>
               </div>
               <p style={{ fontSize: '32px', fontWeight: 900, color: s.alert ? '#f87171' : '#fff', lineHeight: 1 }}>{s.value}</p>
               {s.alert && <p style={{ fontSize: '11px', color: '#f87171', marginTop: '4px', fontWeight: 600 }}>You have unread messages</p>}
@@ -139,7 +139,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Filters */}
-        <div style={{ ...card, padding: '18px 20px' }}>
+        <div style={{ ...card, padding: 'clamp(14px,3.5vw,18px) clamp(14px,3.5vw,20px)' }}>
           <p style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filter Messages</p>
           <div className="msg-filters">
             <div>
@@ -205,9 +205,9 @@ export default function MessagesPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Header row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: typeColor }}>
-                            {getTypeIcon(message.type)}
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{message.subject}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: typeColor, minWidth: 0, maxWidth: '100%' }}>
+                            <span style={{ display: 'flex', flexShrink: 0 }}>{getTypeIcon(message.type)}</span>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', minWidth: 0, overflowWrap: 'anywhere' }}>{message.subject}</span>
                           </div>
                           <span style={{ fontSize: '10px', fontWeight: 700, color: typeColor, background: `${typeColor}18`, border: `1px solid ${typeColor}30`, borderRadius: '20px', padding: '2px 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                             {message.type.replace('_', ' ')}
@@ -218,7 +218,7 @@ export default function MessagesPage() {
                         </div>
 
                         {/* Preview */}
-                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, overflow: 'hidden', overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                           {message.message.length > 150 ? message.message.substring(0, 150) + '...' : message.message}
                         </p>
 

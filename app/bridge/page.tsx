@@ -317,7 +317,7 @@ export default function BridgePage() {
           <p style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: BODY, lineHeight: 1.85, maxWidth: '720px', margin: '0 0 14px' }}>
             And when the camp delivers a weak option — it&apos;s no mystery.{' '}
             <span style={{ color: BLUE2, fontWeight: 700 }}>You don&apos;t necessarily leave.</span>{' '}
-            Polite interaction — <em>&ldquo;here&apos;s what I do,&rdquo;</em> with informed explanation — lets you use the ice time, the shooters, and the clock wisely: honing YOUR game, not getting indoctrinated into something that doesn&apos;t maximize coverage and minimize waste.
+            Polite interaction — <em>&ldquo;here&apos;s what I do,&rdquo;</em>{' '}with informed explanation — lets you use the ice time, the shooters, and the clock wisely: honing YOUR game, not getting indoctrinated into something that doesn&apos;t maximize coverage and minimize waste.
           </p>
 
           <p style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', color: MUTED, lineHeight: 1.85, maxWidth: '700px', margin: '0 0 36px', fontStyle: 'italic' }}>
@@ -333,7 +333,7 @@ export default function BridgePage() {
             boxShadow: '0 4px 32px rgba(0,0,0,0.3)',
           }}>
             <p style={{ fontSize: 'clamp(18px, 2.4vw, 24px)', fontStyle: 'italic', color: 'rgba(255,255,255,0.9)', lineHeight: 1.5, margin: '0 0 10px' }}>
-              &ldquo;A <span style={{ color: BLUE2, fontStyle: 'normal', fontWeight: 900 }}>Smarter Goalie</span> is in the house.&rdquo;
+              &ldquo;A <span style={{ color: BLUE2, fontStyle: 'normal', fontWeight: 900 }}>Smarter Goalie</span>{' '}is in the house.&rdquo;
             </p>
             <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '3px', color: MUTED, textTransform: 'uppercase', margin: 0 }}>
               Respect in the house — all around

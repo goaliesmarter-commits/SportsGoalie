@@ -25,9 +25,11 @@ export function MindVaultEntryForm({ onSubmit, placeholder, label }: Props) {
   const [isVoice, setIsVoice] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const handleTranscription = (text: string) => {
+  // Only dictation makes an entry a voice entry; typing into the box reports through the
+  // same callback and used to flag every typed entry as "Voice".
+  const handleTranscription = (text: string, spoken?: boolean) => {
     setContent(text);
-    setIsVoice(true);
+    setIsVoice((wasVoice) => (spoken ? true : text.trim() ? wasVoice : false));
   };
 
   const handleSave = async () => {

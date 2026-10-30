@@ -122,7 +122,7 @@ export function AchievementsList({ achievements, userAchievements, loading = fal
             Track your learning milestones and accomplishments
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Completed', value: totalCompleted, color: '#4ade80' },
             { label: 'Growth Points', value: totalPoints, color: BLUE },
@@ -188,13 +188,13 @@ export function AchievementsList({ achievements, userAchievements, loading = fal
 
       {/* Tabs + content */}
       <div>
-        <div style={{ display: 'flex', gap: '4px', padding: '6px', background: 'rgba(2,18,44,0.85)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '10px', marginBottom: '16px', width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: '4px', padding: '6px', background: 'rgba(2,18,44,0.85)', border: '1px solid rgba(55,181,255,0.14)', borderRadius: '10px', marginBottom: '16px', width: 'fit-content', maxWidth: '100%' }}>
           {tabs.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
               style={{
-                padding: '6px 14px', borderRadius: '7px', border: 'none', cursor: 'pointer',
+                padding: '6px clamp(8px, 3vw, 14px)', minWidth: 0, borderRadius: '7px', border: 'none', cursor: 'pointer',
                 fontSize: '12px', fontWeight: 600,
                 background: activeTab === key ? `linear-gradient(135deg, ${BLUE} 0%, #0ea5e9 100%)` : 'transparent',
                 color: activeTab === key ? '#fff' : 'rgba(255,255,255,0.5)',
@@ -206,7 +206,7 @@ export function AchievementsList({ achievements, userAchievements, loading = fal
         </div>
 
         {currentList.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {currentList.map(achievement => (
               <AchievementCard
                 key={achievement.id}

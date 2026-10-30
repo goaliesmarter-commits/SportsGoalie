@@ -306,7 +306,7 @@ export default function CoachVideoReviewsPage() {
               </p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,320px),1fr))', gap: '20px' }}>
               {filteredVideos.map(video => {
                 const st = STATUS_STYLES[video.status] ?? { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', label: 'Unknown' };
                 return (

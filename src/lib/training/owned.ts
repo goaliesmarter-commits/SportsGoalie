@@ -135,6 +135,14 @@ export function ownedSkillIds(attempts: OwnableAttempt[]): Set<string> {
 }
 
 /**
+ * A pillar is complete once it has skills and the goalie owns every one of them. A pillar
+ * with no skills is never complete, so an empty one cannot count towards a goal.
+ */
+export function pillarIsComplete(skillIds: string[], owned: Set<string>): boolean {
+  return skillIds.length > 0 && skillIds.every((id) => owned.has(id));
+}
+
+/**
  * The day each skill first became owned, for "skills done over time" and the date a
  * coach sees against a finished skill. Takes are replayed oldest first.
  */

@@ -123,13 +123,13 @@ export default function MessageDetailPage() {
         {/* Message Card */}
         <div style={cardStyle}>
           {/* Card Header */}
-          <div style={{ padding: '24px', borderBottom: '1px solid rgba(55,181,255,0.1)' }}>
+          <div style={{ padding: 'clamp(16px, 5vw, 24px)', borderBottom: '1px solid rgba(55,181,255,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${typeColor}18`, border: `1px solid ${typeColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
                 {getTypeIcon(message.type)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h1 style={{ color: '#fff', fontSize: '20px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.01em' }}>{message.subject}</h1>
+                <h1 style={{ color: '#fff', fontSize: 'clamp(17px, 5vw, 20px)', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.01em', overflowWrap: 'anywhere' }}>{message.subject}</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '20px', background: `${typeColor}14`, border: `1px solid ${typeColor}30`, color: typeColor, fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' }}>
                     {message.type.replace('_', ' ')}
@@ -149,15 +149,15 @@ export default function MessageDetailPage() {
           </div>
 
           {/* Message Body */}
-          <div style={{ padding: '24px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+          <div style={{ padding: 'clamp(16px, 5vw, 24px)' }}>
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px', lineHeight: 1.8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
               {message.message}
             </p>
           </div>
 
           {/* Related Video */}
           {message.type === 'video_review' && message.relatedVideoUrl && (
-            <div style={{ padding: '0 24px 24px', borderTop: '1px solid rgba(55,181,255,0.08)', paddingTop: '20px' }}>
+            <div style={{ padding: '0 clamp(16px, 5vw, 24px) clamp(16px, 5vw, 24px)', borderTop: '1px solid rgba(55,181,255,0.08)', paddingTop: '20px' }}>
               <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Video size={16} color="#f87171" /> Your Video Submission
               </h3>
@@ -169,7 +169,7 @@ export default function MessageDetailPage() {
 
           {/* Attachments */}
           {message.attachments && message.attachments.length > 0 && (
-            <div style={{ padding: '0 24px 24px', borderTop: '1px solid rgba(55,181,255,0.08)', paddingTop: '20px' }}>
+            <div style={{ padding: '0 clamp(16px, 5vw, 24px) clamp(16px, 5vw, 24px)', borderTop: '1px solid rgba(55,181,255,0.08)', paddingTop: '20px' }}>
               <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
                 Attachments ({message.attachments.length})
               </h3>
@@ -180,7 +180,7 @@ export default function MessageDetailPage() {
                   <h4 style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ImageIcon size={14} /> Images
                   </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 160px), 1fr))', gap: '12px' }}>
                     {message.attachments.filter(a => a.type === 'image').map((attachment, idx) => (
                       <div
                         key={idx}
@@ -209,7 +209,7 @@ export default function MessageDetailPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {message.attachments.filter(a => a.type === 'video').map((attachment, idx) => (
                       <div key={idx}>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>{attachment.fileName}</p>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', fontWeight: 600, marginBottom: '6px', overflowWrap: 'anywhere' }}>{attachment.fileName}</p>
                         <div style={{ background: '#000', borderRadius: '10px', overflow: 'hidden' }}>
                           <video src={attachment.url} controls style={{ width: '100%', maxHeight: '380px' }} preload="metadata" />
                         </div>
@@ -227,11 +227,11 @@ export default function MessageDetailPage() {
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {message.attachments.filter(a => a.type === 'document').map((attachment, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <FileText size={28} color="rgba(255,255,255,0.3)" />
-                          <div>
-                            <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{attachment.fileName}</p>
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 180px', minWidth: 0 }}>
+                          <FileText size={28} color="rgba(255,255,255,0.3)" style={{ flexShrink: 0 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ color: '#fff', fontSize: '13px', fontWeight: 600, overflowWrap: 'anywhere' }}>{attachment.fileName}</p>
                             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>{formatFileSize(attachment.fileSize)}</p>
                           </div>
                         </div>

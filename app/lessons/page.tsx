@@ -97,7 +97,7 @@ function LessonsPageContent() {
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)' }}>Your coach will add lessons and quizzes here.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {entries.map(({ item, title, description, duration }) => {
               const href = getHref(item);
               const isLocked = item.status === 'locked';

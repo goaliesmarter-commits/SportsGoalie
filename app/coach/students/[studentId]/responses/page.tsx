@@ -199,7 +199,7 @@ export default function CoachStudentResponsesPage() {
           <div style={{ background: cardBg, border, borderRadius: '16px', padding: '48px 24px', textAlign: 'center' }}>
             <ClipboardList size={36} color="rgba(255,255,255,0.12)" style={{ margin: '0 auto 12px', display: 'block' }} />
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '14px', margin: 0 }}>
-              {student.displayName} hasn&apos;t answered any Knowledge Checks yet
+              {student.displayName}{' '}hasn&apos;t answered any Knowledge Checks yet
             </p>
           </div>
         ) : (

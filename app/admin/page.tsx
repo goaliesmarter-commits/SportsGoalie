@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 import { AdminRoute } from '@/components/auth/protected-route';
 import { useAuth } from '@/lib/auth/context';
+import { fromLocalDateKey } from '@/lib/utils/local-date';
 import {
   analyticsService,
   PlatformAnalytics,
@@ -71,7 +72,7 @@ function AdminDashboardContent() {
   const firstName = (user?.displayName || user?.email || '').split(' ')[0].split('@')[0];
 
   const chartData = engagement.map((d) => ({
-    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    date: fromLocalDateKey(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     users: d.activeUsers,
     quizzes: d.quizAttempts,
     score: d.averageScore,
@@ -113,7 +114,7 @@ function AdminDashboardContent() {
         </div>
 
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
           <KpiCard title="Total Users" value={analytics?.users.total ?? 0} subtitle={`+${analytics?.users.newThisMonth ?? 0} this month`} icon={<Users size={20} />} trend={analytics?.users.newThisMonth ? 'up' : undefined} loading={loading} />
           <KpiCard title="Active Students" value={analytics?.users.activeStudentCount ?? 0} subtitle={`${analytics?.engagement.activeUsersToday ?? 0} active today`} icon={<Activity size={20} />} loading={loading} />
           <KpiCard title="Quiz Attempts" value={analytics?.engagement.totalQuizAttempts ?? 0} subtitle={`${analytics?.engagement.averageQuizScore ?? 0}% avg score`} icon={<Trophy size={20} />} trend={analytics?.engagement.averageQuizScore && analytics.engagement.averageQuizScore > 70 ? 'up' : 'down'} loading={loading} />

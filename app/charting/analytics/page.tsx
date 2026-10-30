@@ -7,6 +7,8 @@ import { SkeletonAnalytics } from '@/components/ui/skeletons';
 import { chartingService, dynamicChartingService, formTemplateService } from '@/lib/database';
 import { Session, ChartingEntry, DynamicChartingEntry, FormTemplate } from '@/types';
 import { toDateSafe as toDateSafeShared } from '@/lib/utils/timestamp';
+import { filledPeriods } from '@/lib/charting/v2-periods';
+import { hasPostGameAnswer, hasPreGameAnswer } from '@/lib/charting/v2-sections';
 import { CheckInAnswers } from '@/components/charting/CheckInAnswers';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -323,9 +325,9 @@ export default function ChartingAnalyticsPage() {
   const extractV2 = (entry: ChartingEntry) => {
     const raw = entry as unknown as Record<string, unknown>;
     return {
-      preGame: raw.v2PreGame as { routineCompleted: boolean; anxietyPresent: boolean; targetStateAchieved: boolean; mentalStateRating: number } | undefined,
-      periods: raw.v2Periods as Record<'period1' | 'period2' | 'period3' | 'overtime', { mindControlRating: number; periodFactorRatio?: number; goalsAgainst: number; shots: number; saves: number; standardSaves: number; keySaves: number; weakGoals: number; midChallengeCount: number; highChallengeCount: number; goals?: { isGoodGoal: boolean }[] } | undefined> | undefined,
-      postGame: raw.v2PostGame as { overallGameFactorRating: number; gameRetentionRating: number; goodDecisionRate: number; mindVaultEntry?: string } | undefined,
+      preGame: raw.v2PreGame as { routineCompleted?: boolean; anxietyPresent?: boolean; targetStateAchieved?: boolean; mentalStateRating?: number; personalStartTime?: string } | undefined,
+      periods: raw.v2Periods as Record<'period1' | 'period2' | 'period3' | 'overtime', { mindControlRating?: number; periodFactorRatio?: number; goalsAgainst: number; shots: number; saves: number; standardSaves: number; keySaves: number; weakGoals: number; midChallengeCount: number; highChallengeCount: number; goals?: { isGoodGoal: boolean }[] } | undefined> | undefined,
+      postGame: raw.v2PostGame as { overallGameFactorRating?: number; gameRetentionRating?: number; goodDecisionRate?: number; mindVaultEntry?: string; overallFeeling?: string; improvementFocus?: string; whatWillYouDoDifferently?: string } | undefined,
       practice: raw.v2Practice as { practiceValueRating: number; technicalEyeDevelopmentRating: number; designatedTrainingReceived: boolean; designatedTrainingDuration?: number; videoCaptured: boolean; practiceIndex?: { category: 'immediate_development' | 'refinement' | 'maintenance' }[]; indexItemsWorkedOn?: string[]; improvementRatings?: { rating: number }[]; mindVaultEntry?: string } | undefined,
     };
   };
@@ -333,23 +335,33 @@ export default function ChartingAnalyticsPage() {
   const calculateV2GameStats = () => {
     const filtered = getFilteredEntries();
     let totalV2 = 0, mindSample = 0, routine = 0, anxiety = 0, targetState = 0, mentalStateSum = 0;
-    // Factor Ratio is optional, so it gets its own sample count — dividing it by
-    // `periodSamples` would treat every unrated period as a zero.
-    let periodSamples = 0, mindSum = 0, factorSum = 0, factorSamples = 0, goalsAgainst = 0, goodGoals = 0, badGoals = 0;
+    // Every rating and yes/no answer is optional, so each gets its own sample
+    // count. Dividing by the number of games or periods would score a skipped
+    // question as a zero (or a "no") and drag the average down.
+    let routineSamples = 0, anxietySamples = 0, targetSamples = 0, mentalStateSamples = 0;
+    let periodSamples = 0, mindSum = 0, mindSamples = 0, factorSum = 0, factorSamples = 0, goalsAgainst = 0, goodGoals = 0, badGoals = 0;
     let totalShots = 0, totalSaves = 0, totalStandardSaves = 0, totalKeySaves = 0, totalWeakGoals = 0, totalMidChallenge = 0, totalHighChallenge = 0;
-    let postSample = 0, overallFactorSum = 0, retentionSum = 0, decisionSum = 0, vaultCount = 0;
+    let postSample = 0, overallFactorSum = 0, overallFactorSamples = 0, retentionSum = 0, retentionSamples = 0, decisionSum = 0, decisionSamples = 0, vaultCount = 0;
 
     filtered.forEach((entry) => {
       const v2 = extractV2(entry);
-      if (!v2.preGame && !v2.periods && !v2.postGame) return;
+      const answeredPeriods = filledPeriods(v2.periods);
+      const preAnswered = hasPreGameAnswer(v2.preGame);
+      const postAnswered = hasPostGameAnswer(v2.postGame);
+      // A section opened and saved with nothing in it does not make a game.
+      if (!preAnswered && answeredPeriods.length === 0 && !postAnswered) return;
       totalV2++;
-      if (v2.preGame) { mindSample++; if (v2.preGame.routineCompleted) routine++; if (v2.preGame.anxietyPresent) anxiety++; if (v2.preGame.targetStateAchieved) targetState++; mentalStateSum += v2.preGame.mentalStateRating || 0; }
-      if (v2.periods) {
-        (['period1', 'period2', 'period3', 'overtime'] as const).forEach((key) => {
-          const p = v2.periods?.[key];
-          if (!p) return;
+      if (preAnswered && v2.preGame) {
+        mindSample++;
+        if (typeof v2.preGame.routineCompleted === 'boolean') { routineSamples++; if (v2.preGame.routineCompleted) routine++; }
+        if (typeof v2.preGame.anxietyPresent === 'boolean') { anxietySamples++; if (v2.preGame.anxietyPresent) anxiety++; }
+        if (typeof v2.preGame.targetStateAchieved === 'boolean') { targetSamples++; if (v2.preGame.targetStateAchieved) targetState++; }
+        if (typeof v2.preGame.mentalStateRating === 'number') { mentalStateSamples++; mentalStateSum += v2.preGame.mentalStateRating; }
+      }
+      if (answeredPeriods.length > 0) {
+        answeredPeriods.forEach(([, p]) => {
           periodSamples++;
-          mindSum += p.mindControlRating || 0;
+          if (typeof p.mindControlRating === 'number') { mindSum += p.mindControlRating; mindSamples++; }
           if (typeof p.periodFactorRatio === 'number') { factorSum += p.periodFactorRatio; factorSamples++; }
           goalsAgainst += p.goalsAgainst || 0;
           totalShots        += p.shots             || 0;
@@ -364,13 +376,19 @@ export default function ChartingAnalyticsPage() {
           badGoals += (p.goals?.length || 0) - good;
         });
       }
-      if (v2.postGame) { postSample++; overallFactorSum += v2.postGame.overallGameFactorRating || 0; retentionSum += v2.postGame.gameRetentionRating || 0; decisionSum += v2.postGame.goodDecisionRate || 0; if (v2.postGame.mindVaultEntry?.trim().length) vaultCount++; }
+      if (v2.postGame) {
+        if (postAnswered) postSample++;
+        if (typeof v2.postGame.overallGameFactorRating === 'number') { overallFactorSum += v2.postGame.overallGameFactorRating; overallFactorSamples++; }
+        if (typeof v2.postGame.gameRetentionRating === 'number') { retentionSum += v2.postGame.gameRetentionRating; retentionSamples++; }
+        if (typeof v2.postGame.goodDecisionRate === 'number') { decisionSum += v2.postGame.goodDecisionRate; decisionSamples++; }
+        if (v2.postGame.mindVaultEntry?.trim().length) vaultCount++;
+      }
     });
 
     if (totalV2 === 0) return null;
     const avg = (sum: number, count: number) => (count > 0 ? sum / count : 0);
     const savePct = totalShots > 0 ? ((totalShots - goalsAgainst) / totalShots) * 100 : 0;
-    return { totalV2, mindSample, routinePct: avg(routine, mindSample) * 100, anxietyPct: avg(anxiety, mindSample) * 100, targetStatePct: avg(targetState, mindSample) * 100, avgMentalState: avg(mentalStateSum, mindSample), periodSamples, avgMindControl: avg(mindSum, periodSamples), factorSamples, avgFactorRatio: avg(factorSum, factorSamples), goalsAgainst, goodGoals, badGoals, goodBadRatio: badGoals > 0 ? goodGoals / badGoals : goodGoals, totalShots, totalSaves, totalStandardSaves, totalKeySaves, totalWeakGoals, totalMidChallenge, totalHighChallenge, savePct, postSample, avgOverallFactor: avg(overallFactorSum, postSample), avgRetention: avg(retentionSum, postSample), avgGoodDecisionRate: avg(decisionSum, postSample), vaultCount };
+    return { totalV2, mindSample, routinePct: avg(routine, routineSamples) * 100, anxietyPct: avg(anxiety, anxietySamples) * 100, targetStatePct: avg(targetState, targetSamples) * 100, avgMentalState: avg(mentalStateSum, mentalStateSamples), periodSamples, avgMindControl: avg(mindSum, mindSamples), factorSamples, avgFactorRatio: avg(factorSum, factorSamples), goalsAgainst, goodGoals, badGoals, goodBadRatio: badGoals > 0 ? goodGoals / badGoals : goodGoals, totalShots, totalSaves, totalStandardSaves, totalKeySaves, totalWeakGoals, totalMidChallenge, totalHighChallenge, savePct, postSample, avgOverallFactor: avg(overallFactorSum, overallFactorSamples), avgRetention: avg(retentionSum, retentionSamples), avgGoodDecisionRate: avg(decisionSum, decisionSamples), vaultCount };
   };
 
   const calculateV2PracticeStats = () => {

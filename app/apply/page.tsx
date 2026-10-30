@@ -214,7 +214,7 @@ export default function ApplyPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(20px, 3vw, 32px)', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 'clamp(20px, 3vw, 32px)', alignItems: 'start' }}>
 
           {/* ── What happens ── */}
           <div style={{ background: CARD_BG, border: CARD_BDR, borderRadius: '16px', padding: 'clamp(24px, 4vw, 34px)' }}>

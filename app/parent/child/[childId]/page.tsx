@@ -378,7 +378,7 @@ export default function ChildDetailPage() {
                 <div style={{ marginBottom: '16px' }}>
                   <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>Game & Practice Charting</h3>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                    Review how {childData.displayName.split(' ')[0]} is reflecting on each session — mind management, performance, and what they&apos;re saving to their Mind Vault.
+                    Review how {childData.displayName.split(' ')[0]}{' '}is reflecting on each session — mind management, performance, and what they&apos;re saving to their Mind Vault.
                   </p>
                 </div>
                 <GoalieChartingHistory studentId={childId} />

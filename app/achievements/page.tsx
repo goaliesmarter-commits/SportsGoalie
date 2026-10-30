@@ -50,8 +50,15 @@ function AchievementsContent() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <style>{`
-        .ach-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-        @media (max-width: 640px) { .ach-stats { grid-template-columns: 1fr; } }
+        .ach-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        @media (max-width: 640px) { .ach-stats { grid-template-columns: minmax(0, 1fr); } }
+        .ach-hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 600px; }
+        .ach-hero-stat { padding: 14px 16px; min-width: 0; }
+        @media (max-width: 479px) {
+          .ach-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .ach-hero-stat:last-child { grid-column: 1 / -1; }
+          .ach-hero-stat { padding: 12px 14px; }
+        }
       `}</style>
 
       {/* Hero Banner */}
@@ -65,13 +72,13 @@ function AchievementsContent() {
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '28px', maxWidth: '520px' }}>
             Keep building momentum through Knowledge Checks, consistency, and focused progress across all 8 Pillars.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', maxWidth: '600px' }}>
+          <div className="ach-hero-stats">
             {[
               { label: 'Unlocked', value: completedAchievements, color: BLUE },
               { label: 'Completion Rate', value: `${completionRate}%`, color: BLUE },
               { label: 'Growth Points', value: totalPoints, color: 'rgba(255,255,255,0.7)' },
             ].map(s => (
-              <div key={s.label} style={{ background: 'rgba(55,181,255,0.08)', border: '1px solid rgba(55,181,255,0.2)', borderRadius: '14px', padding: '14px 16px' }}>
+              <div key={s.label} className="ach-hero-stat" style={{ background: 'rgba(55,181,255,0.08)', border: '1px solid rgba(55,181,255,0.2)', borderRadius: '14px' }}>
                 <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>{s.label}</p>
                 <p style={{ fontSize: '26px', fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</p>
               </div>

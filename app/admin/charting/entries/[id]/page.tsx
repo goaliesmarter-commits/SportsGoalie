@@ -129,7 +129,7 @@ function EntryDetailContent() {
 
       {/* Session Info */}
       {sectionCard('Session Information', (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
           {[
             { Icon: Calendar, label: 'Date', value: session.date.toDate().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
             { Icon: Clock, label: 'Time', value: session.date.toDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
@@ -202,7 +202,7 @@ function EntryDetailContent() {
 
       {/* Pre-Game */}
       {entry.preGame && sectionCard('Pre-Game Checklist', (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
           <div>{subHeading('Game Readiness')}{renderYesNoField('Well Rested', entry.preGame.gameReadiness.wellRested)}{renderYesNoField('Fueled for Game', entry.preGame.gameReadiness.fueledForGame)}</div>
           <div>{subHeading('MindSet')}{renderYesNoField('Mind Cleared', entry.preGame.mindSet.mindCleared)}{renderYesNoField('Mental Imagery', entry.preGame.mindSet.mentalImagery)}</div>
           <div>{subHeading('Pre-Game Routine')}{renderYesNoField('Ball Exercises', entry.preGame.preGameRoutine.ballExercises)}{renderYesNoField('Stretching', entry.preGame.preGameRoutine.stretching)}{renderYesNoField('Other', entry.preGame.preGameRoutine.other)}</div>
@@ -216,7 +216,7 @@ function EntryDetailContent() {
         const periodData = entry[periodKey];
         if (!periodData) return null;
         return sectionCard(`Period ${periodNum}`, (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
             <div>{subHeading('MindSet')}{renderRadioField('Focus', { focusConsistent: periodData.mindSet.focusConsistent, focusInconsistent: periodData.mindSet.focusInconsistent })}{renderRadioField('Decision Making', { decisionMakingStrong: periodData.mindSet.decisionMakingStrong, decisionMakingImproving: periodData.mindSet.decisionMakingImproving, decisionMakingNeedsWork: periodData.mindSet.decisionMakingNeedsWork })}{renderRadioField('Body Language', { bodyLanguageConsistent: periodData.mindSet.bodyLanguageConsistent, bodyLanguageInconsistent: periodData.mindSet.bodyLanguageInconsistent })}</div>
             <div>{subHeading('Skating')}{renderRadioField('Skating Performance', { inSyncWithPuck: periodData.skating.inSyncWithPuck, improving: periodData.skating.improving, weak: periodData.skating.weak, notInSync: periodData.skating.notInSync })}</div>
             <div>{subHeading('Positional - Above Icing')}{renderRadioField('Performance Level', { poor: periodData.positionalAboveIcing.poor, improving: periodData.positionalAboveIcing.improving, good: periodData.positionalAboveIcing.good })}</div>
@@ -238,7 +238,7 @@ function EntryDetailContent() {
 
       {/* Overtime & Shootout */}
       {(entry.overtime || entry.shootout) && sectionCard('Overtime & Shootout', (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '20px' }}>
           {entry.overtime && (
             <div>
               {subHeading('Overtime')}

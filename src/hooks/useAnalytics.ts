@@ -7,6 +7,7 @@ import { VideoQuizProgress } from '@/types/video-quiz';
 import { PILLARS } from '@/types';
 import { getPillarSlugFromDocId } from '@/lib/utils/pillars';
 import { takeStreak } from '@/lib/training/attempt-streak';
+import { fromLocalDateKey, toLocalDateKey } from '@/lib/utils/local-date';
 
 export interface DailyProgress {
   date: string;
@@ -81,10 +82,13 @@ function toDate(ts: any): Date {
   return new Date(ts);
 }
 
+// Local calendar day. The UTC date this used to return put an afternoon take on the
+// next day, and the chart label below then read that key as UTC midnight, which
+// showed the day before: History said Oct 27 while the trend said Oct 26.
 function dateStr(d: Date): string {
   const t = d.getTime();
   if (!t || isNaN(t)) return '';
-  return d.toISOString().split('T')[0];
+  return toLocalDateKey(d);
 }
 
 /**
@@ -241,7 +245,7 @@ function aggregateAnalytics(
   }
 
   const dailyProgress: DailyProgress[] = Array.from(dailyMap.entries()).map(([date, v]) => ({
-    date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    date: fromLocalDateKey(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     quizzes: v.quizzes,
     timeSpent: v.timeSpent,
     avgScore: v.quizzes > 0 ? Math.round(v.totalScore / v.quizzes) : 0,
@@ -308,7 +312,7 @@ function aggregateAnalytics(
   const monthDays = new Set<string>();
 
   for (const ds of attemptDates) {
-    const d = new Date(ds);
+    const d = fromLocalDateKey(ds);
     if (d >= startOfWeek) weekDays.add(ds);
     if (d >= startOfMonth) monthDays.add(ds);
   }

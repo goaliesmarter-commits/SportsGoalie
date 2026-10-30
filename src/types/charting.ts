@@ -489,16 +489,22 @@ export type MindManagementStartTime =
   | '3_plus_hours_before'
   | 'wake_up_thinking';
 
-/** V2 Pre-Game Section — completed before leaving for the rink */
+/**
+ * V2 Pre-Game Section — completed before leaving for the rink.
+ *
+ * Every answer starts blank, so every answer is optional: absent means the
+ * goalie skipped it. Consumers leave a skipped answer out of their averages
+ * and rates instead of scoring it as a "no" or a zero.
+ */
 export interface V2PreGameData {
-  personalStartTime: MindManagementStartTime;
-  mentalStateRating: number; // 1-5
+  personalStartTime?: MindManagementStartTime;
+  mentalStateRating?: number; // 1-5
   mentalStateVoiceNote?: string;
-  routineCompleted: boolean;
+  routineCompleted?: boolean;
   routineVoiceNote?: string; // captured if No
-  anxietyPresent: boolean;
+  anxietyPresent?: boolean;
   anxietyVoiceNote?: string; // captured if Yes → feeds Mind Vault
-  targetStateAchieved: boolean;
+  targetStateAchieved?: boolean;
   targetStateVoiceNote?: string; // captured if No
 }
 
@@ -523,7 +529,8 @@ export interface V2PeriodData {
   // ── Goal Classification ───────────────────────────────────────────────────
   goals: GoalEntry[];
   // ── Ratings ───────────────────────────────────────────────────────────────
-  mindControlRating: number; // 1-5 stars
+  /** 1-5 stars. Absent means unanswered; it used to default to 3, which made an untouched period look like a rated one. */
+  mindControlRating?: number;
   mindControlChallengeLevel?: 'low' | 'mid' | 'high'; // specificity flow: captured if 1-2
   mindControlVoiceNote?: string; // situation notes: captured if 1-2
   /**
@@ -550,13 +557,13 @@ export interface V2PeriodData {
 /** V2 Post-Game Section — completed immediately after the game */
 export interface V2PostGameData {
   overallFeeling: string; // voice transcription, raw/unfiltered
-  overallGameFactorRating: number; // 1-5
+  overallGameFactorRating?: number; // 1-5, absent until answered
   overallGameFactorVoiceNote?: string; // captured if 4-5
   mindControlAverage: number; // auto-calculated from period data
   goodGoalCount: number; // auto-calculated
   badGoalCount: number; // auto-calculated
   goodDecisionRate: number; // percentage, auto-calculated
-  gameRetentionRating: number; // 1-5
+  gameRetentionRating?: number; // 1-5, absent until answered
   gameRetentionVoiceNote?: string;
   mindVaultEntry: string; // voice transcription
   factorRatioSummary: number; // auto-calculated average of period factor ratios

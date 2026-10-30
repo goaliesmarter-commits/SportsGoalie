@@ -319,7 +319,7 @@ export function QuizCreator({ open, onOpenChange, coachId, onSave }: QuizCreator
                 <Settings size={14} color={PURPLE} />
                 <p style={{ color: '#fff', fontSize: '14px', fontWeight: 700 }}>Quiz Settings</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
                 {([
                   { label: 'Allow Playback Speed', desc: 'Let students adjust video playback speed', key: 'allowPlaybackSpeedChange' as const },
                   { label: 'Allow Rewind', desc: 'Let students rewind the video', key: 'allowRewind' as const },

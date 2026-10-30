@@ -118,8 +118,8 @@ export function GoalsList({ goals, onCreateGoal, onUpdateGoal, onDeleteGoal, loa
 
       {/* Stats card */}
       <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '20px' }}>
-          <div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ flex: '1 1 180px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <Target style={{ width: '20px', height: '20px', color: BLUE }} />
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', margin: 0 }}>Learning Goals</h2>
@@ -134,7 +134,7 @@ export function GoalsList({ goals, onCreateGoal, onUpdateGoal, onDeleteGoal, loa
             New Goal
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Total Goals', value: totalGoals, color: BLUE },
             { label: 'Completed', value: completedCount, color: '#4ade80' },
@@ -195,7 +195,7 @@ export function GoalsList({ goals, onCreateGoal, onUpdateGoal, onDeleteGoal, loa
         </div>
 
         {currentGoals.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {currentGoals.map(goal => (
               <GoalCard key={goal.id} goal={goal} onUpdate={onUpdateGoal} onDelete={onDeleteGoal} />
             ))}

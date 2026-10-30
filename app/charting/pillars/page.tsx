@@ -19,6 +19,7 @@ import {
   accentLineStyle,
 } from '@/components/charting/pillar-chrome';
 import { averageRatingPercent } from '@/lib/charting/rating-average';
+import { isPillarBoardTemplate } from '@/lib/charting/pillar-boards';
 
 /**
  * Pillar Charts — the goalie's own view of the check-in forms they've filled in.
@@ -69,7 +70,7 @@ export default function PillarChartsIndexPage() {
 
       // 'combined' is the full Hockey game/practice tracker — it belongs to the
       // session flow on /charting, not here.
-      const pillarTemplates = templatesResult.data.filter((t) => t.pillar && t.pillar !== 'combined');
+      const pillarTemplates = templatesResult.data.filter(isPillarBoardTemplate);
 
       const built = await Promise.all(
         pillarTemplates.map(async (template): Promise<PillarCard | null> => {
@@ -190,7 +191,7 @@ export default function PillarChartsIndexPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px', paddingBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '14px', paddingBottom: '24px' }}>
           {cards.map((card) => {
             const IconComponent = PILLAR_ICONS[card.info.icon] || Target;
             const hasEntries = card.entryCount > 0;

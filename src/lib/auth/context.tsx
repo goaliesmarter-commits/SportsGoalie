@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
+import { resolveProfile } from '@/lib/auth/profile-update';
 import { User, AuthState, LoginCredentials, RegisterCredentials, ProfileUpdateData } from '../../types/auth';
 import {
   createAuthErrorFromFirebase,
@@ -90,10 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        const profile = resolveProfile(userData, firebaseUser);
         const user: User = {
           id: firebaseUser.uid,
           email: firebaseUser.email!,
-          displayName: firebaseUser.displayName,
+          displayName: profile.displayName,
           role: userData.role || 'student',
           emailVerified: firebaseUser.emailVerified,
           createdAt: userData.createdAt?.toDate() || new Date(),
@@ -130,9 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...(userData.parentOnboardingComplete !== undefined && { parentOnboardingComplete: userData.parentOnboardingComplete }),
         };
 
-        // Store profile image if available
-        if (firebaseUser.photoURL) {
-          user.profileImage = firebaseUser.photoURL;
+        if (profile.profileImage) {
+          user.profileImage = profile.profileImage;
         }
 
         return user;

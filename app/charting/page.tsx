@@ -17,6 +17,7 @@ import { calculateActivityStreak } from '@/lib/utils/streak';
 import { CalendarHeatmap } from '@/components/charting/CalendarHeatmap';
 import { NewSessionModal } from '@/components/charting/NewSessionModal';
 import { chartTitle } from '@/lib/templates/chart-title';
+import { isV2GameEntry, v2GameProgress } from '@/lib/charting/v2-sections';
 
 const CYAN   = '#37b5ff';
 const MINT   = '#34d399';
@@ -79,11 +80,21 @@ export default function ChartingPage() {
   const stats         = useMemo<SessionStats>(() => calculateSessionStats(sessions), [sessions]);
   const currentStreak = useMemo(() => calculateCurrentStreak(sessions, chartingEntries, dynamicEntries), [sessions, chartingEntries, dynamicEntries]);
 
-  const chartedSessionIds = useMemo(() => {
-    const ids = new Set<string>();
-    chartingEntries.forEach(e => ids.add(e.sessionId));
-    dynamicEntries.forEach(e => { if (e.sessionId) ids.add(e.sessionId); });
-    return ids;
+  // A V2 game only counts as charted once Pre-Game, Periods and Post-Game all
+  // hold answers; one with only some of them is partial. Legacy and practice
+  // entries have no such sections, so having an entry is enough for them.
+  const { chartedSessionIds, partialSessionIds } = useMemo(() => {
+    const charted = new Set<string>();
+    const partial = new Set<string>();
+    chartingEntries.forEach(e => {
+      if (!isV2GameEntry(e)) { charted.add(e.sessionId); return; }
+      const progress = v2GameProgress(e);
+      if (progress === 'complete') charted.add(e.sessionId);
+      else if (progress === 'partial') partial.add(e.sessionId);
+    });
+    dynamicEntries.forEach(e => { if (e.sessionId) charted.add(e.sessionId); });
+    charted.forEach(id => partial.delete(id));
+    return { chartedSessionIds: charted, partialSessionIds: partial };
   }, [chartingEntries, dynamicEntries]);
 
   const chartingStats = useMemo(() => {
@@ -123,12 +134,14 @@ export default function ChartingPage() {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'completed': case 'charted': return 'default';
-      case 'in-progress': return 'secondary';
+      case 'in-progress': case 'partial': return 'secondary';
       default: return 'outline';
     }
   };
 
   const getDisplayStatus = (session: Session) => {
+    // A session marked completed before the chart was finished still reads as partial.
+    if (partialSessionIds.has(session.id)) return 'partial';
     if (session.status === 'completed') return 'completed';
     return chartedSessionIds.has(session.id) ? 'charted' : session.status;
   };

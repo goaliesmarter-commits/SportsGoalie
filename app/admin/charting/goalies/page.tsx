@@ -220,7 +220,7 @@ function GoaliesContent() {
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '15px' }}>{searchQuery ? 'Try adjusting your search.' : 'No goalies have charted a session or a pillar check-in yet.'}</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {sorted.map(goalie => {
               const initials = goalie.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
               return (

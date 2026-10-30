@@ -14,6 +14,7 @@ import {
   Flame,
 } from 'lucide-react';
 import Link from 'next/link';
+import { calendarDaysAgo } from '@/lib/utils/local-date';
 
 interface ChildProgressCardProps {
   child: LinkedChildSummary;
@@ -31,9 +32,7 @@ export function ChildProgressCard({ child }: ChildProgressCardProps) {
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return 'Never';
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const days = calendarDaysAgo(date);
 
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';

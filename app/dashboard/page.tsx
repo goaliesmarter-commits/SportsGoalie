@@ -146,8 +146,11 @@ function StandardDashboard() {
         .pillar-row:hover{background:rgba(255,255,255,0.04)!important;padding-left:26px!important}
         .qa-btn{transition:transform .18s,box-shadow .18s,border-color .18s,background .18s}
         .qa-btn:hover{transform:translateY(-3px) scale(1.02)}
-        .dash-grid{display:grid;grid-template-columns:1fr;gap:24px}
-        @media(min-width:1024px){.dash-grid{grid-template-columns:1.6fr 1fr}}
+        .dash-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+        @media(min-width:1024px){.dash-grid{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}
+        .dash-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+        @media(min-width:600px){.dash-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(min-width:1200px){.dash-stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
         .hero-ring{display:none}
         @media(min-width:520px){.hero-ring{display:block}}
         .continue-hover{transition:border-color .2s,box-shadow .2s}
@@ -235,7 +238,7 @@ function StandardDashboard() {
 
       {/* ── STATS + ACTIVITY STRIP ── */}
       <div className="s5" style={{ maxWidth: '1280px', margin: '0 auto', padding: 'clamp(16px,3vw,24px) clamp(14px,4vw,28px) 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '14px' }}>
+        <div className="dash-stats">
           <StatCard label="Knowledge Checks" value={stats?.quizzesCompleted ?? 0} icon={<Trophy size={16} />} color={BLUE} delay="0s" />
           <StatCard label="Skills Done" value={stats?.skillsCompleted ?? 0} icon={<BookOpen size={16} />} color="#a78bfa" delay=".05s" />
           <StatCard label="Avg Grasp Level" value={stats?.averageQuizScore ? `${Math.round(stats.averageQuizScore)}%` : '--'} icon={<Target size={16} />} color="#4ade80" delay=".10s" />
@@ -490,14 +493,14 @@ function ContinueLearningCard({ pillar }: { pillar: { sport: { id: string; name:
 
   return (
     <Link href={`/pillars/${pillar.sport.id}`} style={{ textDecoration: 'none' }}>
-      <div className="continue-hover" style={{ background: `linear-gradient(135deg,rgba(2,18,44,.95) 0%,${color}18 60%,${color}0a 100%)`, border: `1px solid ${color}30`, borderRadius: '20px', padding: '24px', cursor: 'pointer', boxShadow: `0 4px 24px rgba(0,0,0,.3)` }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '18px' }}>
+      <div className="continue-hover" style={{ background: `linear-gradient(135deg,rgba(2,18,44,.95) 0%,${color}18 60%,${color}0a 100%)`, border: `1px solid ${color}30`, borderRadius: '20px', padding: 'clamp(16px,4vw,24px)', cursor: 'pointer', boxShadow: `0 4px 24px rgba(0,0,0,.3)` }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'clamp(12px,3vw,18px)' }}>
           <div style={{ width: '58px', height: '58px', borderRadius: '18px', background: `${color}1c`, border: `1px solid ${color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 24px ${color}33` }}>
             <Icon size={26} color={color} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 800, color, background: `${color}18`, border: `1px solid ${color}28`, borderRadius: '20px', padding: '3px 10px', letterSpacing: '.5px', textTransform: 'uppercase', animation: 'pulse-ring 2.5s ease-in-out infinite' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 8px', marginBottom: '8px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', fontSize: '11px', fontWeight: 800, color, background: `${color}18`, border: `1px solid ${color}28`, borderRadius: '20px', padding: '3px 10px', letterSpacing: '.5px', textTransform: 'uppercase', animation: 'pulse-ring 2.5s ease-in-out infinite' }}>
                 <Play size={9} fill={color} /> In Progress
               </span>
               <span style={{ fontSize: '22px', fontWeight: 900, color }}>{pct}%</span>
@@ -530,8 +533,8 @@ function MindVaultCard({ summaries }: { summaries: MindVaultCategorySummary[] | 
 
   return (
     <div style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.12) 0%, rgba(2,18,44,0.95) 55%, rgba(109,40,217,0.08) 100%)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '20px', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '20px 24px', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', padding: 'clamp(14px,4vw,20px) clamp(16px,4vw,24px)', borderBottom: '1px solid rgba(167,139,250,0.12)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '1 1 200px', minWidth: 0 }}>
           <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Brain size={18} color={VIOLET} />
           </div>
@@ -549,7 +552,7 @@ function MindVaultCard({ summaries }: { summaries: MindVaultCategorySummary[] | 
         )}
       </div>
 
-      <div style={{ padding: '24px' }}>
+      <div style={{ padding: 'clamp(16px,4vw,24px)' }}>
         {summaries === null ? (
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>Loading your vault…</p>
         ) : total === 0 ? (

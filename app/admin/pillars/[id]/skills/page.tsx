@@ -268,7 +268,7 @@ function AdminSkillsContent() {
             <h2 style={{ color: '#fff', fontSize: '16px', fontWeight: 700, margin: '0 0 4px' }}>{state.editingId ? 'Edit Skill' : 'Create New Skill'}</h2>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', margin: '0 0 20px' }}>{state.editingId ? 'Update skill information' : 'Add a new skill to this pillar'}</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '16px', marginBottom: '16px' }}>
               {[
                 { lbl: 'Name', id: 'name', type: 'text', val: formData.name, onChange: (v: string) => setFormData(p => ({ ...p, name: v })), ph: 'Skill name' },
                 { lbl: 'Estimated Time (min)', id: 'time', type: 'number', val: String(formData.estimatedTimeToComplete), onChange: (v: string) => setFormData(p => ({ ...p, estimatedTimeToComplete: parseInt(v) || 0 })), ph: '30' },

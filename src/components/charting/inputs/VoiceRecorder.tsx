@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, MicOff, Square, Loader2 } from 'lucide-react';
 
 interface VoiceRecorderProps {
-  onTranscriptionComplete: (text: string) => void;
+  /** `spoken` is true when the text came from dictation, false when it was typed. */
+  onTranscriptionComplete: (text: string, spoken?: boolean) => void;
   initialText?: string;
   placeholder?: string;
 }
@@ -66,9 +67,9 @@ export function VoiceRecorder({
     setText(initialText);
   }, [initialText]);
 
-  const commit = useCallback((value: string) => {
+  const commit = useCallback((value: string, spoken: boolean) => {
     emittedRef.current = value;
-    onTranscriptionComplete(value);
+    onTranscriptionComplete(value, spoken);
   }, [onTranscriptionComplete]);
 
   const startRecording = useCallback(() => {
@@ -114,7 +115,7 @@ export function VoiceRecorder({
       const final = finalTranscript.trim();
       if (final) {
         setText(final);
-        commit(final);
+        commit(final, true);
       }
     };
 
@@ -133,7 +134,7 @@ export function VoiceRecorder({
 
   const handleTextChange = (newText: string) => {
     setText(newText);
-    commit(newText);
+    commit(newText, false);
   };
 
   return (

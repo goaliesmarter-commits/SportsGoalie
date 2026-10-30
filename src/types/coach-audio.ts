@@ -256,9 +256,9 @@ export const COACH_AUDIO_CATALOGUE: CoachAudioCatalogueEntry[] = [
     id: 'V-A-13',
     part: 'systems',
     scriptLine:
-      "The Factor Ratio is the bar that illustrates how you handled the game challenges you were confronted with: the standard of play, the challenge level, the speed of the play, and more. Period by period, you rate how much of a factor you were. No two games or shifts are exactly the same. A tough opponent, a slow start, a late push. So the question is never just how hard the game was. It's how you faced each challenge, overall and in comparison. Judging the goals against, for example, or the decisions made that need adjusting. Then we ask why. Your concentration. Your decisions. Over-reacting. Your game chart confirms what you observed about yourself across the pillars, and the patterns show you where to go next. Think smart, play smart.",
+      "The Factor Ratio is the bar that illustrates how you handled the game challenges you were confronted with: the standard of play, the challenge level, the speed of the play, and more. Period by period, you rate how much of a factor you were. No two games or shifts are exactly the same. A tough opponent, a slow start, a late push. So the question is never just how hard the game was. It's how you faced each challenge, overall and in comparison. Judging the goals against, for example, or the decisions made that need adjusting. Then we ask why. Your concentration. Your decisions. Over-reacting. Positional play above or below the icing line. Your game chart confirms what you observed about yourself across the pillars, and the content you provide shows your consistent patterns in decision making and what needs attention. Think smart, play smart.",
     reRecord: {
-      reason: 'New wording from Coach Mike, 17 October. The take on file reads the earlier script.',
+      reason: 'Final wording (v3) from Coach Mike, 24 October. The take on file reads an earlier script.',
       heldBefore: '2026-10-17T22:53:00Z',
       wordingFinal: true,
     },
@@ -289,11 +289,11 @@ export const COACH_AUDIO_CATALOGUE: CoachAudioCatalogueEntry[] = [
     id: 'V-A-17',
     part: 'systems',
     scriptLine:
-      "Smarter Goalie's ultimate goal is that you become that 'Intelligent Athletic Goaltender' you dream about. True growth comes with determination and the will to succeed. Mastering your Technical Eye leads you to self-evaluation skills that spring you forward in your self-awareness and eventually self-coaching in real time.",
+      "Smarter Goalie's ultimate goal is that you become that 'Intelligent Athletic Goaltender' you dream about. True growth comes with a strong desire, determination and the will to succeed. Mastering your Technical Eye leads you to self-awareness, self-evaluation and eventually self-coaching in practice and game performance.",
     reRecord: {
-      reason:
-        'New wording from Coach Mike, 17 October, for the goalie dashboard. His message gave two passages separated by "...", so a line may be missing between them. Confirm the full wording before recording.',
+      reason: 'Final wording (v3) from Coach Mike, 24 October, for the goalie dashboard. The take on file reads an earlier script.',
       heldBefore: '2026-10-17T22:53:00Z',
+      wordingFinal: true,
     },
   },
 
@@ -308,10 +308,10 @@ export const COACH_AUDIO_CATALOGUE: CoachAudioCatalogueEntry[] = [
     id: 'V-A-19',
     part: 'pillars',
     scriptLine:
-      "Coach Mike here. Welcome to MindSet, where your Mind-Vault grows and lives. It lives in a state of change: as your situation changes, some of it holds steady and some of it changes with you and your situation.\n\nAt Smarter Goalie, we believe that high performance isn't just a byproduct of natural talent. It is the result of a systematic, disciplined approach to every aspect of the game. You are the last line of defense. You occupy the most demanding position in hockey, where a split-second decision determines the outcome of the game. That kind of pressure requires more than physical skill. It requires an unshakable mental framework.\n\nThis is your Mind-Vault.\n\nThink of your Mind-Vault not as a fleeting feeling of confidence, but as a carefully curated repository of your greatest mental assets. It is an impenetrable inner sanctuary where we store your proven strategies, your hard-won successes, and the clarity required to perform under intense pressure.\n\nIn the heat of competition, when distractions rise and mistakes happen, you don't need to hope for confidence. You need to access it. Your Mind-Vault allows you to:\n\nStore and retrieve. Bank your brilliant saves and successful game scenarios, so you can withdraw that confidence exactly when you need it most.\n\nFilter the noise. Develop the laser-like focus necessary to see only what matters: the puck and the play.\n\nTrain the subconscious, the quickest part of your brain. We teach it to play in the now, free of negative influence, controlling the noise with the mantras you develop as your own.\n\nMaster the reset. Transform a challenging goal or a mistake into data, allowing you to re-calibrate and return to peak performance in seconds.\n\nI have spent my career studying what separates the good from the truly great, and it always comes back to one truth: Greatness is built, not born. We don't leave your mental game to chance. We teach you to organize, access, and command your mind with the same precision you apply to your skating and save selection.\n\nWhether you are just starting your journey or refining your game at the highest levels, your Mind-Vault is where your consistency, resilience, and ultimate performance begin.\n\nYour first deposit starts today. The next time the noise shows up, catch it, name it, and write down what you did. That's how a Mind-Vault is built, one deposit at a time.\n\nLet's start building yours.",
+      "Coach Mike here. Welcome to MindSet, where your Mind-Vault grows and lives. It lives in a state of confirmation and change: as your situation changes, some of it holds steady and some of it changes with you and your situation.\n\nAt Smarter Goalie, we believe that high performance isn't just a byproduct of luck. It is the result of a systematic, disciplined approach to every aspect of your game. You are the last line of defense. You occupy the most demanding position on the team and on the ice, where a split-second decision can determine the outcome of the game. That kind of pressure requires more than physical skill. It requires an unshakable mental framework.\n\nThis is your Mind-Vault.\n\nThink of your Mind-Vault not as a fleeting feeling of confidence, but as a carefully designed repository of your greatest mental assets. It is an impenetrable inner sanctuary where we store your proven strategies, your hard-won successes, and the clarity required to perform under intense pressure and challenge.\n\nIn the heat of competition, when distractions rise and mistakes happen, you don't need to hope for confidence. You need to access it. Your Mind-Vault allows you to stay balanced mentally, and self-coach with clarity and perseverance.\n\nStore and retrieve. Bank your brilliant saves and successful game scenarios, and the mantras you create, or take from the Smarter Goalie index library, so you can withdraw that confidence and reset for the next shift, exactly when you need it most.\n\nFilter the noise. Develop the laser-like focus necessary to see only what matters: the puck and the play.\n\nTrain the subconscious, the quickest part of your brain, to play free of negative influence, controlling the noise with the mantras you develop as your own, and proceed like nothing ever happened.\n\nMaster the reset. Transform a challenging goal or a mistake into data, allowing you to re-calibrate and return to peak performance in seconds.\n\nI have spent my career studying what separates the good from the truly great, and it always comes back to one truth: Greatness is built, not born. We don't leave your mental game to chance. We teach you to organize, access, and command your mind with the same precision you apply to your skating, positional play and save selection.\n\nWhether you are just starting your journey or refining and improving your game, your Mind-Vault is where your consistency, resilience, and ultimate performance begin.\n\nYour first deposit starts today. The next time the noise shows up, catch it, name it, and chart later what happened. That's how a Mind-Vault is built, one deposit at a time.\n\nLet's start building yours today. Think smart, play smart.",
     reRecord: {
       reason:
-        'New opening from Coach Mike, 17 October: it now welcomes the goalie to MindSet instead of the Mind-Vault. The rest is as recorded. The take on file has the old opening.',
+        'Final wording (v3) from Coach Mike, 24 October. It welcomes the goalie to MindSet, and several lines changed from the take on file.',
       heldBefore: '2026-10-17T22:53:00Z',
       wordingFinal: true,
     },
@@ -485,9 +485,9 @@ export const COACH_AUDIO_CATALOGUE: CoachAudioCatalogueEntry[] = [
     part: 'triggers',
     readsMessageId: 'B-12',
     scriptLine:
-      'Hey, just checking in. Smarter Goalie is big on support. Wondering if you would be open to a chat on goaltending?',
+      'Hey, just checking in. Smarter Goalie is big on support. Wondering if you would be open to a chat on goaltending? Select YES and I will get back to you to schedule that chat.',
     reRecord: {
-      reason: 'New script from Coach Mike, 17 October (21 days, no chart). The take on file reads the earlier script.',
+      reason: 'Final script (v3) from Coach Mike, 24 October (21 days, no chart). The take on file reads an earlier script.',
       heldBefore: '2026-10-17T22:53:00Z',
       wordingFinal: true,
     },

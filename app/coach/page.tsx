@@ -27,13 +27,17 @@ interface StudentSummary {
   curriculumItems: number;
   completedItems: number;
   hasCurriculum: boolean;
+  /** Only custom-track goalies get a curriculum; the rest follow the standard pathway. */
+  isCustom: boolean;
 }
 
 export default function CoachDashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<StudentSummary[]>([]);
-  const [stats, setStats] = useState({ totalStudents: 0, studentsWithCurriculum: 0, totalCurriculumItems: 0, averageProgress: 0 });
+  // totalStudents counts custom-track goalies only: it is the base for the
+  // curriculum numbers. allGoalies is everyone assigned, matching the roster page.
+  const [stats, setStats] = useState({ allGoalies: 0, totalStudents: 0, studentsWithCurriculum: 0, totalCurriculumItems: 0, averageProgress: 0 });
 
   useEffect(() => {
     if (user?.id) loadData();
@@ -44,14 +48,19 @@ export default function CoachDashboardPage() {
       const allUsersResult = await userService.getAllUsers({ role: 'student', limit: 200 });
       if (!allUsersResult.success || !allUsersResult.data) return;
 
-      const assigned = allUsersResult.data.items.filter(
-        u => u.workflowType === 'custom' && (user?.role === 'admin' || u.assignedCoachId === user?.id)
+      const assignedAll = allUsersResult.data.items.filter(
+        u => user?.role === 'admin' || u.assignedCoachId === user?.id
       );
+      const customCount = assignedAll.filter(u => u.workflowType === 'custom').length;
 
       let withCurriculum = 0, totalItems = 0, totalProgress = 0;
       const summaries: StudentSummary[] = [];
 
-      for (const student of assigned) {
+      for (const student of assignedAll) {
+        if (student.workflowType !== 'custom') {
+          summaries.push({ id: student.id, displayName: student.displayName || student.email, email: student.email, progress: 0, curriculumItems: 0, completedItems: 0, hasCurriculum: false, isCustom: false });
+          continue;
+        }
         const r = await customCurriculumService.getStudentCurriculum(student.id);
         if (r.success && r.data && r.data.items.length > 0) {
           withCurriculum++;
@@ -59,18 +68,19 @@ export default function CoachDashboardPage() {
           const pct = Math.round((completed / r.data.items.length) * 100);
           totalItems += r.data.items.length;
           totalProgress += pct;
-          summaries.push({ id: student.id, displayName: student.displayName || student.email, email: student.email, progress: pct, curriculumItems: r.data.items.length, completedItems: completed, hasCurriculum: true });
+          summaries.push({ id: student.id, displayName: student.displayName || student.email, email: student.email, progress: pct, curriculumItems: r.data.items.length, completedItems: completed, hasCurriculum: true, isCustom: true });
         } else {
-          summaries.push({ id: student.id, displayName: student.displayName || student.email, email: student.email, progress: 0, curriculumItems: 0, completedItems: 0, hasCurriculum: false });
+          summaries.push({ id: student.id, displayName: student.displayName || student.email, email: student.email, progress: 0, curriculumItems: 0, completedItems: 0, hasCurriculum: false, isCustom: true });
         }
       }
 
       setStudents(summaries);
       setStats({
-        totalStudents: assigned.length,
+        allGoalies: assignedAll.length,
+        totalStudents: customCount,
         studentsWithCurriculum: withCurriculum,
         totalCurriculumItems: totalItems,
-        averageProgress: assigned.length > 0 ? Math.round(totalProgress / assigned.length) : 0,
+        averageProgress: customCount > 0 ? Math.round(totalProgress / customCount) : 0,
       });
     } catch (err) { console.error('Failed to load coach stats:', err); }
     finally { setLoading(false); }
@@ -119,8 +129,8 @@ export default function CoachDashboardPage() {
                 Coach <span style={{ color: GOLD }}>{firstName}</span>
               </h1>
               <p style={{ fontSize: '14px', color: MUTED, lineHeight: 1.6, maxWidth: '380px' }}>
-                {stats.totalStudents > 0
-                  ? `${stats.totalStudents} goalie${stats.totalStudents !== 1 ? 's' : ''} in your program · ${stats.averageProgress}% average completion`
+                {stats.allGoalies > 0
+                  ? `${stats.allGoalies} goalie${stats.allGoalies !== 1 ? 's' : ''} in your program${stats.totalStudents > 0 ? ` · ${stats.averageProgress}% average curriculum completion` : ''}`
                   : 'No goalies assigned yet. Goalies appear here once linked through admin.'}
               </p>
               {/* quick nav buttons */}
@@ -148,7 +158,7 @@ export default function CoachDashboardPage() {
       {/* ── METRICS STRIP ── */}
       <div className="s3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '14px', marginBottom: '24px' }}>
         <MetricCard
-          label="Total Goalies"    value={stats.totalStudents}
+          label="Total Goalies"    value={stats.allGoalies}
           sub="on your roster"     icon={<ShieldCheck size={22} />}
           accent={GOLD}
         />
@@ -164,7 +174,7 @@ export default function CoachDashboardPage() {
         />
         <MetricCard
           label="Avg Completion"   value={`${stats.averageProgress}%`}
-          sub="across all goalies"  icon={<Activity size={22} />}
+          sub="on custom curricula"  icon={<Activity size={22} />}
           accent={GOLD}
         />
       </div>
@@ -181,7 +191,7 @@ export default function CoachDashboardPage() {
               <div>
                 <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#fff', letterSpacing: '.01em', marginBottom: '2px' }}>Goalie Roster</h2>
                 <p style={{ fontSize: '12px', color: MUTED }}>
-                  {loading ? 'Loading…' : `${stats.totalStudents} assigned`}
+                  {loading ? 'Loading…' : `${stats.allGoalies} assigned`}
                 </p>
               </div>
               <Link href="/coach/students" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: GOLD, fontWeight: 700, textDecoration: 'none', background: 'rgba(212,169,59,.1)', border: `1px solid rgba(212,169,59,.28)`, borderRadius: '8px', padding: '6px 12px' }}>
@@ -225,7 +235,7 @@ export default function CoachDashboardPage() {
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <p style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px' }}>{student.displayName}</p>
-                          <p style={{ fontSize: '11px', color: MUTED }}>{student.hasCurriculum ? `${student.completedItems}/${student.curriculumItems} modules` : 'No curriculum'}</p>
+                          <p style={{ fontSize: '11px', color: MUTED }}>{student.hasCurriculum ? `${student.completedItems}/${student.curriculumItems} modules` : student.isCustom ? 'No curriculum' : 'Standard pathway'}</p>
                         </div>
                       </div>
                       <div style={{ paddingRight: '14px' }}>

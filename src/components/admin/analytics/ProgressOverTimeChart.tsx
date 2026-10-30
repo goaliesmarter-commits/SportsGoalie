@@ -3,6 +3,7 @@
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Clock, Target, BarChart3 } from 'lucide-react';
+import { fromLocalDateKey } from '@/lib/utils/local-date';
 
 interface ProgressData {
   date: string;
@@ -43,7 +44,7 @@ export function ProgressOverTimeChart({ data }: ProgressOverTimeChartProps) {
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const date = fromLocalDateKey(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 

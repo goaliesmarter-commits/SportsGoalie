@@ -28,8 +28,8 @@ export function RotatingNumberSelector({
   const effectiveValue = value ?? null;
 
   return (
-    <div className="w-full overflow-x-auto scrollbar-hide">
-      <div className="flex gap-2">
+    <div className="w-full">
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const isSelected = option.value === effectiveValue;
           return (
@@ -38,7 +38,7 @@ export function RotatingNumberSelector({
               type="button"
               aria-pressed={isSelected}
               onClick={() => onChange(option.value)}
-              className="relative flex-shrink-0 rounded-xl px-4 py-2.5 text-sm text-left transition-all duration-200 active:scale-[0.97] whitespace-nowrap"
+              className="relative max-w-full rounded-xl px-4 py-2.5 text-sm text-left transition-all duration-200 active:scale-[0.97]"
               style={isSelected ? {
                 background: 'rgba(55,181,255,0.13)',
                 border: '1.5px solid rgba(55,181,255,0.55)',

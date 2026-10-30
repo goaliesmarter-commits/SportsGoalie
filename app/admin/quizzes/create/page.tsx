@@ -267,7 +267,7 @@ function CreateVideoQuizContent() {
             {activeTab === 'settings' && (
               <div>
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '15px', marginBottom: '16px' }}>Player Controls</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '12px' }}>
                   {[
                     { key: 'showExplanations', label: 'Show Explanations' },
                     { key: 'showCorrectAnswers', label: 'Show Correct Answers' },

@@ -24,6 +24,9 @@ import {
 } from '@/types';
 import { Timestamp, query, where, orderBy, limit as firestoreLimit, getDocs, collection, doc, setDoc } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
+import { toLocalDateKey } from '../../utils/local-date';
+import { filledPeriods } from '../../charting/v2-periods';
+import { hasPostGameAnswer, hasPreGameAnswer } from '../../charting/v2-sections';
 import { db } from '../../firebase/config';
 
 /**
@@ -918,7 +921,7 @@ export class ChartingService extends BaseDatabaseService {
   private toDateKey(value: unknown): string | null {
     const date = this.toDate(value);
     if (!date) return null;
-    return date.toISOString().split('T')[0];
+    return toLocalDateKey(date);
   }
 
   private toDate(value: unknown): Date | null {
@@ -972,6 +975,20 @@ export class ChartingService extends BaseDatabaseService {
         totalChallenge += degreeOfChallenge.period1 + degreeOfChallenge.period2 + degreeOfChallenge.period3;
         challengeCount += 3;
       }
+
+      // V2 charts keep each goal on its period, flagged good or weak. Without
+      // this the coach summary read 0 good / 0 weak for any V2 game.
+      filledPeriods(this.extractV2(entry).periods).forEach(([key, period]) => {
+        const goals = period.goals ?? [];
+        const good = goals.filter((g) => g.isGoodGoal).length;
+        const bad = goals.length - good;
+        totalGoodGoals += good;
+        totalBadGoals += bad;
+        if (key !== 'overtime') {
+          goalsByPeriod[key].good += good;
+          goalsByPeriod[key].bad += bad;
+        }
+      });
     });
 
     return {
@@ -1104,80 +1121,115 @@ export class ChartingService extends BaseDatabaseService {
   }
 
   private calculateV2GameAnalytics(entries: ChartingEntry[]): V2GameAnalytics {
-    // Mind Management aggregation
+    // Mind Management aggregation. Each answer keeps its own count: a goalie who
+    // skips a question has not answered "no" or "0", so it is left out of that
+    // average instead of pulling it down.
     let mindSample = 0;
+    let routineAnswered = 0;
     let routineCompleted = 0;
+    let anxietyAnswered = 0;
     let anxietyPresent = 0;
+    let targetAnswered = 0;
     let targetStateAchieved = 0;
+    let mentalStateCount = 0;
     let mentalStateSum = 0;
 
     // Period aggregation
     type PeriodKey = 'period1' | 'period2' | 'period3' | 'overtime';
-    // `factorCount` is tracked separately from `count`: Factor Ratio is optional,
-    // so dividing its sum by the period count would score every unrated period
-    // as a zero and pull the average below the scale's own floor of 1.
-    const periodAgg: Record<PeriodKey, {
-      count: number;
-      mindSum: number;
-      factorSum: number;
-      factorCount: number;
-      goalsAgainst: number;
-      good: number;
-      bad: number;
-    }> = {
-      period1: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      period2: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      period3: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
-      overtime: { count: 0, mindSum: 0, factorSum: 0, factorCount: 0, goalsAgainst: 0, good: 0, bad: 0 },
+    // `mindCount` and `factorCount` are tracked separately from `count`: both
+    // ratings are optional, so dividing a sum by the period count would score
+    // every unrated period as a zero and pull the average below the scale's own
+    // floor of 1.
+    const emptyAgg = () => ({
+      count: 0,
+      mindSum: 0,
+      mindCount: 0,
+      factorSum: 0,
+      factorCount: 0,
+      goalsAgainst: 0,
+      good: 0,
+      bad: 0,
+    });
+    const periodAgg: Record<PeriodKey, ReturnType<typeof emptyAgg>> = {
+      period1: emptyAgg(),
+      period2: emptyAgg(),
+      period3: emptyAgg(),
+      overtime: emptyAgg(),
     };
 
     // Post-Game aggregation
     let postSample = 0;
     let overallFactorSum = 0;
+    let overallFactorCount = 0;
     let retentionSum = 0;
+    let retentionCount = 0;
     let goodDecisionSum = 0;
+    let goodDecisionCount = 0;
     let mindVaultCount = 0;
 
     let totalV2Games = 0;
 
     entries.forEach((entry) => {
       const v2 = this.extractV2(entry);
-      const hasAnyGameV2 = !!v2.preGame || !!v2.periods || !!v2.postGame;
-      if (!hasAnyGameV2) return;
+      const answeredPeriods = filledPeriods(v2.periods);
+      const preAnswered = hasPreGameAnswer(v2.preGame);
+      const postAnswered = hasPostGameAnswer(v2.postGame);
+      // A section that was opened and saved with nothing in it is not a game.
+      if (!preAnswered && answeredPeriods.length === 0 && !postAnswered) return;
       totalV2Games++;
 
-      if (v2.preGame) {
+      if (preAnswered && v2.preGame) {
         mindSample++;
-        if (v2.preGame.routineCompleted) routineCompleted++;
-        if (v2.preGame.anxietyPresent) anxietyPresent++;
-        if (v2.preGame.targetStateAchieved) targetStateAchieved++;
-        mentalStateSum += v2.preGame.mentalStateRating || 0;
+        if (typeof v2.preGame.routineCompleted === 'boolean') {
+          routineAnswered++;
+          if (v2.preGame.routineCompleted) routineCompleted++;
+        }
+        if (typeof v2.preGame.anxietyPresent === 'boolean') {
+          anxietyAnswered++;
+          if (v2.preGame.anxietyPresent) anxietyPresent++;
+        }
+        if (typeof v2.preGame.targetStateAchieved === 'boolean') {
+          targetAnswered++;
+          if (v2.preGame.targetStateAchieved) targetStateAchieved++;
+        }
+        if (typeof v2.preGame.mentalStateRating === 'number') {
+          mentalStateCount++;
+          mentalStateSum += v2.preGame.mentalStateRating;
+        }
       }
 
-      if (v2.periods) {
-        (Object.keys(periodAgg) as PeriodKey[]).forEach((key) => {
-          const p = v2.periods?.[key];
-          if (!p) return;
-          const agg = periodAgg[key];
-          agg.count++;
-          agg.mindSum += p.mindControlRating || 0;
-          if (typeof p.periodFactorRatio === 'number') {
-            agg.factorSum += p.periodFactorRatio;
-            agg.factorCount++;
-          }
-          agg.goalsAgainst += p.goalsAgainst || 0;
-          const goods = p.goals?.filter((g) => g.isGoodGoal).length || 0;
-          const bads = (p.goals?.length || 0) - goods;
-          agg.good += goods;
-          agg.bad += bads;
-        });
-      }
+      answeredPeriods.forEach(([key, p]) => {
+        const agg = periodAgg[key];
+        agg.count++;
+        if (typeof p.mindControlRating === 'number') {
+          agg.mindSum += p.mindControlRating;
+          agg.mindCount++;
+        }
+        if (typeof p.periodFactorRatio === 'number') {
+          agg.factorSum += p.periodFactorRatio;
+          agg.factorCount++;
+        }
+        agg.goalsAgainst += p.goalsAgainst || 0;
+        const goods = p.goals?.filter((g) => g.isGoodGoal).length || 0;
+        const bads = (p.goals?.length || 0) - goods;
+        agg.good += goods;
+        agg.bad += bads;
+      });
 
       if (v2.postGame) {
-        postSample++;
-        overallFactorSum += v2.postGame.overallGameFactorRating || 0;
-        retentionSum += v2.postGame.gameRetentionRating || 0;
-        goodDecisionSum += v2.postGame.goodDecisionRate || 0;
+        if (postAnswered) postSample++;
+        if (typeof v2.postGame.overallGameFactorRating === 'number') {
+          overallFactorSum += v2.postGame.overallGameFactorRating;
+          overallFactorCount++;
+        }
+        if (typeof v2.postGame.gameRetentionRating === 'number') {
+          retentionSum += v2.postGame.gameRetentionRating;
+          retentionCount++;
+        }
+        if (typeof v2.postGame.goodDecisionRate === 'number') {
+          goodDecisionSum += v2.postGame.goodDecisionRate;
+          goodDecisionCount++;
+        }
         if (v2.postGame.mindVaultEntry && v2.postGame.mindVaultEntry.trim().length > 0) {
           mindVaultCount++;
         }
@@ -1189,7 +1241,7 @@ export class ChartingService extends BaseDatabaseService {
       return {
         period: key,
         sampleSize: a.count,
-        avgMindControl: this.safeAvg(a.mindSum, a.count),
+        avgMindControl: this.safeAvg(a.mindSum, a.mindCount),
         avgFactorRatio: this.safeAvg(a.factorSum, a.factorCount),
         totalGoalsAgainst: a.goalsAgainst,
         totalGoodGoals: a.good,
@@ -1198,12 +1250,14 @@ export class ChartingService extends BaseDatabaseService {
     });
 
     const sampledPeriods = periods.filter((p) => p.sampleSize > 0);
+    // A rated Mind Control or Factor Ratio is always 1-5, so a zero average means
+    // that period had no ratings at all: exclude it rather than let it drag the
+    // overall down.
+    const mindRatedPeriods = sampledPeriods.filter((p) => p.avgMindControl > 0);
     const overallAvgMindControl =
-      sampledPeriods.length > 0
-        ? sampledPeriods.reduce((s, p) => s + p.avgMindControl, 0) / sampledPeriods.length
+      mindRatedPeriods.length > 0
+        ? mindRatedPeriods.reduce((s, p) => s + p.avgMindControl, 0) / mindRatedPeriods.length
         : 0;
-    // A rated Factor Ratio is always 1-5, so a zero average means that period
-    // had no ratings at all — exclude it rather than let it drag the overall down.
     const factorRatedPeriods = sampledPeriods.filter((p) => p.avgFactorRatio > 0);
     const overallAvgFactorRatio =
       factorRatedPeriods.length > 0
@@ -1218,10 +1272,10 @@ export class ChartingService extends BaseDatabaseService {
       totalV2Games,
       mindManagement: {
         sampleSize: mindSample,
-        routineCompletedRate: this.safeAvg(routineCompleted, mindSample) * 100,
-        anxietyPresentRate: this.safeAvg(anxietyPresent, mindSample) * 100,
-        targetStateAchievedRate: this.safeAvg(targetStateAchieved, mindSample) * 100,
-        avgMentalStateRating: this.safeAvg(mentalStateSum, mindSample),
+        routineCompletedRate: this.safeAvg(routineCompleted, routineAnswered) * 100,
+        anxietyPresentRate: this.safeAvg(anxietyPresent, anxietyAnswered) * 100,
+        targetStateAchievedRate: this.safeAvg(targetStateAchieved, targetAnswered) * 100,
+        avgMentalStateRating: this.safeAvg(mentalStateSum, mentalStateCount),
       },
       periods,
       overallAvgMindControl,
@@ -1232,9 +1286,9 @@ export class ChartingService extends BaseDatabaseService {
       goodBadRatio: totalBadGoals > 0 ? totalGoodGoals / totalBadGoals : totalGoodGoals,
       postGame: {
         sampleSize: postSample,
-        avgOverallGameFactor: this.safeAvg(overallFactorSum, postSample),
-        avgGameRetention: this.safeAvg(retentionSum, postSample),
-        avgGoodDecisionRate: this.safeAvg(goodDecisionSum, postSample),
+        avgOverallGameFactor: this.safeAvg(overallFactorSum, overallFactorCount),
+        avgGameRetention: this.safeAvg(retentionSum, retentionCount),
+        avgGoodDecisionRate: this.safeAvg(goodDecisionSum, goodDecisionCount),
         mindVaultEntriesCaptured: mindVaultCount,
       },
     };

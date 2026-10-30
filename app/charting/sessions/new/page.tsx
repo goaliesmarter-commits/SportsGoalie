@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { ArrowLeft, Save, Trophy, Dumbbell, MapPin, CalendarDays, Users, Tag } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
+import { toLocalDateTimeInputValue } from '@/lib/utils/local-date';
 
 const BLUE  = '#37b5ff';
 const MUTED = 'rgba(255,255,255,0.38)';
@@ -20,7 +21,7 @@ export default function NewSessionPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: 'game' as 'game' | 'practice',
-    date: new Date().toISOString().slice(0, 16),
+    date: toLocalDateTimeInputValue(),
     opponent: '',
     location: '',
     tags: [] as string[],
@@ -129,7 +130,7 @@ export default function NewSessionPage() {
           {/* Date + Location + Opponent in a compact grid */}
           <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, color: LABEL, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Details</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '10px' }}>
               {/* Date */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <Label htmlFor="date" style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '5px' }}>

@@ -5,6 +5,7 @@ import {
   V2PostGameData,
 } from '@/types/charting';
 import { PillarSlug } from '@/types/onboarding';
+import { isPeriodFilled } from '@/lib/charting/v2-periods';
 
 type PeriodKey = 'period1' | 'period2' | 'period3' | 'overtime';
 
@@ -51,15 +52,19 @@ export function generatePracticeIndex(
   sessionId: string,
 ): PracticeIndexItem[] {
   const items: PracticeIndexItem[] = [];
+  // Untouched periods and unanswered ratings are left out: a blank rating is
+  // not a low one, and flagging it sent goalies to "Immediate Development" for
+  // a question they never answered.
   const activePeriods = Object.entries(v2Periods).filter(
-    ([, p]) => p !== null && p !== undefined,
+    ([, p]) => isPeriodFilled(p),
   ) as [string, V2PeriodData][];
+  const ratedPeriods = activePeriods.filter(([, p]) => typeof p.mindControlRating === 'number');
 
   // ── Mind Control per period (Mindset Pillar) ─────────────────────────────
   let hasMindImmediate = false;
   let hasMindRefinement = false;
 
-  for (const [key, period] of activePeriods) {
+  for (const [key, period] of ratedPeriods) {
     const label = PERIOD_LABELS[key as PeriodKey] ?? key;
     if ((period.mindControlRating ?? 0) <= 2) {
       items.push(item(
@@ -85,7 +90,7 @@ export function generatePracticeIndex(
   }
 
   // No low-mind-control periods — add maintenance
-  if (!hasMindImmediate && !hasMindRefinement && activePeriods.length > 0) {
+  if (!hasMindImmediate && !hasMindRefinement && ratedPeriods.length > 0) {
     items.push(item(
       sessionId,
       'Maintain Mind Command',
@@ -97,8 +102,8 @@ export function generatePracticeIndex(
   }
 
   // ── Game Retention (Mindset Pillar) ─────────────────────────────────────
-  const retention = v2PostGame.gameRetentionRating ?? 0;
-  if (retention <= 2) {
+  const retention = v2PostGame.gameRetentionRating;
+  if (retention !== undefined && retention <= 2) {
     items.push(item(
       sessionId,
       'Game Retention — Develop Recall',

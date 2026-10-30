@@ -70,7 +70,7 @@ function ItemCard({ item, label, onChange }: ItemCardProps) {
       borderRadius: '16px',
       background: 'linear-gradient(135deg, rgba(4,33,63,0.92) 0%, rgba(10,45,82,0.92) 100%)',
       border: '1px solid rgba(55,181,255,0.18)',
-      padding: '28px',
+      padding: 'clamp(18px, 5vw, 28px)',
       backdropFilter: 'blur(10px)',
       boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
     }}>
@@ -307,10 +307,19 @@ export default function TrainingLogPage() {
     }
   };
 
-  // "Save Category" — mark category items as done, stay on page
-  const handleSaveCategory = () => {
-    setItems(prev => prev.map(i => i.category === activeCategory ? { ...i, done: true } : i));
-    toast.success(`${CATEGORY_META[activeCategory].label} saved`);
+  // "Save Category" — mark category items as done, write the log, stay on page.
+  // This used to change the screen only, so the toast said saved while nothing
+  // reached Firestore and a reload came back with 0 items done.
+  const handleSaveCategory = async () => {
+    if (saving) return;
+    const nextItems = items.map(i => i.category === activeCategory ? { ...i, done: true } : i);
+    setItems(nextItems);
+    try {
+      await persistItems(nextItems);
+      toast.success(`${CATEGORY_META[activeCategory].label} saved`);
+    } catch {
+      // error already shown in persistItems
+    }
   };
 
   // "Save Log" (last category) — mark final category done, persist, navigate home
@@ -341,7 +350,7 @@ export default function TrainingLogPage() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(145deg, #020d1c 0%, #041830 50%, #021020 100%)',
-      padding: '28px 40px 60px',
+      padding: '28px clamp(16px, 4vw, 40px) 60px',
       boxSizing: 'border-box',
     }}>
       <style>{`
@@ -349,11 +358,24 @@ export default function TrainingLogPage() {
         .tl-tab:hover { color: rgba(255,255,255,0.8) !important; }
         .tl-cat-btn { transition: all 0.22s ease; }
         .tl-cat-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+        .tl-head {
+          display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+          gap: 16px; margin-bottom: 36px;
+        }
+        .tl-head-back { grid-column: 1; }
+        .tl-head-title { grid-column: 2; }
+        .tl-head-count { grid-column: 3; }
+        @media (max-width: 639px) {
+          .tl-head { grid-template-columns: auto minmax(0, 1fr); gap: 12px 16px; margin-bottom: 24px; }
+          .tl-head-back { grid-column: 1; grid-row: 1; }
+          .tl-head-count { grid-column: 2; grid-row: 1; }
+          .tl-head-title { grid-column: 1 / -1; grid-row: 2; }
+        }
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '16px', marginBottom: '36px' }}>
-        <div>
+      <div className="tl-head">
+        <div className="tl-head-back">
           <button
             type="button"
             onClick={() => router.push('/training')}
@@ -363,22 +385,22 @@ export default function TrainingLogPage() {
           </button>
         </div>
 
-        <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', textAlign: 'center', whiteSpace: 'nowrap', margin: 0 }}>
+        <h1 className="tl-head-title" style={{ color: '#fff', fontSize: 'clamp(22px, 6vw, 28px)', fontWeight: 700, letterSpacing: '-0.02em', textAlign: 'center', margin: 0 }}>
           {isToday ? "Today's Log" : formatDate(targetDate)}
         </h1>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+        <div className="tl-head-count" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', minWidth: 0 }}>
           <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontWeight: 600 }}>
             {doneCount} of {items.length} items done
           </span>
-          <div style={{ width: '160px', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ width: 'clamp(96px, 30vw, 160px)', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${progressPct}%`, background: `linear-gradient(90deg, ${BLUE}, ${MINT})`, borderRadius: '2px', transition: 'width 0.4s ease' }} />
           </div>
         </div>
       </div>
 
       {/* ── Category Tabs ── */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', justifyContent: 'center', marginBottom: '32px', paddingBottom: '2px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '32px', paddingBottom: '2px' }}>
         {CATEGORY_ORDER.map(cat => {
           const active = activeCategory === cat;
           const done = isCatDone(cat);
@@ -466,13 +488,15 @@ export default function TrainingLogPage() {
               type="button"
               className="tl-cat-btn"
               onClick={handleSaveCategory}
+              disabled={saving}
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px', marginTop: '8px',
                 background: `${CATEGORY_META[activeCategory].color}18`,
                 border: `1.5px solid ${CATEGORY_META[activeCategory].color}50`,
                 color: CATEGORY_META[activeCategory].color,
                 fontSize: '15px', fontWeight: 700,
-                cursor: 'pointer',
+                cursor: saving ? 'wait' : 'pointer',
+                opacity: saving ? 0.7 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 boxShadow: `0 4px 18px ${CATEGORY_META[activeCategory].color}20`,
               }}

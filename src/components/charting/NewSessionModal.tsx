@@ -9,6 +9,9 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { X, Save, Trophy, Dumbbell, MapPin, CalendarDays, Users, Tag } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
+import { Session } from '@/types';
+import { toDateSafe } from '@/lib/utils/timestamp';
+import { toLocalDateTimeInputValue } from '@/lib/utils/local-date';
 
 const BLUE  = '#37b5ff';
 const MUTED = 'rgba(255,255,255,0.38)';
@@ -17,19 +20,37 @@ const LABEL = 'rgba(255,255,255,0.55)';
 interface NewSessionModalProps {
   open: boolean;
   onClose: () => void;
+  /** When set, the modal edits this session instead of creating a new one. */
+  session?: Session;
+  /** Called after an edit has been saved, so the page can reload the session. */
+  onSaved?: () => void;
 }
 
-export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
+function formFor(session?: Session) {
+  if (!session) {
+    return {
+      type: 'game' as 'game' | 'practice',
+      date: toLocalDateTimeInputValue(),
+      opponent: '',
+      location: '',
+      tags: [] as string[],
+    };
+  }
+  return {
+    type: session.type as 'game' | 'practice',
+    date: toLocalDateTimeInputValue(toDateSafe(session.date) ?? new Date()),
+    opponent: session.opponent ?? '',
+    location: session.location ?? '',
+    tags: session.tags ?? [],
+  };
+}
+
+export function NewSessionModal({ open, onClose, session, onSaved }: NewSessionModalProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const isEdit = !!session;
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    type: 'game' as 'game' | 'practice',
-    date: new Date().toISOString().slice(0, 16),
-    opponent: '',
-    location: '',
-    tags: [] as string[],
-  });
+  const [formData, setFormData] = useState(() => formFor(session));
 
   // Close on Escape
   useEffect(() => {
@@ -38,17 +59,13 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // Reset form when opening
+  // Reset form when opening, so the date is the time it is now (not when the
+  // page loaded) and an edit starts from the saved values. Keyed on `open` only:
+  // the session page reloads its session when the window regains focus, and that
+  // must not wipe what is being typed.
   useEffect(() => {
-    if (open) {
-      setFormData({
-        type: 'game',
-        date: new Date().toISOString().slice(0, 16),
-        opponent: '',
-        location: '',
-        tags: [],
-      });
-    }
+    if (open) setFormData(formFor(session));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!open) return null;
@@ -58,6 +75,25 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
     if (!user) return;
     try {
       setLoading(true);
+
+      if (session) {
+        // Cleared fields are saved as empty strings: an undefined value is
+        // stripped before the write, so the old text would otherwise stay.
+        const saved = await chartingService.updateSession(session.id, {
+          date: Timestamp.fromDate(new Date(formData.date)),
+          opponent: formData.opponent.trim(),
+          location: formData.location.trim(),
+          tags: formData.tags,
+        });
+        if (saved.success) {
+          onSaved?.();
+          onClose();
+        } else {
+          alert('Failed to save changes');
+        }
+        return;
+      }
+
       const result = await chartingService.createSession({
         studentId: user.id,
         type: formData.type,
@@ -122,7 +158,7 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
             <div>
               <p style={{ fontSize: '10px', color: LABEL, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: '2px' }}>Charting</p>
               <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-.02em', lineHeight: 1 }}>
-                New <span style={{ color: BLUE }}>Session</span>
+                {isEdit ? 'Edit' : 'New'} <span style={{ color: BLUE }}>Session</span>
               </h2>
             </div>
           </div>
@@ -140,7 +176,8 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit}>
 
-          {/* Session Type */}
+          {/* Session Type — fixed once a session exists, since its chart is tied to the type */}
+          {!isEdit && (
           <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, color: LABEL, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Session Type</p>
             <RadioGroup
@@ -172,11 +209,12 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
               })}
             </RadioGroup>
           </div>
+          )}
 
           {/* Details grid */}
           <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, color: LABEL, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Details</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '10px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <Label htmlFor="modal-date" style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <CalendarDays size={11} color={BLUE} /> Date & Time <span style={{ color: BLUE }}>*</span>
@@ -247,10 +285,10 @@ export function NewSessionModal({ open, onClose }: NewSessionModalProps) {
               {loading ? (
                 <>
                   <div style={{ width: '13px', height: '13px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.7s linear infinite' }} />
-                  Creating…
+                  {isEdit ? 'Saving…' : 'Creating…'}
                 </>
               ) : (
-                <><Save size={13} /> Create Session</>
+                <><Save size={13} /> {isEdit ? 'Save Changes' : 'Create Session'}</>
               )}
             </button>
           </div>

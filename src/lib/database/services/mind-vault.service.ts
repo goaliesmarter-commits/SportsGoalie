@@ -146,6 +146,46 @@ export class MindVaultService extends BaseDatabaseService {
   }
 
   /**
+   * Put the one thing a goalie wants to keep from a game into the vault.
+   *
+   * The post-game page can be saved more than once, so the entry gets one fixed
+   * id per game: saving again rewrites the same entry instead of adding a
+   * second copy, and the entry keeps the date it was first made.
+   */
+  async saveGameEntry(data: {
+    studentId: string;
+    sessionId: string;
+    content: string;
+    isVoiceEntry: boolean;
+  }): Promise<ApiResponse<{ id: string }>> {
+    const id = `post_game_${data.sessionId}`;
+    try {
+      const existing = await this.getById<MindVaultEntry>(this.COLLECTION, id, { useCache: false });
+      if (existing.success && existing.data) {
+        const updated = await this.updateEntry(id, { content: data.content });
+        if (!updated.success) {
+          return { success: false, error: updated.error, timestamp: new Date() };
+        }
+        return { success: true, data: { id }, timestamp: new Date() };
+      }
+
+      const created: CreateMindVaultEntryData = {
+        studentId: data.studentId,
+        category: 'hockey_challenges',
+        content: data.content,
+        isVoiceEntry: data.isVoiceEntry,
+        sessionId: data.sessionId,
+        source: 'post_game',
+      };
+      return await this.createWithId<MindVaultEntry>(this.COLLECTION, id, created);
+    } catch (error) {
+      const normalizedError = this.normalizeError(error, 'CREATE_ERROR');
+      console.warn(`[MindVaultService] saveGameEntry failed (code=${normalizedError.code}): ${normalizedError.message}`);
+      return { success: false, error: normalizedError, message: normalizedError.message, timestamp: new Date() };
+    }
+  }
+
+  /**
    * Update an existing entry
    */
   async updateEntry(

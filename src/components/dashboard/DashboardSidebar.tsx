@@ -93,7 +93,7 @@ export function DashboardSidebar({ isOpen, onToggle }: DashboardSidebarProps) {
                 <img src="/logo.png" alt="Smarter Goalie" style={{ height: '32px', width: 'auto' }} />
                 <span style={{ color: '#fff', fontWeight: 800, fontSize: '13px', letterSpacing: '-0.02em' }}>SmarterGoalie</span>
               </Link>
-              <button onClick={onToggle} className="sidebar-toggle" style={{ padding: '6px', borderRadius: '8px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s' }}>
+              <button onClick={onToggle} className="sidebar-toggle" aria-label="Close sidebar" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s' }}>
                 <X size={18} className="lg:hidden" />
                 <ChevronLeft size={18} className="hidden lg:block" />
               </button>

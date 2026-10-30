@@ -602,7 +602,7 @@ export default function PillarHistoryPage() {
             Not set up yet
           </h3>
           <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.42)', maxWidth: '380px', margin: '0 auto', lineHeight: 1.6 }}>
-            {pillarInfo.name} check-ins haven&apos;t been activated for you yet.
+            {pillarInfo.name}{' '}check-ins haven&apos;t been activated for you yet.
           </p>
         </div>
       ) : entries.length === 0 ? (

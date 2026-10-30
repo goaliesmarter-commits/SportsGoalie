@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Session, DynamicChartingEntry } from '@/types';
-import { format, startOfDay, addDays, getDay } from 'date-fns';
+import { format, startOfDay, addDays, getDay, differenceInCalendarDays } from 'date-fns';
+import { isV2GameEntry, v2GameProgress } from '@/lib/charting/v2-sections';
 
 interface CalendarHeatmapProps {
   sessions: Session[];
@@ -21,6 +23,20 @@ export const CalendarHeatmap = ({
   const yearStart = addDays(today, -365);
   const yearEnd = addDays(today, 90);
   const totalDays = 455;
+
+  // The grid runs a year back and 90 days ahead, so it is wider than most screens
+  // and used to open on the oldest (empty) months. Open it centred on today.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const weekPitch = 20; // 14px cell + 6px gap
+    const labelGutter = 40;
+    const firstColumnDate = addDays(yearStart, -getDay(yearStart));
+    const todayColumn = Math.floor(differenceInCalendarDays(today, firstColumnDate) / 7);
+    el.scrollLeft = Math.max(0, labelGutter + todayColumn * weekPitch - el.clientWidth / 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toJsDate = (rawDate: unknown): Date | null => {
     if (
@@ -50,6 +66,9 @@ export const CalendarHeatmap = ({
 
   const isLegacyEntryComplete = (entry: any): boolean => {
     if (!entry) return false;
+    // V2 game charts keep their sections under different fields and are judged on
+    // whether each one holds an answer.
+    if (isV2GameEntry(entry)) return v2GameProgress(entry) === 'complete';
     return !!entry.preGame && !!entry.gameOverview && !!entry.period1 && !!entry.period2 && !!entry.period3 && !!entry.postGame;
   };
 
@@ -77,7 +96,8 @@ export const CalendarHeatmap = ({
       const legacyEntry = legacyEntriesBySession[session.id];
       if (legacyEntry) {
         if (isLegacyEntryComplete(legacyEntry)) fullyCompleteCount++;
-        else partiallyCompleteCount++;
+        // A V2 chart with every section blank has nothing charted yet.
+        else if (!isV2GameEntry(legacyEntry) || v2GameProgress(legacyEntry) === 'partial') partiallyCompleteCount++;
       }
     });
 
@@ -139,7 +159,11 @@ export const CalendarHeatmap = ({
 
   return (
     <div className="space-y-4">
-      <style>{`.cal-heatmap-scroll::-webkit-scrollbar{display:none}`}</style>
+      <style>{`
+        .cal-heatmap-scroll::-webkit-scrollbar{height:6px}
+        .cal-heatmap-scroll::-webkit-scrollbar-thumb{background:rgba(55,181,255,0.35);border-radius:99px}
+        .cal-heatmap-scroll::-webkit-scrollbar-track{background:transparent}
+      `}</style>
 
       {/* Legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px' }}>
@@ -153,7 +177,7 @@ export const CalendarHeatmap = ({
       </div>
 
       {/* Heatmap Grid */}
-      <div className="overflow-x-auto pb-2 cal-heatmap-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div ref={scrollRef} className="overflow-x-auto pb-2 cal-heatmap-scroll" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(55,181,255,0.35) transparent' }}>
         <div className="inline-flex flex-col gap-1 min-w-max">
           {/* Month labels */}
           <div className="relative h-5 ml-10 mb-1">

@@ -545,7 +545,7 @@ export default function V2PracticeChartPage() {
             <div className="flex items-center justify-between text-xs rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <span className="text-white/50">
                 <span className="font-bold text-white">{totalWorkedOn}</span> of{' '}
-                <span className="font-bold text-white">{totalIndexItems}</span> items
+                <span className="font-bold text-white">{totalIndexItems}</span>{' '}items
                 selected for today&apos;s session
               </span>
               <span className="text-white/25">#3 · Index items worked on</span>

@@ -542,7 +542,7 @@ function AdminChartingContent() {
               {challengeStats && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Challenge Level & Consistency</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '12px', padding: '16px' }}>
                       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', margin: '0 0 6px' }}>Average Challenge Rating</p>
                       <p style={{ fontSize: '32px', fontWeight: 700, color: '#818cf8', margin: '0 0 4px' }}>{challengeStats.avgChallenge}<span style={{ fontSize: '15px' }}>/10</span></p>
@@ -563,7 +563,7 @@ function AdminChartingContent() {
               {focusStats && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>MindSet Performance</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     <MetricPanel title="Focus Consistency" value={focusStats.percentage} label="consistent" color="#14b8a6" detail={`${focusStats.consistentCount} consistent / ${focusStats.inconsistentCount} inconsistent periods`} trend={focusStats.trend} />
                     {skatingStats && (
                       <MetricPanel title="Skating In Sync" value={skatingStats.percentage} label="in sync" color="#06b6d4" detail={`${skatingStats.inSyncCount} in sync / ${skatingStats.notInSyncCount} not in sync periods`} trend={skatingStats.trend} />
@@ -633,7 +633,7 @@ function AdminChartingContent() {
               {(decisionMaking || bodyLanguage) && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Decision Making & Body Language</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     {decisionMaking && <MetricPanel title="Decision Making — Strong" value={decisionMaking.strongPercentage} label="strong" color="#10b981" detail={`${decisionMaking.strongCount} strong / ${decisionMaking.improvingCount} improving / ${decisionMaking.needsWorkCount} needs work`} />}
                     {bodyLanguage && <MetricPanel title="Body Language" value={bodyLanguage.consistentPercentage} label="consistent" color="#84cc16" detail={`${bodyLanguage.consistentCount} consistent / ${bodyLanguage.inconsistentCount} inconsistent`} />}
                   </div>
@@ -643,7 +643,7 @@ function AdminChartingContent() {
               {reboundControl && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Rebound Control</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     <MetricPanel title="Quality" value={reboundControl.qualityGood} label="good" color="#8b5cf6" detail={`${reboundControl.goodCount} good / ${reboundControl.totalQuality} total`} />
                     <MetricPanel title="Consistency" value={reboundControl.consistencyPercentage} label="consistent" color="#d946ef" detail={`${reboundControl.consistentCount} consistent / ${reboundControl.totalConsistency} total`} />
                   </div>
@@ -653,7 +653,7 @@ function AdminChartingContent() {
               {freezingPuck && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Freezing Puck</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     <MetricPanel title="Quality" value={freezingPuck.qualityGood} label="good" color="#ec4899" detail={`${freezingPuck.goodCount} good / ${freezingPuck.totalQuality} total`} />
                     <MetricPanel title="Consistency" value={freezingPuck.consistencyPercentage} label="consistent" color="#f43f5e" detail={`${freezingPuck.consistentCount} consistent / ${freezingPuck.totalConsistency} total`} />
                   </div>
@@ -663,7 +663,7 @@ function AdminChartingContent() {
               {teamPlayStats && (
                 <div style={{ ...card, padding: '24px' }}>
                   <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Team Play (Period 3)</h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '14px' }}>
                     <MetricPanel title="Setting Up Defense" value={teamPlayStats.defensePercentage} label="good" color="#0ea5e9" detail={`${teamPlayStats.defenseGoodCount} good / ${teamPlayStats.defenseImprovingCount} improving / ${teamPlayStats.defensePoorCount} poor`} />
                     <MetricPanel title="Setting Up Forwards" value={teamPlayStats.forwardsPercentage} label="good" color="#64748b" detail={`${teamPlayStats.forwardsGoodCount} good / ${teamPlayStats.forwardsImprovingCount} improving / ${teamPlayStats.forwardsPoorCount} poor`} />
                   </div>

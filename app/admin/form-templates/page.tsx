@@ -250,7 +250,7 @@ export default function FormTemplatesPage() {
                     {group.items.length}
                   </span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
             {group.items.map((template) => {
               const entries = template.usageCount || 0;
               // The service refuses to delete a template that holds entries, since

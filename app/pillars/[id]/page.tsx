@@ -155,7 +155,7 @@ function SkillsGroup({ difficulty, skills, pillarId, userLevel, skillProgress }:
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '14px' }}>
         {skills.map(skill => (
           <SkillCard key={skill.id} skill={skill} pillarId={pillarId} progress={skillProgress[skill.id]} />
         ))}
@@ -287,7 +287,7 @@ export default function PillarDetailPage() {
     <div style={{ minHeight: '100vh' }}>
 
       {/* ── Hero ── */}
-      <section style={{ padding: '20px 24px 0' }}>
+      <section style={{ padding: '20px clamp(14px,4vw,24px) 0' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', borderRadius: '20px', background: 'rgba(2,18,44,0.9)', border: '1.5px solid rgba(55,181,255,0.25)', padding: 'clamp(16px,3vw,28px) clamp(16px,4vw,32px)', overflow: 'hidden', boxShadow: '0 0 60px rgba(55,181,255,0.08)' }}>
           <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '50%', height: '1px', background: `linear-gradient(90deg, transparent, ${BLUE}, transparent)` }} />
 
@@ -297,7 +297,7 @@ export default function PillarDetailPage() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: '1 1 260px', minWidth: 0 }}>
               <h1 style={{ fontSize: 'clamp(24px,4vw,44px)', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: '12px' }}>
                 {pillarDisplayName(pillar.id, pillar.name)}
               </h1>
@@ -332,7 +332,7 @@ export default function PillarDetailPage() {
 
             {/* Level Panel */}
             {isLearner && (
-              <div style={{ width: '240px', flexShrink: 0 }}>
+              <div style={{ width: '240px', maxWidth: '100%', flexShrink: 0 }}>
                 {levelLoading ? (
                   <div style={{ background: 'rgba(55,181,255,0.07)', border: '1px solid rgba(55,181,255,0.2)', borderRadius: '14px', padding: '18px', display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
                     <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Loading your level…

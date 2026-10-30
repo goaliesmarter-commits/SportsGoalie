@@ -129,8 +129,10 @@ function GoalsAndAchievementsContent() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <style>{`
-        .goals-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (min-width: 640px) { .goals-stats { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+        .goals-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        @media (min-width: 860px) { .goals-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; } }
+        .goals-tile-icon { display: none !important; }
+        @media (min-width: 360px) { .goals-tile-icon { display: flex !important; } }
         .goals-tab-content { padding: 16px; }
         @media (min-width: 640px) { .goals-tab-content { padding: 24px 28px; } }
       `}</style>
@@ -157,12 +159,12 @@ function GoalsAndAchievementsContent() {
             { label: 'Completion Rate', value: `${goalCompletionRate}%`, icon: <CheckCircle2 size={17} color={BLUE} /> },
             { label: 'Achievements', value: unlockedAchievements, icon: <Trophy size={17} color={BLUE} /> },
           ].map(s => (
-            <div key={s.label} style={{ background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.18)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '130px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
-                <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(55,181,255,0.12)', border: '1px solid rgba(55,181,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{s.icon}</div>
+            <div key={s.label} style={{ background: 'rgba(2,18,44,0.82)', border: '1px solid rgba(55,181,255,0.18)', borderRadius: '16px', padding: 'clamp(12px, 3.5vw, 20px)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px', minHeight: '130px', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                <p style={{ fontSize: 'clamp(9px, 2.4vw, 10px)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 'clamp(0.3px, 0.2vw, 2px)', color: 'rgba(255,255,255,0.4)', minWidth: 0, overflowWrap: 'anywhere' }}>{s.label}</p>
+                <div className="goals-tile-icon" style={{ width: 'clamp(28px, 8vw, 34px)', height: 'clamp(28px, 8vw, 34px)', borderRadius: '9px', background: 'rgba(55,181,255,0.12)', border: '1px solid rgba(55,181,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
               </div>
-              <p style={{ fontSize: '42px', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-1px' }}>{s.value}</p>
+              <p style={{ fontSize: 'clamp(32px, 9vw, 42px)', fontWeight: 900, color: '#fff', lineHeight: 1, letterSpacing: '-1px' }}>{s.value}</p>
             </div>
           ))}
         </div>

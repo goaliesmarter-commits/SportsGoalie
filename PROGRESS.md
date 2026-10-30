@@ -8,7 +8,7 @@
 
 **Current Phase:** Block 4 - Pillar Charting Engine (Blocks 1-3 largely delivered)
 **Phase Start Date:** 2026-02-22
-**Last Updated:** 2026-09-22
+**Last Updated:** 2026-10-28
 **Overall Progress:** Phase 2.0-2.2 Complete. Block 1 complete (7/7). Block 2 substantially complete (4/5). Block 3 partially delivered — parent/coach charting, video review, and Growth Points built; contextual support and learning portfolio not started.
 
 > ⚠️ **Second logging lapse: 2026-08-29 to 2026-09-10.** Twenty-five commits across four
@@ -17,6 +17,14 @@
 > sign-up, the applicant holding screen, the 6Z-7PS rename. This file and PROJECT_TRACKER.md
 > both stopped at 2026-08-23. The 2026-09-22 entry below is logged first-hand; the gap is
 > **not** back-filled and is listed as an open task rather than reconstructed silently.
+
+> ⚠️ **Third logging lapse: 2026-09-23 to 2026-10-27.** Commits landed on thirteen working days
+> in that stretch (09-26, 09-28, 09-29, 10-02, 10-03, 10-04, 10-06, 10-11, 10-17, 10-18, 10-19,
+> 10-20, 10-25) and this file was not touched. One session file exists for it,
+> `docs/sessions/2026-10/2026-10-12-promised-fixes-owned-rule.md`, and it is **not yet entered
+> under Recent Sessions below**. The rest has no session file. Not back-filled here, no hours
+> estimated; the work is recorded in `docs/BILLING-LEDGER.md` (sections 2026-09-24 through
+> 2026-10-19) and `PROJECT_TRACKER.md`. The 2026-10-28 entry below is logged first-hand.
 
 > ⚠️ **This file was not updated between 2026-03-12 and 2026-08-03.** Five months of work happened without session logging. Sessions for that period were reconstructed from git history on 2026-08-03; see the note under Recent Sessions. The original targets above ("End of March 2026") were superseded without being rewritten — scope grew considerably beyond the March directive.
 
@@ -125,6 +133,10 @@
 > ⚠️ **Sessions dated 2026-03-16 through 2026-07-27 were reconstructed on 2026-08-03 from git history.** Session logging lapsed for five months while development continued. Times in those entries are **estimates from commit scope, not measurements**. Where a contemporaneous work-log document existed (`docs/work-log-apr17-may15-2026.md`, `docs/development-log-may31-jun24.md`), its figures were used and the source is named in the session file. The 2026-08-02 entry is logged first-hand.
 
 > ⚠️ **Sessions dated 2026-08-20, 2026-08-21 and 2026-08-22 were reconstructed on 2026-08-23 from git history.** Logging lapsed for four sessions. **No hours are claimed for those three** — the elapsed time was not measured at the time, and it is not estimated after the fact. What each entry states is what the commit demonstrably changed; reasoning that was not written down then has not been invented now.
+
+### 2026-10-28 - [Coach Mike's Fix List: Charting, Dates, Check-In Count, Training Log](docs/sessions/2026-10/2026-10-28-coach-mike-fix-list-charting-dates-training-log.md)
+**Time:** not tracked — figure to be supplied | **Focus:** Bug Fix - Charting / Bug Fix - Dates / Bug Fix - Training Log | **Block:** 2
+Michael's 19-finding "Fix List for Basim" (tested 26–27 Oct) was sorted into ours and not ours; **twelve are ours, eleven are coded and one is diagnosed**, all at no charge (classification in `docs/BILLING-LEDGER.md`). The not-ours seven (#5, #8, #10, #11, #12, #14, #18) and the MindSet voice button were left alone. **The V2 game chart opened with defaults filled in** (a 3/5 on every rating, preset options) and saved them, so an untouched period looked played, a new game looked answered and every average drifted toward 3 (#3, #17, #6, #9, #16). The answer fields are now optional and a blank answer is stored as absent; "has this period been touched" is decided once in `src/lib/charting/v2-periods.ts` and "has this section got an answer" once in `v2-sections.ts`, and the practice index, goals analytics, V2 game analytics, heatmap, sessions list and session page all read those two. Pre-Game and Periods now refuse to save empty; Post-Game marks the chart complete only when all three sections have answers, and a half-filled game reads "partial". The Mind Vault now receives the post-game reflection (#4) under the deterministic id `post_game_${sessionId}`, so saving twice replaces rather than duplicates. **Dates (#2, #13)** were one bug in two places: `toISOString().split('T')[0]` yields the UTC day, and `new Date('YYYY-MM-DD')` parses as UTC midnight, which prints as the day before anywhere west of UTC. `src/lib/utils/local-date.ts` adds local-day keys and labels and every day-key and chart label in the analytics hook, both analytics services, the admin engagement chart and the progress chart now goes through it. **Check-in count (#15)** — Progress counted every dynamic entry while the boards show only pillar-board templates; one definition in `pillar-boards.ts` now feeds both. **Training log Save (#19)** flipped local state and wrote nothing; it persists now, and the list query dropped its `orderBy` (it needed a composite index that `firestore.indexes.json` does not declare) and sorts in JS. Edit Session (#1) is the existing New Session modal in an edit mode. **Not changed on purpose:** `savePct` (#18). **#7 (Goals page permission error) is a rules deploy, not code, and is not done** — `firebase deploy --only firestore:rules`, Hafsa's step. **Existing games keep their old numbers:** a period saved under the old defaults cannot be told apart from a deliberate 3, so only new saves are correct. Verified: `tsc` clean; 61 related tests pass in Karachi, Toronto and Los Angeles clocks (Windows Node ignores `TZ` at launch, so the first runs were all Karachi — rerun with an in-process preload and the offset checked); the same 13 unrelated test files fail as before; lint is unchanged against `HEAD` except one `no-console` warning. **No build and no browser pass this session; live rules and data not checked. Nothing committed.**
 
 ### 2026-09-22 - [Freeze Point, Coach Audio Foundation, QA Import + the No-Charge Fault List](docs/sessions/2026-09/2026-09-22-freeze-point-coach-audio-qa-import.md)
 **Time:** not tracked — figure to be supplied | **Focus:** Feature - Freeze Point / Feature - Coach Audio / Feature - QA Library / Bug Fix - Dashboard & Auth | **Block:** 2
@@ -521,13 +533,14 @@ Initial project analysis and progress tracking system implementation.
 | 2026-08 (to 23rd) | 18.65h measured, 5 sessions unmeasured | Concurrent pillar charting engine, baseline analytics, timestamp fix, Growth Points rules, video quiz builder viewport fit, content library grid overflow fix, reflective questions + coach answers view, onboarding back-navigation, eighth pillar, pillar identity resolution, Mind Vault per-category forms, ESLint repair | 8 |
 | 2026-08 (from 29th) | not measured, 2 sessions unlogged | Sport display names, archived chatbot route, ESLint flat configs, public question box, account pause/resume, legal acceptance, Mind Vault category labels, contact email | 2 |
 | 2026-09 | not measured, 3 sessions | Goalie login handles + signup policy, Driver-or-Passenger assessment, founding-member sign-up, pricing/navigation, invitation atomicity, applicant holding screen, 6Z-7PS rename · then 09-22: freeze point, coach audio foundation, QA import, no-charge fault list | 3 |
-| **Total** | **363.65h measured** | - | **51** |
+| 2026-10 | not measured, 1 session entered | 10-28: Coach Mike's fix list — V2 chart blanks and analytics, Mind Vault post-game entry, local-day dates, pillar check-in count, training log Save, Edit Session. (10-12 has a session file but is not entered here yet; 10-05, 10-06 and 10-19 have ledger sections only) | 1 |
+| **Total** | **363.65h measured** | - | **52** |
 
-> ⚠️ **The 2026-08-29 to 2026-09-22 rows carry no hours at all.** Four of those five working
-> days have no session file either. Nothing is estimated from commit scope — the standing rule
-> holds. **Billable vs no-charge for 2026-09-22 is recorded in `docs/BILLING-LEDGER.md`**; the
-> hours column there reads "not tracked" for the same reason, which means no invoice can be
-> built from it until a measured figure exists.
+> ⚠️ **The 2026-08-29 to 2026-10-28 rows carry no hours at all.** Most of those working days
+> have no session file either. Nothing is estimated from commit scope — the standing rule
+> holds. **Billable vs no-charge from 2026-09-22 on is recorded in `docs/BILLING-LEDGER.md`**
+> (the 2026-10-28 section is new); the hours column there reads "not tracked" for the same
+> reason, which means no invoice can be built from it until a measured figure exists.
 
 > ⚠️ **Five August sessions carry no hours: 2026-08-19, 20, 21, 22 and 23.** The 19th was not
 > measured at the time; the 20th–22nd were reconstructed from git on 2026-08-23; the 23rd needs its

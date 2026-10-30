@@ -423,7 +423,7 @@ function EditVideoQuizContent() {
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${BLUE}66, transparent)` }} />
             <p style={{ color: '#fff', fontWeight: 700, fontSize: '17px', marginBottom: '20px' }}>Quiz Settings</p>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>Player Controls</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '12px' }}>
               {[
                 { key: 'showExplanations', label: 'Show Explanations' },
                 { key: 'showCorrectAnswers', label: 'Show Correct Answers' },

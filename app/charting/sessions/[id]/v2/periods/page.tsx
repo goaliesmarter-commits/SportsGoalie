@@ -18,6 +18,7 @@ import {
 import type { StarDefinition } from '@/components/charting/inputs';
 import { toast } from 'sonner';
 import { useEventVoice } from '@/hooks/useEventVoice';
+import { filledPeriods, isPeriodFilled } from '@/lib/charting/v2-periods';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -88,7 +89,9 @@ function createEmptyPeriod(): V2PeriodData {
     midChallengeCount: 0,
     highChallengeCount: 0,
     goals: [],
-    mindControlRating: 3,
+    // Emotional Balance starts unanswered. It used to start at 3, so every
+    // period the goalie never opened was saved as a 3 and pulled the average.
+    mindControlRating: undefined,
     mindControlVoiceNote: undefined,
     // Factor Ratio starts unanswered, like the four technical Pillars. Seeding
     // it with 1 meant an untouched period saved as "low challenge" and counted
@@ -197,7 +200,7 @@ export default function V2PeriodsPage() {
                 period3: v2Periods.period3 || prev.period3,
                 overtime: v2Periods.overtime || prev.overtime,
               }));
-              if (v2Periods.overtime?.mindControlRating) setShowOvertime(true);
+              if (isPeriodFilled(v2Periods.overtime)) setShowOvertime(true);
             }
           }
         }
@@ -220,12 +223,18 @@ export default function V2PeriodsPage() {
       const existingEntries = entriesResult.success ? entriesResult.data || [] : [];
       const myEntry = existingEntries.find(e => e.submittedBy === user.id);
 
-      const periodsToSave: Record<string, V2PeriodData> = {
-        period1: periods.period1,
-        period2: periods.period2,
-        period3: periods.period3,
-      };
-      if (showOvertime) periodsToSave.overtime = periods.overtime;
+      // Only periods the goalie actually charted are saved. A period left at
+      // its blank starting point is not data, and storing it made a one-period
+      // game report three.
+      const periodsToSave: Record<string, V2PeriodData> = {};
+      for (const [key, period] of filledPeriods(periods)) {
+        if (key === 'overtime' && !showOvertime) continue;
+        periodsToSave[key] = period;
+      }
+      if (Object.keys(periodsToSave).length === 0) {
+        toast.error('Enter at least one stat or rating for a period before saving.');
+        return;
+      }
 
       const entryData: Record<string, unknown> = {
         sessionId: session.id,
@@ -278,6 +287,8 @@ export default function V2PeriodsPage() {
   const activePeriod = periods[activeTab];
   const allTabs = showOvertime ? [...PERIOD_TABS, { key: 'overtime' as PeriodKey, label: 'Overtime', short: 'OT' }] : PERIOD_TABS;
   const isBasic = user?.chartLevel === 'basic';
+  // An unanswered rating is not a low one, so it must not open the breakdown flow.
+  const lowMindControl = activePeriod.mindControlRating !== undefined && activePeriod.mindControlRating <= 2;
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -456,7 +467,7 @@ export default function V2PeriodsPage() {
 
             {/* ── MindSet (Mind Control) ──────────────────────────────────── */}
             <div className="rounded-xl p-4 space-y-3 transition-colors duration-300" style={
-              activePeriod.mindControlRating <= 2
+              lowMindControl
                 ? { background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.28)' }
                 : { background: 'linear-gradient(160deg, #0c2e56 0%, #04213f 30%, #0a2d52 100%)', border: '1px solid rgba(55,181,255,0.26)', boxShadow: '0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07)' }
             }>
@@ -465,7 +476,7 @@ export default function V2PeriodsPage() {
                 helpText="Rate your mental command during this period. 1 = Not in the Now, 5 = Command Center Operating. Tap any star to see its full definition."
               >
                 <StarRating
-                  value={activePeriod.mindControlRating}
+                  value={activePeriod.mindControlRating ?? null}
                   onChange={(val) => {
                     if (val > 2) {
                       setPeriods(prev => ({
@@ -486,7 +497,7 @@ export default function V2PeriodsPage() {
               </ContextualHelp>
 
               {/* ── Low-Star Specificity Flow ────────────────────────────── */}
-              {activePeriod.mindControlRating <= 2 && (
+              {lowMindControl && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4 pt-3 border-t" style={{ borderColor: 'rgba(239,68,68,0.3)' }}>
 
                   {/* Header */}

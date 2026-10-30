@@ -5,6 +5,7 @@ import { ApiResponse } from '@/types';
 import { VideoQuizProgress } from '@/types/video-quiz';
 import { sportDisplayName } from '@/lib/utils/pillars';
 import { logger } from '../../utils/logger';
+import { toLocalDateKey } from '@/lib/utils/local-date';
 import { finishedTakeDate, takeStreak } from '@/lib/training/attempt-streak';
 import { ownedSkillIds, quizIsOwned, skillOwnedDates } from '@/lib/training/owned';
 
@@ -173,7 +174,7 @@ export class StudentAnalyticsService extends BaseDatabaseService {
         const dateField = quiz.completedAt || quiz.submittedAt;
         if (dateField) {
           const date = dateField.toDate ? dateField.toDate() : new Date(dateField);
-          activeDaysSet.add(date.toISOString().split('T')[0]);
+          activeDaysSet.add(toLocalDateKey(date));
         }
       });
 
@@ -391,10 +392,10 @@ export class StudentAnalyticsService extends BaseDatabaseService {
       const quizAttempts = quizAttemptsResult.data?.items || [];
 
       // The day each skill became owned: the take that got its last open question right.
-      // Same day keys as the rest of this chart (UTC), so they compare as plain strings.
+      // Same day keys as the rest of this chart (local days), so they compare as plain strings.
       const ownedOnDay = new Map<string, string>();
       for (const [skillId, date] of skillOwnedDates(quizAttempts)) {
-        ownedOnDay.set(skillId, date.toISOString().split('T')[0]);
+        ownedOnDay.set(skillId, toLocalDateKey(date));
       }
 
       // Cumulative skills owned, including any owned before the window starts
@@ -406,13 +407,13 @@ export class StudentAnalyticsService extends BaseDatabaseService {
       for (let i = days - 1; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = toLocalDateKey(date);
 
         // Quizzes taken on this day
         const dayQuizzes = quizAttempts.filter(q => {
           const dateField = q.completedAt || q.submittedAt;
           const attemptDate = dateField?.toDate ? dateField.toDate() : new Date(dateField || 0);
-          return attemptDate.toISOString().split('T')[0] === dateStr;
+          return toLocalDateKey(attemptDate) === dateStr;
         });
 
         // Add any skills owned by the end of this day

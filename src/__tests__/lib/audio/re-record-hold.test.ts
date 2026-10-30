@@ -138,10 +138,23 @@ describe('the holds the catalogue ships with — new wording of 17 October', () 
     expect(line('V-A-19')).toMatch(/^Coach Mike here\. Welcome to MindSet, where your Mind-Vault grows and lives\./);
   });
 
-  it('keeps the rest of V-A-19 as recorded', () => {
+  it('carries the closing of the final V-A-19 script', () => {
     const line = COACH_AUDIO_CATALOGUE.find(e => e.id === 'V-A-19')!.scriptLine;
-    expect(line).toContain("At Smarter Goalie, we believe that high performance isn't just a byproduct");
-    expect(line).toMatch(/Let's start building yours\.$/);
+    expect(line).toContain("At Smarter Goalie, we believe that high performance isn't just a byproduct of luck.");
+    expect(line).toMatch(/Let's start building yours today\. Think smart, play smart\.$/);
+  });
+
+  it('carries the final v3 wording of 24 October', () => {
+    const entry = (id: string) => COACH_AUDIO_CATALOGUE.find(e => e.id === id)!;
+    expect(entry('V-A-13').scriptLine).toContain('Positional play above or below the icing line.');
+    expect(entry('V-A-17').scriptLine).toContain('self-awareness, self-evaluation and eventually self-coaching');
+    expect(entry('V-B-12').scriptLine).toMatch(/Select YES and I will get back to you to schedule that chat\.$/);
+  });
+
+  it('shows the transcript of every reworded clip as soon as its new take is uploaded', () => {
+    for (const id of REWORDED) {
+      expect(COACH_AUDIO_CATALOGUE.find(e => e.id === id)!.reRecord?.wordingFinal, id).toBe(true);
+    }
   });
 });
 

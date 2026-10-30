@@ -128,7 +128,7 @@ function TopBar({ pageTitle, onToggleSidebar }: { pageTitle: string; onToggleSid
       <style>{`.tb-toggle:hover{background:rgba(0,255,255,0.08)!important;color:#00FFFF!important}`}</style>
       <header style={{ position: 'sticky', top: 0, zIndex: 30, height: '64px', background: 'rgba(6,5,15,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(0,255,255,0.1)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '16px', boxShadow: '0 1px 32px rgba(0,0,0,0.5)' }}>
         <button onClick={onToggleSidebar} className="lg:hidden tb-toggle"
-          style={{ padding: '6px', borderRadius: '8px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+          style={{ width: '44px', height: '44px', margin: '0 -8px 0 -10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
           aria-label="Toggle sidebar">
           <svg style={{ height: '20px', width: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

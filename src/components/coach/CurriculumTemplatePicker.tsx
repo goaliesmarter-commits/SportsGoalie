@@ -28,7 +28,7 @@ export function CurriculumTemplatePicker({ templates, onSelectTemplate, onStartF
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px' }}>(based on student profile)</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '12px' }}>
             {templates.map((t) => (
               <button
                 key={t.id}

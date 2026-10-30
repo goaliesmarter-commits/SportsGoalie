@@ -255,10 +255,11 @@ export function createAuthErrorResponse(error: { code: string; message: string }
   return new Response(
     JSON.stringify({
       success: false,
-      error: {
-        code: error.code,
-        message: error.message,
-      },
+      // A plain string, like every /api/admin route returns. The admin pages
+      // hand `data.error` straight to a toast, and an object there crashes the
+      // whole page instead of showing the message.
+      error: error.message,
+      code: error.code,
       timestamp: new Date().toISOString(),
     }),
     {

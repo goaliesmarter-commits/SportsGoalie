@@ -18,7 +18,7 @@ import { VideoQuizProgress } from '@/types/video-quiz';
 import { Timestamp } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
 import { takeStreak } from '@/lib/training/attempt-streak';
-import { ownedSkillIds } from '@/lib/training/owned';
+import { ownedSkillIds, pillarIsComplete } from '@/lib/training/owned';
 import { generateCoachCode, normalizeCoachCode } from '../../utils/coach-code-generator';
 
 /**
@@ -57,7 +57,6 @@ import { generateCoachCode, normalizeCoachCode } from '../../utils/coach-code-ge
 export class UserService extends BaseDatabaseService {
   private readonly USERS_COLLECTION = 'users';
   private readonly USER_PROGRESS_COLLECTION = 'user_progress';
-  private readonly SPORT_PROGRESS_COLLECTION = 'sport_progress';
   private readonly USER_ACHIEVEMENTS_COLLECTION = 'user_achievements';
   private readonly NOTIFICATIONS_COLLECTION = 'notifications';
   private readonly COACH_CODES_COLLECTION = 'coach_codes';
@@ -432,21 +431,25 @@ export class UserService extends BaseDatabaseService {
   }
 
   // User Progress Management
+  private emptyOverallStats(): OverallStats {
+    return {
+      totalTimeSpent: 0,
+      skillsCompleted: 0,
+      sportsCompleted: 0,
+      quizzesCompleted: 0,
+      averageQuizScore: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      totalPoints: 0,
+      level: 1,
+      experiencePoints: 0,
+    };
+  }
+
   async initializeUserProgress(userId: string): Promise<ApiResponse<{ id: string }>> {
     const progressData: Omit<UserProgress, 'id' | 'createdAt' | 'updatedAt'> = {
       userId,
-      overallStats: {
-        totalTimeSpent: 0,
-        skillsCompleted: 0,
-        sportsCompleted: 0,
-        quizzesCompleted: 0,
-        averageQuizScore: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        totalPoints: 0,
-        level: 1,
-        experiencePoints: 0,
-      },
+      overallStats: this.emptyOverallStats(),
       achievements: [],
       lastUpdated: Timestamp.now(),
     };
@@ -459,9 +462,20 @@ export class UserService extends BaseDatabaseService {
     // Get base progress record
     const progressResult = await this.getById<UserProgress>(this.USER_PROGRESS_COLLECTION, userId);
 
-    if (!progressResult.success || !progressResult.data) {
+    if (!progressResult.success) {
       return progressResult;
     }
+
+    // No stored record is not "no progress". Most student accounts are created without one
+    // and it is only built on their first progress write, so a goalie with finished checks
+    // and no record read as all zeros on the dashboard, Progress and the parent's view.
+    // Everything below is counted from the attempts anyway, so start from an empty record.
+    const baseProgress: UserProgress = progressResult.data ?? {
+      userId,
+      overallStats: this.emptyOverallStats(),
+      achievements: [],
+      lastUpdated: Timestamp.now(),
+    };
 
     // Calculate real stats from video quiz attempts
     try {
@@ -473,13 +487,7 @@ export class UserService extends BaseDatabaseService {
         limit: this.PROGRESS_ATTEMPTS_LIMIT,
       });
 
-      // Get enrollment records directly to avoid expensive nested per-skill aggregation.
-      const sportProgressResult = await this.query<SportProgress>(this.SPORT_PROGRESS_COLLECTION, {
-        where: [{ field: 'userId', operator: '==', value: userId }],
-      });
-
       const attempts = attemptsResult.success ? attemptsResult.data?.items || [] : [];
-      const sportProgressItems = sportProgressResult.success ? sportProgressResult.data?.items || [] : [];
 
       // Calculate real stats
       const quizzesCompleted = attempts.length; // Total number of video quiz attempts
@@ -494,9 +502,19 @@ export class UserService extends BaseDatabaseService {
       // goalie had merely taken a check for, which put "Skills Done" ahead of the rings.
       const skillsOwned = ownedSkillIds(attempts);
 
-      const completedSportsCount = sportProgressItems.filter(
-        (progress) => progress.status === 'completed'
-      ).length;
+      // Pillars finished, on the same rule as the pillar rings: every skill in the pillar is
+      // owned. This counted enrolment records marked "completed", but nothing ever marks one
+      // (the stored completion hook never fires), so a "Complete Sports" goal stayed at 0.
+      // Only pillars the goalie has taken a check in can be complete, so only those are read.
+      const { sportsService } = await import('./sports.service');
+      const startedPillarIds = [...new Set(attempts.map((a) => a.sportId).filter((id): id is string => !!id))];
+      const pillarSkills = await Promise.all(
+        startedPillarIds.map(async (sportId) => {
+          const skills = await sportsService.getSkillsBySport(sportId);
+          return skills.success ? (skills.data?.items || []).map((skill) => skill.id) : [];
+        })
+      );
+      const completedSportsCount = pillarSkills.filter((skillIds) => pillarIsComplete(skillIds, skillsOwned)).length;
 
       // Streak from the days a take was finished. Read the shared rule rather than a local
       // loop: the old one dated takes by `submittedAt` (which finishing never sets, so the
@@ -506,16 +524,16 @@ export class UserService extends BaseDatabaseService {
 
       // Update progress data with calculated values
       const updatedProgress: UserProgress = {
-        ...progressResult.data,
+        ...baseProgress,
         overallStats: {
-          ...progressResult.data.overallStats,
+          ...baseProgress.overallStats,
           totalTimeSpent,
           skillsCompleted: skillsOwned.size,
           sportsCompleted: completedSportsCount,
           quizzesCompleted, // Total video quiz attempts
           averageQuizScore,
           currentStreak,
-          longestStreak: Math.max(longestStreak, progressResult.data.overallStats.longestStreak || 0),
+          longestStreak: Math.max(longestStreak, baseProgress.overallStats.longestStreak || 0),
         },
       };
 
@@ -536,9 +554,11 @@ export class UserService extends BaseDatabaseService {
     userId: string,
     updates: Partial<Omit<UserProgress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
   ): Promise<ApiResponse<void>> {
-    const progressResult = await this.getUserProgress(userId);
-    if (!progressResult.success || !progressResult.data) {
-      // Initialize if doesn't exist
+    // Ask the stored record, not getUserProgress: that one now answers for a goalie with no
+    // record by counting their attempts. Create it only when the read worked and found
+    // nothing; creating on a failed read could overwrite a record that is really there.
+    const stored = await this.getById<UserProgress>(this.USER_PROGRESS_COLLECTION, userId);
+    if (stored.success && !stored.data) {
       await this.initializeUserProgress(userId);
     }
 
