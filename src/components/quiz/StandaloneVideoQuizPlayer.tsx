@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { secondsToAnswer } from '@/lib/training/answer-timing';
+import { learningRecordService } from '@/lib/database/services/learning-record.service';
 
 interface StandaloneVideoQuizPlayerProps {
   quiz: VideoQuiz;
@@ -409,6 +410,26 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     };
 
     progressRef.current.questionsAnswered.push(questionAnswer);
+
+    // The learning record keeps every answer for good (Knowledge Check Layers).
+    // Every answer here is on Layer 1 until the support layers arrive in Phase 2.
+    // Not awaited: a slow write must never hold the frame, and a failed one is
+    // logged by the service rather than shown to the goalie mid-question.
+    const attempt = progressRef.current;
+    void learningRecordService.addEntry({
+      userId,
+      videoQuizId: quiz.id,
+      questionId: frozenQuestion.id,
+      skillId: attempt.skillId,
+      sportId: attempt.sportId,
+      attemptId: attempt.id,
+      layer: 1,
+      outcome: isReflective ? 'reflective' : isCorrect ? 'correct' : 'incorrect',
+      answerText,
+      timeToAnswer: questionAnswer.timeToAnswer,
+      answeredAt: Date.now(),
+    });
+
     progressRef.current.questionsRemaining--;
     progressRef.current.score += pointsEarned;
     // An all-reflective quiz has nothing to score against, so guard the divide —
@@ -430,7 +451,7 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     // Default: let go of the frame and carry on, as the player always has.
     releaseFreeze();
     checkAllSettled();
-  }, [frozenQuestion, releaseFreeze, checkAllSettled]);
+  }, [frozenQuestion, releaseFreeze, checkAllSettled, userId, quiz.id]);
 
   // A hold with no question, and no choice: the goalie has looked, carry on.
   const handleAcknowledge = useCallback(() => {

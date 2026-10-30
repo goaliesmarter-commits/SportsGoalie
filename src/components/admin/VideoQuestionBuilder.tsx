@@ -16,6 +16,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
+  cleanLayerMedia,
+  QuestionLayerEditor,
+  SupportLayerFields,
+  supportLayerProblem,
+} from '@/components/admin/SupportLayerFields';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -307,6 +313,16 @@ export function VideoQuestionBuilder({
       return;
     }
 
+    // The support layers replay up to the question, so their times have to sit
+    // before it. Holds and reflective questions have no layers to check.
+    if (!isHoldOnly && newQuestion.reflective !== true) {
+      const problem = supportLayerProblem(newQuestion.timestamp!, newQuestion.segmentStart, newQuestion.layerMedia);
+      if (problem) {
+        toast.error(problem.title, { description: problem.description });
+        return;
+      }
+    }
+
     // Check if timestamp conflicts with existing question. The gap is the coach's
     // to widen; it never goes below one second, because the player skips a
     // question that shares a second with the one before it.
@@ -385,6 +401,14 @@ export function VideoQuestionBuilder({
           ? newQuestion.rewindTo
           : undefined,
       stepNumber: Number.isFinite(newQuestion.stepNumber) ? newQuestion.stepNumber : nextStepNumber,
+
+      // Support layers. A hold asks nothing and a reflective question has no
+      // right answer, so neither can be missed and neither has layers.
+      segmentStart:
+        !isHoldOnly && !isReflective && Number.isFinite(newQuestion.segmentStart)
+          ? newQuestion.segmentStart
+          : undefined,
+      layerMedia: !isHoldOnly && !isReflective ? cleanLayerMedia(newQuestion.layerMedia) : undefined,
     };
 
     // Sorting by timestamp here is the AUTHORING order - it is what Michael
@@ -414,6 +438,15 @@ export function VideoQuestionBuilder({
     setBlankAfter('');
 
     toast.success('Question added successfully');
+  };
+
+  // Adds or changes the support layers on a question already in the list.
+  const handleApplyLayers = (
+    index: number,
+    next: Pick<VideoQuizQuestion, 'segmentStart' | 'layerMedia'>
+  ) => {
+    onChange(questions.map((q, i) => (i === index ? { ...q, ...next } : q)));
+    toast.success('Support layers updated', { description: 'Save the Knowledge Check to keep them.' });
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -1010,6 +1043,24 @@ export function VideoQuestionBuilder({
                               </ul>
                             </div>
                           )}
+                          {/* Holds ask nothing and reflective questions have no
+                              right answer, so neither can be missed into a layer. */}
+                          {!question.holdOnly && !question.reflective && (
+                            <div className="pt-2">
+                              <QuestionLayerEditor
+                                timestamp={question.timestamp}
+                                segmentStart={question.segmentStart}
+                                layerMedia={question.layerMedia}
+                                onApply={(next) => handleApplyLayers(index, next)}
+                                onProblem={(problem) =>
+                                  toast.error(problem.title, { description: problem.description })
+                                }
+                                formatTimestamp={formatTimestamp}
+                                parseTimestampInput={parseTimestampInput}
+                                idPrefix={`q-${question.id}-`}
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1351,6 +1402,20 @@ export function VideoQuestionBuilder({
               className="border-slate-300 focus-visible:ring-red-200"
             />
           </div>
+
+          {!newQuestion.holdOnly && !newQuestion.reflective && (
+            <SupportLayerFields
+              // A new key per added question clears the half-typed times with the form.
+              key={questions.length}
+              segmentStart={newQuestion.segmentStart}
+              layerMedia={newQuestion.layerMedia}
+              onChange={({ segmentStart, layerMedia }) =>
+                setNewQuestion({ ...newQuestion, segmentStart, layerMedia })
+              }
+              formatTimestamp={formatTimestamp}
+              parseTimestampInput={parseTimestampInput}
+            />
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch

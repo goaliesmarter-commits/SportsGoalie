@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import { Question } from './quiz';
 import { QuestionType, DifficultyLevel } from './index';
 import { VideoStructuredTags } from './video-tags';
+import type { QuestionLayerMedia } from './knowledge-layers';
 
 /**
  * Video-based quiz question with timestamp
@@ -77,6 +78,20 @@ export interface VideoQuizQuestion extends Question {
    * teaching.
    */
   stepNumber?: number;
+
+  // ---------------------------------------------------------------------------
+  // Knowledge Check Layers (Build 1). See `./knowledge-layers`.
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Where this question's own segment of the video starts, in seconds. A missed
+   * question replays from here to its freeze point (`timestamp`). Absent starts
+   * at the previous freeze point, or 0 for the first.
+   */
+  segmentStart?: number;
+
+  /** What the slow support layers show for this question. */
+  layerMedia?: QuestionLayerMedia;
 }
 
 /**
