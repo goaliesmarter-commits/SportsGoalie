@@ -65,6 +65,24 @@ export function startLoop(questionIds: readonly string[]): LoopState {
   return begin(1, all, all);
 }
 
+/**
+ * Makes `questionId` the current question, at Layer 1, when the goalie reaches
+ * it before the one the loop expected (round 1 follows the video, and the goalie
+ * may skip ahead). The skipped question stays in the round, after this one.
+ * Does nothing if the question is not waiting in this round or a question is
+ * already part-way through its layers.
+ */
+export function moveToFront(state: LoopState, questionId: string): LoopState {
+  const current = state.current;
+  if (!current || current.questionId === questionId || current.layer !== 1) return state;
+  if (!state.queue.includes(questionId)) return state;
+  return {
+    ...state,
+    queue: [questionId, ...state.queue.filter(id => id !== questionId)],
+    current: { questionId, layer: 1, layer3Tries: 0 },
+  };
+}
+
 /** What the player should do now. */
 export function currentStep(state: LoopState): LoopStep {
   if (!state.current) return { kind: 'done', rounds: state.round };

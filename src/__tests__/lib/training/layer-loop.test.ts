@@ -3,6 +3,7 @@ import {
   acknowledgeAnswer,
   answerQuestion,
   currentStep,
+  moveToFront,
   startLoop,
   type LoopState,
 } from '@/lib/training/layer-loop';
@@ -109,6 +110,24 @@ describe('the loop', () => {
 
   it('asks each question once even if the list repeats it', () => {
     expect(startLoop(['a', 'a', 'b']).all).toEqual(['a', 'b']);
+  });
+
+  it('takes a question reached early (the goalie skipped ahead) and keeps the skipped one for later', () => {
+    let s = moveToFront(startLoop(['a', 'b', 'c']), 'c');
+    expect(currentStep(s)).toEqual({ kind: 'ask', questionId: 'c', layer: 1, round: 1 });
+    s = answerQuestion(s, true, rules);
+    expect(currentStep(s)).toEqual({ kind: 'ask', questionId: 'a', layer: 1, round: 1 });
+    expect(s.queue).toEqual(['a', 'b']);
+  });
+
+  it('does not jump away from a question part-way through its layers', () => {
+    const s = play(startLoop(['a', 'b']), [false]); // a on Layer 2
+    expect(moveToFront(s, 'b')).toBe(s);
+  });
+
+  it('ignores a question that is not waiting in this round', () => {
+    const s = startLoop(['a', 'b']);
+    expect(moveToFront(s, 'z')).toBe(s);
   });
 
   it('never changes the state it was given', () => {
