@@ -299,6 +299,16 @@ export interface QuestionPanelProps {
 
   /** Go back and watch the segment again. See `VideoQuizQuestion.rewindTo`. */
   onRewind?: () => void;
+
+  // ---------------------------------------------------------------------------
+  // Knowledge Check Layers (Phase 2).
+  // ---------------------------------------------------------------------------
+
+  /** Says which layer or round this asking is, e.g. "Support Layer 2". Absent on a first asking. */
+  layerLabel?: string;
+
+  /** Support Layer 3's photo, shown with the question in place of the held frame. */
+  layerImageUrl?: string;
 }
 
 /**

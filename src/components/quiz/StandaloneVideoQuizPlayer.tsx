@@ -12,6 +12,19 @@ import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { secondsToAnswer } from '@/lib/training/answer-timing';
 import { learningRecordService } from '@/lib/database/services/learning-record.service';
+import { layerRulesService } from '@/lib/database/services/layer-rules.service';
+import {
+  acknowledgeAnswer,
+  answerQuestion,
+  currentStep,
+  moveToFront,
+  startLoop,
+  type AskLayer,
+  type LoopState,
+} from '@/lib/training/layer-loop';
+import { layerPlayback } from '@/lib/training/layers';
+import type { LayerNumber, LayerRules } from '@/types/knowledge-layers';
+import { LayerAnswerPanel } from './LayerAnswerPanel';
 
 interface StandaloneVideoQuizPlayerProps {
   quiz: VideoQuiz;
@@ -48,6 +61,14 @@ interface StandaloneVideoQuizPlayerProps {
  * A question with none of those fields behaves exactly as before, apart from
  * where the panel sits.
  */
+/** What the panel calls an asking on the layers. Nothing on a first asking. */
+function layerLabelFor(layer: AskLayer | 4, round: number): string | undefined {
+  if (layer === 2 || layer === 3) return `Support Layer ${layer}`;
+  if (round === 2) return 'Retest';
+  if (round > 2) return `Round ${round}`;
+  return undefined;
+}
+
 export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps> = ({
   quiz,
   userId,
@@ -91,6 +112,32 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
    */
   const lastTickRef = useRef(-1);
 
+  // ---------------------------------------------------------------------------
+  // Knowledge Check Layers (Phase 2). All of this stays empty, and the player
+  // behaves exactly as before, unless admin has switched the layers on.
+  //
+  // Round 1 rides on the video: a miss replays that question's own segment at
+  // the layer's speed and asks again, and once the question is settled the
+  // video carries on from where it stopped. The retest rounds run in the panel
+  // after the video ends. See lib/training/layer-loop for the rules.
+  // ---------------------------------------------------------------------------
+  const rulesRef = useRef<LayerRules | null>(null);
+  const loopRef = useRef<LoopState | null>(null);
+  /** The segment replay under way, if any. `started` waits for the seek to land. */
+  const replayRef = useRef<{
+    question: VideoQuizQuestionWithState;
+    layer: AskLayer;
+    round: number;
+    stopAt: number;
+    imageUrl?: string;
+    started: boolean;
+  } | null>(null);
+  /** Where the video carries on from once a replayed question is settled. */
+  const pendingResumeRef = useRef<number | null>(null);
+  /** The speed the goalie chose; replays borrow the player and give it back. */
+  const userRateRef = useRef(1);
+  const completedRef = useRef(false);
+
   // UI State - minimal, only what affects rendering
   const [isReady, setIsReady] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -104,6 +151,18 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  // Which layer the question on screen is being asked on (or the answer shown).
+  // `key` changes on every asking so the panel never keeps a half-picked answer.
+  const [layerView, setLayerView] = useState<{
+    layer: AskLayer | 4;
+    round: number;
+    key: number;
+    imageUrl?: string;
+    answerText?: string;
+    answerImageUrl?: string;
+  } | null>(null);
+  // A segment is replaying at a support layer's speed.
+  const [replaying, setReplaying] = useState<{ layer: AskLayer; speed: number } | null>(null);
 
   // Initialize data ONCE on mount
   useEffect(() => {
@@ -149,12 +208,25 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     console.log('✅ Initialized with', questionsRef.current.length, 'questions');
   }, []); // Empty deps - only run once on mount
 
+  // The layer rules, including whether goalies have the layers at all. Read
+  // once; a Knowledge Check started before they arrive plays without layers.
+  useEffect(() => {
+    let cancelled = false;
+    layerRulesService.getRules().then(result => {
+      if (!cancelled && result.success && result.data) rulesRef.current = result.data;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Leaving the page mid-clip should not leave Coach Mike talking to nobody.
   useEffect(() => pauseVoice, [pauseVoice]);
 
   // Check if quiz should complete (both conditions must be met)
   const checkAndCompleteQuiz = useCallback(() => {
-    if (videoEndedRef.current && allQuestionsAnsweredRef.current) {
+    if (videoEndedRef.current && allQuestionsAnsweredRef.current && !completedRef.current) {
+      completedRef.current = true;
       console.log('🎉 Quiz complete - both video ended and all questions answered!');
       progressRef.current.isCompleted = true;
       progressRef.current.status = 'submitted';
@@ -182,12 +254,29 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
 
   // Once every freeze point has been settled, see whether the check is done.
   const checkAllSettled = useCallback(() => {
+    // With the layers on, answering every question once is not the end: the
+    // retest rounds still have to run, after the video.
+    if (loopRef.current && currentStep(loopRef.current).kind !== 'done') return;
     if (answeredQuestionsRef.current.size >= questionsRef.current.length) {
       console.log('✅ All questions answered');
       allQuestionsAnsweredRef.current = true;
       checkAndCompleteQuiz();
     }
   }, [checkAndCompleteQuiz]);
+
+  /** Holds the frame and asks `question` on `layer` of `round`. */
+  const showAsk = useCallback((
+    question: VideoQuizQuestionWithState,
+    layer: AskLayer,
+    round: number,
+    imageUrl?: string
+  ) => {
+    setPlaying(false);
+    questionShownAtRef.current = Date.now();
+    setFrozenQuestion(question);
+    setAwaitingChoice(false);
+    setLayerView({ layer, round, key: Date.now(), imageUrl });
+  }, []);
 
   // Progress handler - called by ReactPlayer
   const handleProgress = useCallback((state: OnProgressProps) => {
@@ -196,6 +285,24 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
 
     // Update display time for UI
     setDisplayTime(Math.floor(currentSeconds));
+
+    // A segment replay: watch for its end, then ask again. Freeze points are not
+    // checked while it runs - this is going back over ground already covered.
+    const replay = replayRef.current;
+    if (replay) {
+      if (!replay.started) {
+        // Until a tick lands inside the segment, the clock may still show where
+        // the seek came from, which is past the end.
+        if (currentSeconds < replay.stopAt - 0.25) replay.started = true;
+        return;
+      }
+      if (currentSeconds >= replay.stopAt - 0.05) {
+        replayRef.current = null;
+        setReplaying(null);
+        showAsk(replay.question, replay.layer, replay.round, replay.imageUrl);
+      }
+      return;
+    }
 
     // Nothing is checked while a freeze is held. The last checked tick is left
     // where the freeze set it, so playback picks up from exactly that point.
@@ -261,19 +368,26 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       }
       isProcessingRef.current = false;
     }, 0);
-  }, [frozenQuestion, voiceEnabled, playVoice]);
+  }, [frozenQuestion, voiceEnabled, playVoice, showAsk]);
 
   /**
    * Let go of the frame and carry on. With `resumeAt`, playback goes back to
    * that point first (REWIND).
    */
-  const releaseFreeze = useCallback((resumeAt?: number) => {
+  const releaseFreeze = useCallback((explicitResumeAt?: number) => {
     pauseVoice();
     // Every way out of a freeze is a tap. If the phone refused this freeze's
     // voice, that tap unlocks it for the next one. Does nothing once unlocked.
     primeVoice();
     setFrozenQuestion(null);
     setAwaitingChoice(false);
+    setLayerView(null);
+
+    // After a support-layer replay the video sits back in the question's
+    // segment; it carries on from the question itself, at the goalie's speed.
+    const resumeAt = typeof explicitResumeAt === 'number' ? explicitResumeAt : pendingResumeRef.current ?? undefined;
+    pendingResumeRef.current = null;
+    setPlaybackRate(userRateRef.current);
 
     if (typeof resumeAt === 'number') {
       // Moving the clock by hand is a jump, not playback - start the crossing
@@ -322,13 +436,129 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     return segmentStart;
   }, []);
 
+  const questionById = useCallback(
+    (id: string) => questionsRef.current.find(q => q.id === id) ?? null,
+    []
+  );
+
+  /** Replays `question`'s own segment at `layer`'s speed; the progress handler asks again at its end. */
+  const startReplay = useCallback((question: VideoQuizQuestionWithState, layer: AskLayer, round: number) => {
+    const rules = rulesRef.current;
+    if (!rules) return;
+    const playback = layerPlayback(question, questionsRef.current, layer, rules);
+    const segment = playback.segment!;
+    const stopAt = layer === 3 ? playback.freezeAt ?? segment.end : segment.end;
+
+    pauseVoice();
+    setFrozenQuestion(null);
+    setAwaitingChoice(false);
+    setLayerView(null);
+    pendingResumeRef.current = question.timestamp;
+
+    // Too short to replay (a question at the very start of the clip): ask again at once.
+    if (stopAt - segment.start < 0.5) {
+      showAsk(question, layer, round, playback.freezeImageUrl);
+      return;
+    }
+
+    replayRef.current = { question, layer, round, stopAt, imageUrl: playback.freezeImageUrl, started: false };
+    setReplaying({ layer, speed: playback.speed });
+    lastTickRef.current = segment.start;
+    currentTimeRef.current = segment.start;
+    playerRef.current?.seekTo(segment.start, 'seconds');
+    setPlaybackRate(playback.speed);
+    setTimeout(() => setPlaying(true), 100);
+  }, [pauseVoice, showAsk]);
+
+  /** Shows the answer: Support Layer 4. */
+  const showAnswer = useCallback((question: VideoQuizQuestionWithState, round: number) => {
+    const rules = rulesRef.current;
+    if (!rules) return;
+    const playback = layerPlayback(question, questionsRef.current, 4, rules);
+    pauseVoice();
+    setPlaying(false);
+    setFrozenQuestion(question);
+    setAwaitingChoice(false);
+    setLayerView({
+      layer: 4,
+      round,
+      key: Date.now(),
+      answerText: playback.answerText,
+      answerImageUrl: playback.answerImageUrl,
+    });
+  }, [pauseVoice]);
+
+  /** After the video: runs whatever the loop asks for next, in the panel. */
+  const runPanel = useCallback(() => {
+    const loop = loopRef.current;
+    if (!loop) return;
+    const step = currentStep(loop);
+    if (step.kind === 'done') {
+      setFrozenQuestion(null);
+      setLayerView(null);
+      if (answeredQuestionsRef.current.size >= questionsRef.current.length) {
+        allQuestionsAnsweredRef.current = true;
+        checkAndCompleteQuiz();
+      } else {
+        const left = questionsRef.current.length - answeredQuestionsRef.current.size;
+        toast.warning(`Please answer ${left} remaining question(s) to complete the quiz`);
+      }
+      return;
+    }
+    const question = questionById(step.questionId);
+    if (!question) return;
+    if (step.kind === 'answer') showAnswer(question, step.round);
+    else if (step.layer === 1) showAsk(question, 1, step.round);
+    else startReplay(question, step.layer, step.round);
+  }, [checkAndCompleteQuiz, questionById, showAnswer, showAsk, startReplay]);
+
+  /**
+   * The loop has moved on after an answer to `question`: replay its segment,
+   * show its answer, or - once it is settled for this round - carry on with the
+   * video (round 1) or the next question in the panel (after the video).
+   */
+  const continueLoop = useCallback((question: VideoQuizQuestionWithState) => {
+    const loop = loopRef.current;
+    if (!loop) return;
+    const step = currentStep(loop);
+    if (step.kind === 'ask' && step.questionId === question.id && step.layer > 1) {
+      startReplay(question, step.layer, step.round);
+      return;
+    }
+    if (step.kind === 'answer' && step.questionId === question.id) {
+      showAnswer(question, step.round);
+      return;
+    }
+    if (videoEndedRef.current) {
+      runPanel();
+      return;
+    }
+    setLayerView(null);
+    if (question.afterAnswer === 'choose') {
+      setAwaitingChoice(true);
+      return;
+    }
+    releaseFreeze();
+    checkAllSettled();
+  }, [startReplay, showAnswer, runPanel, releaseFreeze, checkAllSettled]);
+
+  // The goalie has read the answer on Support Layer 4.
+  const handleAnswerSeen = useCallback(() => {
+    if (!frozenQuestion || !loopRef.current) return;
+    primeVoice();
+    loopRef.current = acknowledgeAnswer(loopRef.current);
+    continueLoop(frozenQuestion);
+  }, [frozenQuestion, primeVoice, continueLoop]);
+
   // Handle question answer
   const handleAnswer = useCallback((answer: string | string[]) => {
     if (!frozenQuestion) return;
 
     console.log('✅ Question answered:', frozenQuestion.id, 'Answer:', answer);
 
-    // Mark as answered
+    // Mark as answered. The score and the attempt's answer list keep the first
+    // answer only; later answers on the layers go to the learning record.
+    const firstAnswer = !answeredQuestionsRef.current.has(frozenQuestion.id);
     answeredQuestionsRef.current.add(frozenQuestion.id);
 
     // Calculate if correct
@@ -409,10 +639,25 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       answeredAt: Timestamp.now(),
     };
 
-    progressRef.current.questionsAnswered.push(questionAnswer);
+    // Where this answer sits in the loop. A question reached ahead of the one
+    // the loop expected (the goalie skipped forward) becomes the current one.
+    let layer: LayerNumber = 1;
+    let round = 1;
+    let loop = loopRef.current;
+    const inLoop = !!loop && !isReflective && loop.all.includes(question.id);
+    if (loop && inLoop) {
+      loop = moveToFront(loop, question.id);
+      const step = currentStep(loop);
+      if (step.kind === 'ask' && step.questionId === question.id) {
+        layer = step.layer;
+        round = step.round;
+      }
+      loopRef.current = loop;
+    }
 
-    // The learning record keeps every answer for good (Knowledge Check Layers).
-    // Every answer here is on Layer 1 until the support layers arrive in Phase 2.
+    if (firstAnswer) progressRef.current.questionsAnswered.push(questionAnswer);
+
+    // The learning record keeps every answer for good, with its layer and round.
     // Not awaited: a slow write must never hold the frame, and a failed one is
     // logged by the service rather than shown to the goalie mid-question.
     const attempt = progressRef.current;
@@ -423,23 +668,33 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       skillId: attempt.skillId,
       sportId: attempt.sportId,
       attemptId: attempt.id,
-      layer: 1,
+      layer,
       outcome: isReflective ? 'reflective' : isCorrect ? 'correct' : 'incorrect',
       answerText,
       timeToAnswer: questionAnswer.timeToAnswer,
       answeredAt: Date.now(),
+      round,
     });
 
-    progressRef.current.questionsRemaining--;
-    progressRef.current.score += pointsEarned;
-    // An all-reflective quiz has nothing to score against, so guard the divide —
-    // `0 / 0` would otherwise write NaN into the goalie's progress record.
-    progressRef.current.percentage = progressRef.current.maxScore > 0
-      ? (progressRef.current.score / progressRef.current.maxScore) * 100
-      : 0;
+    if (firstAnswer) {
+      progressRef.current.questionsRemaining--;
+      progressRef.current.score += pointsEarned;
+      // An all-reflective quiz has nothing to score against, so guard the divide —
+      // `0 / 0` would otherwise write NaN into the goalie's progress record.
+      progressRef.current.percentage = progressRef.current.maxScore > 0
+        ? (progressRef.current.score / progressRef.current.maxScore) * 100
+        : 0;
 
-    // Update answered count for UI
-    setAnsweredCount(prev => prev + 1);
+      // Update answered count for UI
+      setAnsweredCount(prev => prev + 1);
+    }
+
+    // The layers decide what happens next for a question with a right answer.
+    if (loopRef.current && inLoop && rulesRef.current) {
+      loopRef.current = answerQuestion(loopRef.current, isCorrect, rulesRef.current);
+      continueLoop(question);
+      return;
+    }
 
     // Answered, but the frame stays held: PLAY ON / REWIND decides what happens
     // next, and the completion check waits for that choice.
@@ -451,7 +706,7 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     // Default: let go of the frame and carry on, as the player always has.
     releaseFreeze();
     checkAllSettled();
-  }, [frozenQuestion, releaseFreeze, checkAllSettled, userId, quiz.id]);
+  }, [frozenQuestion, releaseFreeze, checkAllSettled, userId, quiz.id, continueLoop]);
 
   // A hold with no question, and no choice: the goalie has looked, carry on.
   const handleAcknowledge = useCallback(() => {
@@ -505,6 +760,21 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
     console.log('🎬 Video ended');
     videoEndedRef.current = true;
 
+    // A replay that ran to the very end of the clip: ask, as at any replay's end.
+    const replay = replayRef.current;
+    if (replay) {
+      replayRef.current = null;
+      setReplaying(null);
+      showAsk(replay.question, replay.layer, replay.round, replay.imageUrl);
+      return;
+    }
+
+    // With the layers on, the panel takes over: anything skipped, then the retests.
+    if (loopRef.current) {
+      runPanel();
+      return;
+    }
+
     const unanswered = questionsRef.current.filter(
       q => !answeredQuestionsRef.current.has(q.id)
     );
@@ -521,7 +791,7 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       allQuestionsAnsweredRef.current = true;
       checkAndCompleteQuiz();
     }
-  }, [checkAndCompleteQuiz]);
+  }, [checkAndCompleteQuiz, showAsk, runPanel]);
 
   // Handle seeking
   const handleSeek = useCallback((seconds: number) => {
@@ -539,6 +809,16 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
   // `primeVoice` must run here, synchronously, not in an effect or a timer.
   const handleStart = useCallback(() => {
     primeVoice();
+    // The loop covers the questions with a right answer, in the order the video
+    // reaches them. Holds and reflective questions play as they always have.
+    if (rulesRef.current?.enabled) {
+      loopRef.current = startLoop(
+        [...questionsRef.current]
+          .filter(q => !q.holdOnly && !q.reflective)
+          .sort((a, b) => a.timestamp - b.timestamp)
+          .map(q => q.id)
+      );
+    }
     setHasStarted(true);
     setPlaying(true);
   }, [primeVoice]);
@@ -627,10 +907,13 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
           muted={muted}
           onPlayPause={handlePlayPause}
           onSeek={handleSeek}
-          onPlaybackRateChange={(rate) => setPlaybackRate(rate)}
+          onPlaybackRateChange={(rate) => {
+            userRateRef.current = rate;
+            setPlaybackRate(rate);
+          }}
           onVolumeChange={(vol) => setVolume(vol)}
           onMuteToggle={() => setMuted(!muted)}
-          disabled={!!frozenQuestion}
+          disabled={!!frozenQuestion || !!replaying}
         />
       )}
 
@@ -658,11 +941,19 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
       {hasStarted && (
         <div className="border-t border-white/10 bg-slate-950 p-3 sm:p-4">
           <div className="h-[340px] overflow-y-auto sm:h-[380px]">
-            {frozenQuestion ? (
+            {frozenQuestion && layerView?.layer === 4 ? (
+              <LayerAnswerPanel
+                key={`${frozenQuestion.id}-${layerView.key}`}
+                question={frozenQuestion}
+                answerText={layerView.answerText}
+                answerImageUrl={layerView.answerImageUrl}
+                onContinue={handleAnswerSeen}
+              />
+            ) : frozenQuestion ? (
               <QuestionPanel
-                // A fresh panel for each freeze point, so a half-picked answer
-                // from one can never carry into the next.
-                key={frozenQuestion.id}
+                // A fresh panel for each freeze point - and for each asking on
+                // the layers - so a half-picked answer never carries over.
+                key={`${frozenQuestion.id}-${layerView?.key ?? 0}`}
                 question={frozenQuestion}
                 questionNumber={questionNumber}
                 totalQuestions={askedQuestions.length}
@@ -671,7 +962,19 @@ export const StandaloneVideoQuizPlayer: React.FC<StandaloneVideoQuizPlayerProps>
                 onAcknowledge={handleAcknowledge}
                 onPlayOn={handlePlayOn}
                 onRewind={handleRewind}
+                layerLabel={layerView ? layerLabelFor(layerView.layer, layerView.round) : undefined}
+                layerImageUrl={layerView?.imageUrl}
               />
+            ) : replaying ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+                <p className="text-sm font-semibold uppercase tracking-widest text-amber-300">
+                  Support Layer {replaying.layer}
+                </p>
+                <p className="max-w-md text-base text-white/80">
+                  Watch that part again at {replaying.speed}× speed
+                  {replaying.layer === 3 ? ', then look closely where it stops.' : '.'}
+                </p>
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center px-4 text-center">
                 {quiz.instructions && (

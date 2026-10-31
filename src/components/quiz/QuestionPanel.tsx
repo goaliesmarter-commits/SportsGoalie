@@ -46,6 +46,8 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
   onAcknowledge,
   onPlayOn,
   onRewind,
+  layerLabel,
+  layerImageUrl,
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | string[]>('');
   const [fillInAnswers, setFillInAnswers] = useState<string[]>([]);
@@ -398,9 +400,14 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
       <Card className="shadow-lg">
         <CardHeader className="border-b py-4">
           <div className="flex items-center justify-between mb-2">
-            <Badge variant="secondary" className="text-xs">
-              Question {questionNumber} of {totalQuestions}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Question {questionNumber} of {totalQuestions}
+              </Badge>
+              {layerLabel && (
+                <Badge className="text-xs bg-amber-100 text-amber-900 hover:bg-amber-100">{layerLabel}</Badge>
+              )}
+            </div>
             {/*
               Reflective questions say so up front. A goalie who thinks they are
               being marked will answer with what they think the coach wants to
@@ -416,6 +423,16 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({
               </Badge>
             ) : null}
           </div>
+          {/* Support Layer 3 can show a photo instead of the held frame. It sits
+              in the panel, never over the picture. */}
+          {layerImageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- an admin-supplied link on any host
+            <img
+              src={layerImageUrl}
+              alt=""
+              className="mb-3 max-h-40 w-full rounded-md object-contain bg-slate-100"
+            />
+          )}
           {/* What to look at comes before what is asked about it. */}
           {question.holdText && (
             <p className="mb-2 text-sm leading-relaxed text-slate-600">{question.holdText}</p>
