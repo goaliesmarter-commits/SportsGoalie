@@ -19,12 +19,19 @@ import { AdminRoute } from '@/components/auth/protected-route';
 import { SkeletonDarkPage } from '@/components/ui/skeletons';
 import { useAuth } from '@/lib/auth/context';
 import { layerRulesService } from '@/lib/database/services/layer-rules.service';
-import { DEFAULT_LAYER_RULES, LAYER_RULE_RANGES, type LayerRules } from '@/types/knowledge-layers';
+import { layerRuleProblems } from '@/lib/training/layers';
+import {
+  DEFAULT_LAYER_RULES,
+  LAYER_RULE_RANGES,
+  type LayerRules,
+  type NumericLayerRule,
+} from '@/types/knowledge-layers';
 
 /* ─── Style constants, matching the other admin screens ────────────────────── */
 
 const BLUE = '#37b5ff';
 const MUTED = 'rgba(255,255,255,0.45)';
+const ERROR = '#ff6b6b';
 
 const card = {
   background: 'rgba(2,18,44,0.82)',
@@ -47,7 +54,7 @@ const input = {
 /* ─── What each rule means, in the words of the brief ─────────────────────── */
 
 interface RuleField {
-  key: keyof LayerRules;
+  key: NumericLayerRule;
   label: string;
   help: string;
   /** Shown after the box. */
@@ -99,15 +106,19 @@ function KnowledgeLayersAdminPage() {
     };
   }, []);
 
-  const setRule = (key: keyof LayerRules, raw: string) => {
+  const setRule = (key: NumericLayerRule, raw: string) => {
     const value = Number(raw);
-    // An emptied box keeps its last value rather than becoming 0; the save
-    // pulls anything out of range back in.
+    // An emptied box keeps its last value rather than becoming 0. A value that
+    // makes no sense is shown under its box, and Save stays off until it is fixed.
     if (raw.trim() === '' || !Number.isFinite(value)) return;
     setRules(current => ({ ...current, [key]: value }));
   };
 
+  const problems = layerRuleProblems(rules);
+  const hasProblems = Object.keys(problems).length > 0;
+
   const save = async () => {
+    if (hasProblems) return;
     if (!user?.id) {
       toast.error('Could not save the layer rules');
       return;
@@ -138,6 +149,31 @@ function KnowledgeLayersAdminPage() {
         </p>
       </div>
 
+      <section style={card}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ flex: '1 1 260px', minWidth: 0 }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: BLUE, margin: 0 }}>
+              Layers for goalies
+            </h2>
+            <p style={{ color: MUTED, fontSize: '12px', margin: '4px 0 0', lineHeight: 1.5 }}>
+              {rules.enabled
+                ? 'On: a missed question replays its part of the video, slower each time, then shows the answer, and the Knowledge Check retests until every question is right.'
+                : 'Off: Knowledge Checks play exactly as before. Turn on when you are ready for goalies to get the layers.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={rules.enabled}
+            aria-label="Layers for goalies"
+            onClick={() => setRules(current => ({ ...current, enabled: !current.enabled }))}
+            style={{ padding: '8px 16px', borderRadius: '999px', border: `1px solid ${rules.enabled ? BLUE : 'rgba(255,255,255,0.25)'}`, background: rules.enabled ? BLUE : 'transparent', color: rules.enabled ? '#000f28' : '#fff', fontWeight: 800, cursor: 'pointer', minWidth: '72px' }}
+          >
+            {rules.enabled ? 'On' : 'Off'}
+          </button>
+        </div>
+      </section>
+
       {SECTIONS.map(section => (
         <section key={section.title} style={card}>
           <h2 style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: BLUE, margin: '0 0 14px' }}>
@@ -146,6 +182,7 @@ function KnowledgeLayersAdminPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {section.fields.map(field => {
               const range = LAYER_RULE_RANGES[field.key];
+              const problem = problems[field.key];
               return (
                 <div key={field.key} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                   <div style={{ flex: '1 1 260px', minWidth: 0 }}>
@@ -153,6 +190,11 @@ function KnowledgeLayersAdminPage() {
                       {field.label}
                     </label>
                     <p style={{ color: MUTED, fontSize: '12px', margin: '2px 0 0', lineHeight: 1.5 }}>{field.help}</p>
+                    {problem && (
+                      <p id={`${field.key}-problem`} role="alert" style={{ color: ERROR, fontSize: '12px', fontWeight: 700, margin: '4px 0 0', lineHeight: 1.5 }}>
+                        {problem}
+                      </p>
+                    )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
@@ -163,7 +205,9 @@ function KnowledgeLayersAdminPage() {
                       step={range.step}
                       value={rules[field.key]}
                       onChange={e => setRule(field.key, e.target.value)}
-                      style={input}
+                      aria-invalid={problem ? true : undefined}
+                      aria-describedby={problem ? `${field.key}-problem` : undefined}
+                      style={problem ? { ...input, borderColor: ERROR } : input}
                     />
                     <span style={{ color: MUTED, fontSize: '12px', width: '64px' }}>{field.unit}</span>
                   </div>
@@ -177,7 +221,8 @@ function KnowledgeLayersAdminPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'flex-end' }}>
         <button
           type="button"
-          onClick={() => setRules(DEFAULT_LAYER_RULES)}
+          // The numbers go back to the defaults; whether goalies have the layers stays as it is.
+          onClick={() => setRules(current => ({ ...DEFAULT_LAYER_RULES, enabled: current.enabled }))}
           disabled={isSaving}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(55,181,255,0.3)', background: 'transparent', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
         >
@@ -187,8 +232,9 @@ function KnowledgeLayersAdminPage() {
         <button
           type="button"
           onClick={save}
-          disabled={isSaving}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: BLUE, color: '#000f28', fontWeight: 800, cursor: isSaving ? 'wait' : 'pointer' }}
+          disabled={isSaving || hasProblems}
+          title={hasProblems ? 'Fix the rules marked in red first' : undefined}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '10px', border: 'none', background: BLUE, color: '#000f28', fontWeight: 800, cursor: isSaving ? 'wait' : hasProblems ? 'not-allowed' : 'pointer', opacity: hasProblems ? 0.45 : 1 }}
         >
           {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           Save rules

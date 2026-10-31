@@ -11,6 +11,7 @@ import {
   LAYER_RULE_RANGES,
   type LayerNumber,
   type LayerRules,
+  type NumericLayerRule,
 } from '@/types/knowledge-layers';
 import type { VideoQuizQuestion } from '@/types/video-quiz';
 
@@ -120,7 +121,11 @@ export function normalizeLayerRules(raw: unknown): LayerRules {
   const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const rules = { ...DEFAULT_LAYER_RULES };
 
-  for (const key of Object.keys(DEFAULT_LAYER_RULES) as (keyof LayerRules)[]) {
+  // Only a stored `true` turns the layers on: anything else leaves goalies with
+  // the Knowledge Check as it always was.
+  rules.enabled = source.enabled === true;
+
+  for (const key of Object.keys(LAYER_RULE_RANGES) as NumericLayerRule[]) {
     const value = source[key];
     if (typeof value !== 'number' || !Number.isFinite(value)) continue;
     const { min, max, step } = LAYER_RULE_RANGES[key];
@@ -130,4 +135,35 @@ export function normalizeLayerRules(raw: unknown): LayerRules {
   }
 
   return rules;
+}
+
+/** Why a rule as typed cannot be saved, by rule. Empty when all of them can. */
+export type LayerRuleProblems = Partial<Record<NumericLayerRule, string>>;
+
+/**
+ * Checks rules as admin typed them, before anything is saved. A value outside
+ * its range is refused rather than quietly pulled in, and the support layers
+ * must each be slower than the one before: regular, then Layer 2, then Layer 3.
+ */
+export function layerRuleProblems(rules: LayerRules): LayerRuleProblems {
+  const problems: LayerRuleProblems = {};
+
+  for (const key of Object.keys(LAYER_RULE_RANGES) as NumericLayerRule[]) {
+    const value = rules[key];
+    const { min, max, step } = LAYER_RULE_RANGES[key];
+    if (!Number.isFinite(value) || value < min || value > max) {
+      problems[key] = `Use a number from ${min} to ${max}.`;
+    } else if (step === 1 && !Number.isInteger(value)) {
+      problems[key] = 'Use a whole number.';
+    }
+  }
+
+  if (!problems.layer2Speed && rules.layer2Speed >= 1) {
+    problems.layer2Speed = 'Layer 2 must replay slower than regular speed (below 1×).';
+  }
+  if (!problems.layer3Speed && !problems.layer2Speed && rules.layer3Speed >= rules.layer2Speed) {
+    problems.layer3Speed = `Layer 3 must be slower than Layer 2 (below ${rules.layer2Speed}×).`;
+  }
+
+  return problems;
 }

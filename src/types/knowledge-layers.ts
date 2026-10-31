@@ -45,6 +45,12 @@ export interface QuestionLayerMedia {
  * One document, `knowledge_check_settings/layers`.
  */
 export interface LayerRules {
+  /**
+   * Whether goalies get the layers at all. Off until Michael turns it on, so the
+   * loop can be shipped and tried by admin before any goalie meets it. Off means
+   * a Knowledge Check plays exactly as it did before the layers.
+   */
+  enabled: boolean;
   /** Playback speed of Support Layer 2. */
   layer2Speed: number;
   /** Playback speed of Support Layer 3. */
@@ -64,6 +70,7 @@ export interface LayerRules {
 }
 
 export const DEFAULT_LAYER_RULES: LayerRules = {
+  enabled: false,
   layer2Speed: 0.5,
   layer3Speed: 0.25,
   layer2AttemptsBeforeAnswer: 3,
@@ -74,10 +81,13 @@ export const DEFAULT_LAYER_RULES: LayerRules = {
   buildingBlockSize: 2,
 };
 
-/** What admin may set each rule to. Anything outside is pulled back in. */
-export const LAYER_RULE_RANGES: Record<keyof LayerRules, { min: number; max: number; step: number }> = {
-  layer2Speed: { min: 0.25, max: 1, step: 0.05 },
-  layer3Speed: { min: 0.1, max: 1, step: 0.05 },
+/** The rules that are numbers, which is all of them but the switch. */
+export type NumericLayerRule = Exclude<keyof LayerRules, 'enabled'>;
+
+/** What admin may set each number to. Anything outside is pulled back in. */
+export const LAYER_RULE_RANGES: Record<NumericLayerRule, { min: number; max: number; step: number }> = {
+  layer2Speed: { min: 0.25, max: 0.95, step: 0.05 },
+  layer3Speed: { min: 0.1, max: 0.9, step: 0.05 },
   layer2AttemptsBeforeAnswer: { min: 1, max: 10, step: 1 },
   layer3AttemptsBeforeAnswer: { min: 1, max: 10, step: 1 },
   ownedCorrectInARow: { min: 1, max: 10, step: 1 },
@@ -114,6 +124,12 @@ export interface LearningRecordEntry {
   timeToAnswer: number;
   /** Milliseconds since the epoch, from the goalie's device. */
   answeredAt: number;
+  /**
+   * Which round of the loop: 1 is the first pass with the video, 2 the retest
+   * of every question, 3 on the misses only. Absent on lines written before the
+   * loop existed, which were all round 1.
+   */
+  round?: number;
 }
 
 /** A learning record line as it is written, before Firestore gives it an id. */

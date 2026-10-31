@@ -43,6 +43,7 @@ export const learningRecordEntrySchema = z.object({
   answerText: z.string().max(MAX_ANSWER_TEXT),
   timeToAnswer: z.number().nonnegative(),
   answeredAt: z.number().int().positive(),
+  round: z.number().int().positive().optional(),
 });
 
 function ok<T>(data: T): ApiResponse<T> {

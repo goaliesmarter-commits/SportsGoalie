@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { layerPlayback, normalizeLayerRules, questionSegment } from '@/lib/training/layers';
+import { layerPlayback, layerRuleProblems, normalizeLayerRules, questionSegment } from '@/lib/training/layers';
 import { DEFAULT_LAYER_RULES } from '@/types/knowledge-layers';
 
 const q = (id: string, timestamp: number, extra: Record<string, unknown> = {}) => ({ id, timestamp, ...extra });
@@ -120,7 +120,7 @@ describe('normalizeLayerRules', () => {
 
   it('pulls values back into range', () => {
     const rules = normalizeLayerRules({ layer2Speed: 4, layer3AttemptsBeforeAnswer: 0, sessionGapMinutes: 1 });
-    expect(rules.layer2Speed).toBe(1);
+    expect(rules.layer2Speed).toBe(0.95);
     expect(rules.layer3AttemptsBeforeAnswer).toBe(1);
     expect(rules.sessionGapMinutes).toBe(5);
   });
@@ -131,8 +131,47 @@ describe('normalizeLayerRules', () => {
     expect(rules.layer3Speed).toBe(0.25);
   });
 
+  it('keeps the layers off unless they were switched on', () => {
+    expect(normalizeLayerRules(null).enabled).toBe(false);
+    expect(normalizeLayerRules({ enabled: 'true' }).enabled).toBe(false);
+    expect(normalizeLayerRules({ enabled: 1 }).enabled).toBe(false);
+    expect(normalizeLayerRules({ enabled: true }).enabled).toBe(true);
+  });
+
   it('ignores values that are not numbers', () => {
     const rules = normalizeLayerRules({ layer2Speed: '0.75', ownedSessions: null, buildingBlockSize: Number.NaN });
     expect(rules).toEqual(DEFAULT_LAYER_RULES);
+  });
+});
+
+describe('layerRuleProblems', () => {
+  const rules = DEFAULT_LAYER_RULES;
+
+  it('finds nothing wrong with the defaults', () => {
+    expect(layerRuleProblems(rules)).toEqual({});
+  });
+
+  it('refuses a "slow" replay at regular speed or faster', () => {
+    expect(layerRuleProblems({ ...rules, layer2Speed: 2 }).layer2Speed).toBe('Use a number from 0.25 to 0.95.');
+    expect(layerRuleProblems({ ...rules, layer2Speed: 1 }).layer2Speed).toBe('Use a number from 0.25 to 0.95.');
+    expect(layerRuleProblems({ ...rules, layer3Speed: 1 }).layer3Speed).toBe('Use a number from 0.1 to 0.9.');
+  });
+
+  it('refuses Layer 3 that is not slower than Layer 2', () => {
+    expect(layerRuleProblems({ ...rules, layer2Speed: 0.5, layer3Speed: 0.5 }).layer3Speed)
+      .toBe('Layer 3 must be slower than Layer 2 (below 0.5×).');
+    expect(layerRuleProblems({ ...rules, layer2Speed: 0.4, layer3Speed: 0.6 }).layer3Speed)
+      .toBe('Layer 3 must be slower than Layer 2 (below 0.4×).');
+    expect(layerRuleProblems({ ...rules, layer2Speed: 0.5, layer3Speed: 0.45 })).toEqual({});
+  });
+
+  it('refuses 0 misses and part of a miss', () => {
+    expect(layerRuleProblems({ ...rules, layer2AttemptsBeforeAnswer: 0 }).layer2AttemptsBeforeAnswer).toBe('Use a number from 1 to 10.');
+    expect(layerRuleProblems({ ...rules, layer3AttemptsBeforeAnswer: 0 }).layer3AttemptsBeforeAnswer).toBe('Use a number from 1 to 10.');
+    expect(layerRuleProblems({ ...rules, ownedSessions: 1.5 }).ownedSessions).toBe('Use a whole number.');
+  });
+
+  it('refuses a session gap too short to be a break', () => {
+    expect(layerRuleProblems({ ...rules, sessionGapMinutes: 1 }).sessionGapMinutes).toBe('Use a number from 5 to 10080.');
   });
 });

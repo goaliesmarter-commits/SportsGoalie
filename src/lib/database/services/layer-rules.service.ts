@@ -14,7 +14,7 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
-import { normalizeLayerRules } from '@/lib/training/layers';
+import { layerRuleProblems, normalizeLayerRules } from '@/lib/training/layers';
 import { logger } from '@/lib/utils/logger';
 import type { LayerRules } from '@/types/knowledge-layers';
 import type { ApiResponse } from '@/types';
@@ -47,6 +47,10 @@ export class LayerRulesService {
    * what was typed when a value had to be pulled back into range.
    */
   async saveRules(rules: LayerRules, updatedBy: string): Promise<ApiResponse<LayerRules>> {
+    // The page refuses these before Save; this stops any other caller too.
+    if (Object.keys(layerRuleProblems(rules)).length > 0) {
+      return fail('layer-rules/invalid', 'Some layer rules are not valid.');
+    }
     const normalized = normalizeLayerRules(rules);
     try {
       await setDoc(doc(db, COLLECTION, DOCUMENT_ID), {
